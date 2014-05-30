@@ -9,12 +9,12 @@ This repository is not:
 
 ### How do I get set up? ###
 
-* Download+Install R ([](http://www.r-project.org/))
-* Download+Install RStudio () - technically not required, but highly desirable because it has built in methods for handling version control in R using Git.
-* Download+Install Git
+* Download+Install R [here](http://www.r-project.org/)
+* Download+Install RStudio [here](http://www.rstudio.com/ide/download/) - technically not required, but highly desirable because it has built in methods for handling version control in R using Git.
+* Download+Install Git [here](http://git-scm.com/downloads)
 * Create a new project in RStudio using Version Control by following the instructions [here](http://www.rstudio.com/ide/docs/using/projects): 
 
 ### Questions? ###
 
-* Documentation for Git here
-* Documentation for Bitbucket here
+* Documentation for Git [here](http://git-scm.com/doc)
+* Documentation for Bitbucket [here](https://confluence.atlassian.com/x/bgozDQ)
