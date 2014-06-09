@@ -46,14 +46,26 @@ options(stringsAsFactors=FALSE)
 
 
 # Paths -------------------------------------------------------------------
+# # Windows
+# # Prepared data directory
+# data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
+# # Plot directory
+# plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
+# # Functions directory
+# fin <- "D:/Dropbox/CLEAR/DOGM Data/Functions"
+# # Working directory
+# work_root <- "D:/Dropbox/CLEAR/DOGM Data"
+
+# Mac
 # Prepared data directory
-data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
+data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
 # Plot directory
-plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
+plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
 # Functions directory
-fin <- "D:/Dropbox/CLEAR/DOGM Data/Functions"
+fin <- "/Users/john/Dropbox/CLEAR/DOGM Data/Functions"
 # Working directory
-work_root <- "D:/Dropbox/CLEAR/DOGM Data"
+work_root <- "/Users/john//Dropbox/CLEAR/DOGM Data"
+
 setwd(work_root)
 
 
@@ -289,10 +301,25 @@ rrate <- ifelse(test = rsim/psim != "NaN",
                 yes = rsim/psim,
                 no = 0)
 
+# Define severance tax (stsim) matrix
 stsim <- matrix(0, nrow = nrow(wsim), ncol = length(all_months))
 
+# Calculate severance taxes for oil/gas wells in each month of simulation
 for (i in 1:length(all_months)) {
   stsim[ind.gw,i] <- ST(psim[ind.gw,i], gp[i], rrate[ind.gw,i])
   stsim[ind.ow,i] <- ST(psim[ind.ow,i], op[i], rrate[ind.ow,i])
 }
 
+# Exempt first six months of production by writing 0 over ST calculations from proceeding loop
+for (i in 1:(length(all_months)-5)) {
+  ind <- which(wsim$tDrill == i)
+  stsim[ind,i:(i+5)] <- 0
+}
+
+# Handle special case where < 5 time steps remain in matrix row
+for (i in (length(all_months)-4):length(all_months)) {
+  ind <- which(wsim$tDrill == i)
+  stsim[ind,i:ncol(stsim)] <- 0
+}
+
+# Property Taxes
