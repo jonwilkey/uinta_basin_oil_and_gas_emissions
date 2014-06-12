@@ -37,7 +37,8 @@
 # v9 -Rewrote code to vectorize most steps in simulation (generation of well
 #     data, calculating production).
 #
-# v10-BLAH
+# v10-Added calculations for production, royatlies, severance taxes, and
+#     property taxes.
 
 
 # Options -----------------------------------------------------------------
@@ -46,25 +47,25 @@ options(stringsAsFactors=FALSE)
 
 
 # Paths -------------------------------------------------------------------
-# # Windows
-# # Prepared data directory
-# data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
-# # Plot directory
-# plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
-# # Functions directory
-# fin <- "D:/Dropbox/CLEAR/DOGM Data/Functions"
-# # Working directory
-# work_root <- "D:/Dropbox/CLEAR/DOGM Data"
-
-# Mac
+# Windows
 # Prepared data directory
-data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
+data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
 # Plot directory
-plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
+plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
 # Functions directory
-fin <- "/Users/john/Dropbox/CLEAR/DOGM Data/Functions"
+fin <- "D:/Dropbox/CLEAR/DOGM Data/Functions"
 # Working directory
-work_root <- "/Users/john//Dropbox/CLEAR/DOGM Data"
+work_root <- "D:/Dropbox/CLEAR/DOGM Data"
+
+# # Mac
+# # Prepared data directory
+# data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
+# # Plot directory
+# plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
+# # Functions directory
+# fin <- "/Users/john/Dropbox/CLEAR/DOGM Data/Functions"
+# # Working directory
+# work_root <- "/Users/john//Dropbox/CLEAR/DOGM Data"
 
 setwd(work_root)
 
@@ -112,6 +113,9 @@ load(file.path(data_root, "decline_field_gw.rda"))
 # Oil & gas price history
 load(file.path(data_root, "oil_and_gas_price_history_1999_to_2012.rda"))
 
+# Leasing operating cost fits
+load(file.path(data_root, "leaseOpCost_v1.rda"))
+
 # Rename some dataframes for brevity
 p <- production
 h <- histdata
@@ -146,7 +150,7 @@ field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
 # MC Simulation: Well Data ------------------------------------------------
 
 # Number of iterations
-nrun <- 10^1
+nrun <- 10^0
 
 Drilled <- round(cdf.drill[findInterval(runif(length(all_months)*nrun),
                                         c(0, cdf.drill[,2])),1])
@@ -264,8 +268,9 @@ for (i in 1:length(all_months)) {
 
 # Define prices and adjust for inflation - op = oil price, gp = gas price. Given
 # basis (233.049) inflation adjusts to 2013-12-01.
-op <- inf_adj(OGprice$bw, OGprice$cpi, basis = 233.049)
-gp <- inf_adj(OGprice$uswp, OGprice$cpi, basis = 233.049)
+basis <- 233.049
+op <- inf_adj(OGprice$bw, OGprice$cpi, basis)
+gp <- inf_adj(OGprice$uswp, OGprice$cpi, basis)
 
 # Royalties
 rsim <- matrix(0, nrow = nrow(wsim), ncol = length(all_months))
@@ -323,3 +328,32 @@ for (i in (length(all_months)-4):length(all_months)) {
 }
 
 # Property Taxes
+
+# Predefine NPV and LOC matrix
+rev <- matrix(0, nrow = nrow(wsim), ncol = length(all_months))
+LOC <- rev
+
+# Determine revenue (price * production)
+for (i in 1:ncol(rev)) {
+  rev[ind.ow,i] <- op[i]*psim[ind.ow,i]
+  rev[ind.gw,i] <- gp[i]*psim[ind.gw,i]
+}
+
+
+# Determine lease operating costs - 6500 is placeholder for well depth value. 
+# LOC is in 2009 dollars (CPI = 214.537), so it must be adjusted for inflation 
+# to desired basis and converted to monthly value. Also, production rate must be
+# in terms of SCFD.
+depth <- 3140
+for (i in 1:ncol(LOC)) {
+  LOC[ind.ow,i] <- (fit.LOC.oil$coefficients[2]*op[i]+
+                    fit.LOC.oil$coefficients[3]*depth+
+                    fit.LOC.oil$coefficients[1])*(basis/214.537)*(1/12)
+  LOC[ind.gw,i] <- (fit.LOC.gas$coefficients[2]*gp[i]+
+                    fit.LOC.gas$coefficients[3]*depth+
+                    fit.LOC.gas$coefficients[4]*wsim[ind.gw,]$a/30+
+                    fit.LOC.gas$coefficients[1])*(basis/214.537)*(1/12)
+}
+
+
+NPV <- rev-rsim-stsim-LOC
