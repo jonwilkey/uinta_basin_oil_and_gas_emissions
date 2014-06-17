@@ -16,25 +16,25 @@ options(stringsAsFactors=FALSE)
 
 
 # Paths -------------------------------------------------------------------
-# # Windows
-# # Raw data directory
-# raw_root <- "D:/Dropbox/CLEAR/DOGM Data/Raw Data"
-# # Prepared data directory
-# data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
-# # Plot directory
-# plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
-# # Working directory
-# work_root <- "D:/Dropbox/CLEAR/DOGM Data"
-
-# Mac
+# Windows
 # Raw data directory
-raw_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Raw Data"
+raw_root <- "D:/Dropbox/CLEAR/DOGM Data/Raw Data"
 # Prepared data directory
-data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
+data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
 # Plot directory
-plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
+plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
 # Working directory
-work_root <- "/Users/john//Dropbox/CLEAR/DOGM Data"
+work_root <- "D:/Dropbox/CLEAR/DOGM Data"
+
+# # Mac
+# # Raw data directory
+# raw_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Raw Data"
+# # Prepared data directory
+# data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
+# # Plot directory
+# plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
+# # Working directory
+# work_root <- "/Users/john//Dropbox/CLEAR/DOGM Data"
 
 # Set working directory
 setwd(work_root)
