@@ -116,6 +116,9 @@ load(file.path(data_root, "oil_and_gas_price_history_1999_to_2012.rda"))
 # Leasing operating cost fits
 load(file.path(data_root, "leaseOpCost_v1.rda"))
 
+# Well Depth PDF x-values & CDF y-values
+load(file.path(data_root, "cdf_wellDepth_v1.rda"))
+
 # Rename some dataframes for brevity
 p <- production
 h <- histdata
@@ -163,9 +166,9 @@ c <- 1 # runID
 bstop <- length(all_months)
 
 # Note - this is still slow
-for (g in 1:length(Drilled)) {
-  if (Drilled[g] > 0) {
-    for (h in 1:Drilled[g]) {
+for (i in 1:length(Drilled)) {
+  if (Drilled[i] > 0) {
+    for (j in 1:Drilled[i]) {
       result[a,1] <- a
       result[a,2] <- b
       result[a,3] <- c
@@ -194,6 +197,7 @@ fieldnum <- ifelse(test = type == "GW",
 acoef <- rep(0, times = length(type))
 bcoef <- acoef
 ccoef <- acoef
+depth <- acoef
 landown <- acoef
 
 # Generate decline curve coefficient values for field and well type
@@ -205,6 +209,10 @@ for (i in 1:length(field)) {
                                         c(0, cdf.oow[,(i-1)*3+2])), (i-1)*3+2]
   ccoef[ind.ow] <- pdf.oow[findInterval(runif(length(ind.ow)),
                                         c(0, cdf.oow[,(i-1)*3+3])), (i-1)*3+3]
+  depth[ind.ow] <- cdf.depth.ow$x[findInterval(runif(length(ind.ow)),
+                                               c(0, cdf.depth.ow$y))]
+  landown[ind.ow] <- findInterval(runif(length(ind.ow)),
+                                        c(0, cdf.fsl[i,]))
   
   ind.gw <- which(type == "GW" & fieldnum == field[i])
   acoef[ind.gw] <- pdf.ggw[findInterval(runif(length(ind.gw)),
@@ -213,9 +221,10 @@ for (i in 1:length(field)) {
                                         c(0, cdf.ggw[,(i-1)*3+2])), (i-1)*3+2]
   ccoef[ind.gw] <- pdf.ggw[findInterval(runif(length(ind.gw)),
                                         c(0, cdf.ggw[,(i-1)*3+3])), (i-1)*3+3]
-  
-  landown[c(ind.ow, ind.gw)] <- findInterval(runif(length(c(ind.ow, ind.gw))),
-                                             c(0, cdf.fsl[i,]))
+  depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)),
+                                               c(0, cdf.depth.gw$y))]
+  landown[ind.gw] <- findInterval(runif(length(ind.gw)),
+                                        c(0, cdf.fsl[i,]))
 }
 
 # Replace landownership #s with strings (switch expression in royalty.R function
@@ -226,16 +235,16 @@ landown[which(landown == 3)] <- "state"
 landown[which(landown == 4)] <- "fee"
 
 # Make a data table
-wsim <- data.table(result, type, fieldnum, acoef, bcoef, ccoef, landown)
+wsim <- data.table(result, type, fieldnum, acoef, bcoef, ccoef, depth, landown)
 # Set/change column names
 setnames(x = wsim,
          old = 1:ncol(wsim),
          new = c("wellID", "tDrill", "runID", "wellType", "fieldnum", "a", "b",
-                 "c", "landOwner"))
+                 "c", "depth", "landOwner"))
 
 # Cleanup
-remove(result, type, fieldnum, acoef, bcoef, ccoef, landown, a, b, c, Drilled,
-       nrun, g, h, i, ind.gw, ind.ow)
+remove(result, type, fieldnum, acoef, bcoef, ccoef, depth, landown, a, b, c,
+       Drilled, nrun, i, j, ind.gw, ind.ow)
 
 
 # Production Simulation ---------------------------------------------------
@@ -340,20 +349,27 @@ for (i in 1:ncol(rev)) {
 }
 
 
-# Determine lease operating costs - 6500 is placeholder for well depth value. 
-# LOC is in 2009 dollars (CPI = 214.537), so it must be adjusted for inflation 
-# to desired basis and converted to monthly value. Also, production rate must be
-# in terms of SCFD.
-depth <- 3140
+# Determine lease operating costs - LOC is in 2009 dollars (CPI = 214.537), so
+# it must be adjusted for inflation to desired basis and converted to monthly
+# value. Also, production rate must be in terms of SCFD.
 for (i in 1:ncol(LOC)) {
   LOC[ind.ow,i] <- (fit.LOC.oil$coefficients[2]*op[i]+
-                    fit.LOC.oil$coefficients[3]*depth+
+                    fit.LOC.oil$coefficients[3]*wsim$depth[ind.ow]+
                     fit.LOC.oil$coefficients[1])*(basis/214.537)*(1/12)
   LOC[ind.gw,i] <- (fit.LOC.gas$coefficients[2]*gp[i]+
-                    fit.LOC.gas$coefficients[3]*depth+
+                    fit.LOC.gas$coefficients[3]*wsim$depth[ind.gw]+
                     fit.LOC.gas$coefficients[4]*wsim[ind.gw,]$a/30+
                     fit.LOC.gas$coefficients[1])*(basis/214.537)*(1/12)
 }
 
-
+# Take deductions for royalties, severance taxes, and LOCs
 NPV <- rev-rsim-stsim-LOC
+
+# Pretty sure that I don't need to use discount factor, since all terms are in
+# real 2013 dollars.
+# # Specify annual discount rate
+# rate <- 0.1164
+# # Calculate vector of discount factors
+# DF <- (1+rate/12)^(-c(0:(length(all_months)-1)))
+
+# Corporate Income Taxes
