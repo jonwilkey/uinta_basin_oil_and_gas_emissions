@@ -119,6 +119,9 @@ load(file.path(data_root, "leaseOpCost_v1.rda"))
 # Well Depth PDF x-values & CDF y-values
 load(file.path(data_root, "cdf_wellDepth_v1.rda"))
 
+# Corporate income taxes in 2011 dollars (CPI = 224.9392)
+load(file.path(data_root, "cdf_corpIncomeTax_v1.rda"))
+
 # Rename some dataframes for brevity
 p <- production
 h <- histdata
@@ -148,6 +151,9 @@ all_months <- seq(from = as.Date("1999-01-01"),
 # Field Selection (i.e. fields that will be analyzed individually). Note that
 # "Field 999" is placeholder for all other fields category.
 field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
+
+# CPI value for inflation adjustment
+basis <- 233.049
 
 
 # MC Simulation: Well Data ------------------------------------------------
@@ -187,11 +193,26 @@ type <- ifelse(test = runif(nrow(result)) <= prob.gas,
                yes = "GW",
                no = "OW")
 
+# Pick field number
 fieldnum <- ifelse(test = type == "GW",
                    yes = cdf.ffg[findInterval(runif(length(type)),
                                               c(0, cdf.ffg[,2])), 1],
                    no = cdf.ffo[findInterval(runif(length(type)),
                                              c(0, cdf.ffo[,2])), 1])
+
+# Generate corporate tax rates for each well
+# 1) Ajdust to "basis" 2013 dollars from 2011 dollars (CPI = 244.9392) by
+#    modifying x-values ($/unit production) in cdf.CI
+cdf.CI$x <- cdf.CI$x*(basis/224.9392)
+
+# 2) Predefine vectors for results (cirSO - corp income rate state oil, cirSG -
+#    state gas, cirFO - fed oil, cirFG - fed gas).
+cirSO <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$ySO))]
+cirSG <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$ySG))]
+cirFO <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$yFO))]
+cirFG <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$yFG))]
+
+# 3) Run runif() for: 1- state oil, 2- state gas, 3- fed oil, 4- fed
 
 # Predefine vector sizes
 acoef <- rep(0, times = length(type))
@@ -199,6 +220,16 @@ bcoef <- acoef
 ccoef <- acoef
 depth <- acoef
 landown <- acoef
+
+# Pull indices of oil and gas wells
+ind.ow <- which(type == "OW")
+ind.gw <- which(type == "GW")
+
+# Generate total measured depth for each well based on well type
+depth[ind.ow] <- cdf.depth.ow$x[findInterval(runif(length(ind.ow)),
+                                             c(0, cdf.depth.ow$y))]
+depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)),
+                                             c(0, cdf.depth.gw$y))]
 
 # Generate decline curve coefficient values for field and well type
 for (i in 1:length(field)) {
@@ -209,8 +240,6 @@ for (i in 1:length(field)) {
                                         c(0, cdf.oow[,(i-1)*3+2])), (i-1)*3+2]
   ccoef[ind.ow] <- pdf.oow[findInterval(runif(length(ind.ow)),
                                         c(0, cdf.oow[,(i-1)*3+3])), (i-1)*3+3]
-  depth[ind.ow] <- cdf.depth.ow$x[findInterval(runif(length(ind.ow)),
-                                               c(0, cdf.depth.ow$y))]
   landown[ind.ow] <- findInterval(runif(length(ind.ow)),
                                         c(0, cdf.fsl[i,]))
   
@@ -221,8 +250,6 @@ for (i in 1:length(field)) {
                                         c(0, cdf.ggw[,(i-1)*3+2])), (i-1)*3+2]
   ccoef[ind.gw] <- pdf.ggw[findInterval(runif(length(ind.gw)),
                                         c(0, cdf.ggw[,(i-1)*3+3])), (i-1)*3+3]
-  depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)),
-                                               c(0, cdf.depth.gw$y))]
   landown[ind.gw] <- findInterval(runif(length(ind.gw)),
                                         c(0, cdf.fsl[i,]))
 }
@@ -235,16 +262,17 @@ landown[which(landown == 3)] <- "state"
 landown[which(landown == 4)] <- "fee"
 
 # Make a data table
-wsim <- data.table(result, type, fieldnum, acoef, bcoef, ccoef, depth, landown)
+wsim <- data.table(result, type, fieldnum, acoef, bcoef, ccoef, depth, landown,
+                   cirSO, cirSG, cirFO, cirFG)
 # Set/change column names
 setnames(x = wsim,
          old = 1:ncol(wsim),
          new = c("wellID", "tDrill", "runID", "wellType", "fieldnum", "a", "b",
-                 "c", "depth", "landOwner"))
+                 "c", "depth", "landOwner", "cirSO", "cirSG", "cirFO", "cirFG"))
 
 # Cleanup
 remove(result, type, fieldnum, acoef, bcoef, ccoef, depth, landown, a, b, c,
-       Drilled, nrun, i, j, ind.gw, ind.ow)
+       Drilled, nrun, i, j, ind.gw, ind.ow, cirSO, cirSG, cirFO, cirFG)
 
 
 # Production Simulation ---------------------------------------------------
@@ -277,7 +305,6 @@ for (i in 1:length(all_months)) {
 
 # Define prices and adjust for inflation - op = oil price, gp = gas price. Given
 # basis (233.049) inflation adjusts to 2013-12-01.
-basis <- 233.049
 op <- inf_adj(OGprice$bw, OGprice$cpi, basis)
 gp <- inf_adj(OGprice$uswp, OGprice$cpi, basis)
 
@@ -365,11 +392,24 @@ for (i in 1:ncol(LOC)) {
 # Take deductions for royalties, severance taxes, and LOCs
 NPV <- rev-rsim-stsim-LOC
 
-# Pretty sure that I don't need to use discount factor, since all terms are in
-# real 2013 dollars.
-# # Specify annual discount rate
-# rate <- 0.1164
-# # Calculate vector of discount factors
-# DF <- (1+rate/12)^(-c(0:(length(all_months)-1)))
+# Specify annual discount rate
+rate <- 0.1164
+
+# Calculate vector of discount factors
+DF <- (1+rate/12)^(-c(0:(length(all_months)-1)))
 
 # Corporate Income Taxes
+
+# Predefine matrices for calculation results
+ciSO <- matrix(0, nrow = nrow(psim), ncol = ncol(psim))
+ciSG <- ciSO
+ciFO <- ciSO
+ciFG <- ciSO
+
+# Calculate corporate income taxes for on-type (OOW & GGW) production
+for (i in 1:ncol(psim)) {
+  ciSO[ind.ow,i] <- wsim$cirSO[ind.ow]*psim[ind.ow,i]
+  ciSG[ind.gw,i] <- wsim$cirSG[ind.gw]*psim[ind.gw,i]
+  ciFO[ind.ow,i] <- wsim$cirFO[ind.ow]*psim[ind.ow,i]
+  ciFG[ind.gw,i] <- wsim$cirFG[ind.gw]*psim[ind.gw,i]
+}
