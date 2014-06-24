@@ -133,8 +133,8 @@ load(file.path(data_root, "cpi.rda"))
 
 # Inflation adjustment to 2012-12-01
 cpi_index_pick <- 229.601
-bw <- bw.z * (cpi.z / cpi_index_pick)
-uswp <- uswp.z * (cpi.z / cpi_index_pick)
+bw <- bw.z * (cpi_index_pick / cpi.z)
+uswp <- uswp.z * (cpi_index_pick / cpi.z)
 
 # Make a new dataframe of inflation adjusted gas prices (gasInfAd) out of zoo
 # vector uswp
