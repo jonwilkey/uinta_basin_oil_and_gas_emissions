@@ -1,7 +1,7 @@
 # Script Info -------------------------------------------------------------
-# conventional_v9.R (Conventional Oil and Gas Model)
+# conventional_v10.R (Conventional Oil and Gas Model)
 # Version 10
-# 05/29/14
+# 06/26/14
 # Jon Wilkey
 
 
@@ -39,6 +39,7 @@
 #
 # v10-Added calculations for production, royatlies, severance taxes, and
 #     property taxes.
+# v+ -Started using version control, see comments on commits for changelog
 
 
 # Options -----------------------------------------------------------------
@@ -231,6 +232,22 @@ depth[ind.ow] <- cdf.depth.ow$x[findInterval(runif(length(ind.ow)),
 depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)),
                                              c(0, cdf.depth.gw$y))]
 
+# Drilling and completion capital cost
+
+# Drilling capital cost coefficients in eq. y = exp(a+b*(depth in ft))
+coef.drill <- c(11.46, 0.00024)
+
+# Completion capital cost coefficients in eq. y = exp(a+b*(depth in ft))
+coef.compl <- c(11.217, 0.00022)
+
+# Annual average CPI value for 2011 dollars (base year used for capital costs)
+base.index <- 224.939
+
+# Total capital cost is sum of drilling and capital costs, adjusted for
+# inflation from 2011 dollars to model-year dollars
+cost <- (exp(coef.drill[1]+coef.drill[2]*depth)+
+         exp(coef.compl[1]+coef.compl[2]*depth))*(basis/base.index)
+
 # Generate decline curve coefficient values for field and well type
 for (i in 1:length(field)) {
   ind.ow <- which(type == "OW" & fieldnum == field[i])
@@ -263,16 +280,18 @@ landown[which(landown == 4)] <- "fee"
 
 # Make a data table
 wsim <- data.table(result, type, fieldnum, acoef, bcoef, ccoef, depth, landown,
-                   cirSO, cirSG, cirFO, cirFG)
+                   cirSO, cirSG, cirFO, cirFG, cost)
 # Set/change column names
 setnames(x = wsim,
          old = 1:ncol(wsim),
          new = c("wellID", "tDrill", "runID", "wellType", "fieldnum", "a", "b",
-                 "c", "depth", "landOwner", "cirSO", "cirSG", "cirFO", "cirFG"))
+                 "c", "depth", "landOwner", "cirSO", "cirSG", "cirFO", "cirFG",
+                 "cost"))
 
 # Cleanup
 remove(result, type, fieldnum, acoef, bcoef, ccoef, depth, landown, a, b, c,
-       Drilled, nrun, i, j, ind.gw, ind.ow, cirSO, cirSG, cirFO, cirFG)
+       Drilled, i, j, ind.gw, ind.ow, cirSO, cirSG, cirFO, cirFG,
+       coef.drill, coef.compl, base.index, cost)
 
 
 # Production Simulation ---------------------------------------------------
@@ -301,7 +320,8 @@ for (i in 1:length(all_months)) {
   psim[ind.neg,i] <- 0
 }
 
-# Fiscal Impacts ----------------------------------------------------------
+
+# Royalties ---------------------------------------------------------------
 
 # Define prices and adjust for inflation - op = oil price, gp = gas price. Given
 # basis (233.049) inflation adjusts to 2013-12-01.
@@ -336,7 +356,9 @@ for (i in 1:length(all_months)) {
 }
 
 
-# Severance Taxes
+
+# Severance Taxes ---------------------------------------------------------
+
 # This is slow, fix NaN problem so we can get past ifelse()-ing to handle division by 0
 rrate <- ifelse(test = rsim/psim != "NaN",
                 yes = rsim/psim,
@@ -363,7 +385,8 @@ for (i in (length(all_months)-4):length(all_months)) {
   stsim[ind,i:ncol(stsim)] <- 0
 }
 
-# Property Taxes
+
+# Property Taxes ----------------------------------------------------------
 
 # Predefine NPV and LOC matrix
 rev <- matrix(0, nrow = nrow(wsim), ncol = length(all_months))
@@ -375,10 +398,12 @@ for (i in 1:ncol(rev)) {
   rev[ind.gw,i] <- gp[i]*psim[ind.gw,i]
 }
 
-
-# Determine lease operating costs - LOC is in 2009 dollars (CPI = 214.537), so
-# it must be adjusted for inflation to desired basis and converted to monthly
-# value. Also, production rate must be in terms of SCFD.
+# Determine lease operating costs - LOC is in 2009 dollars (CPI = 214.537), so 
+# it must be adjusted for inflation to desired basis and converted to monthly 
+# value. Also, production rate must be in terms of SCFD (so divide initial 
+# production rate coefficient by 30 to covert from months to days). Finally LOC
+# data is in dollars per year, so convert from annual costs to monthly costs by
+# dividing by 12.
 for (i in 1:ncol(LOC)) {
   LOC[ind.ow,i] <- (fit.LOC.oil$coefficients[2]*op[i]+
                     fit.LOC.oil$coefficients[3]*wsim$depth[ind.ow]+
@@ -398,7 +423,8 @@ rate <- 0.1164
 # Calculate vector of discount factors
 DF <- (1+rate/12)^(-c(0:(length(all_months)-1)))
 
-# Corporate Income Taxes
+
+# Corporate Income Taxes --------------------------------------------------
 
 # Predefine matrices for calculation results
 ciSO <- matrix(0, nrow = nrow(psim), ncol = ncol(psim))
@@ -413,3 +439,38 @@ for (i in 1:ncol(psim)) {
   ciFO[ind.ow,i] <- wsim$cirFO[ind.ow]*psim[ind.ow,i]
   ciFG[ind.gw,i] <- wsim$cirFG[ind.gw]*psim[ind.gw,i]
 }
+
+
+# Employment --------------------------------------------------------------
+
+# ===== RIMS Estimate =====
+
+# RIMS II Multiplier
+RIMS <- 4.4524
+
+# Preallocate investment schedule space
+invest <- matrix(0, nrow = nrun, floor(length(all_months)/12))
+
+# Determine spending schedule on annual basis
+for (i in 1:nrun) {
+  for (j in 1:ncol(invest)) {
+    tstart <- 12*(j-1)+1
+    tstop <- 12*(j-1)+12
+    ind <- which(wsim$runID == i & wsim$tDrill >= tstart & wsim$tDrill <= tstop)
+    invest[i,j] <- sum(wsim$cost[ind])+sum(rowSums(LOC[ind,tstart:tstop]))
+  }
+}
+
+# RIMS II job creation calculation (muliplier * spending in millions of dollars)
+jobs.RIMS <- RIMS*invest/1e6
+
+# ===== Workload Estimate =====
+
+# Workers per rig (from Duane Winkler email for directional rig)
+rig.workers <- 23
+
+# Fracking (assume 3x as many people needed as regular rig)
+frack.workers <- 3*rig.workers
+
+# Trucking
+
