@@ -466,11 +466,77 @@ jobs.RIMS <- RIMS*invest/1e6
 
 # ===== Workload Estimate =====
 
-# Workers per rig (from Duane Winkler email for directional rig)
-rig.workers <- 23
+# Constants for calculations
+rig.workers <- 23                   # Workers per rig (from Duane Winkler email for directional rig)
+rig.duration <- 15*24               # Duration of drilling a well in hours (to be replaced w/ CDF pick in wsim)
+frack.workers <- 2*rig.workers      # Fracking (assume 2x as many people needed as regular rig)
+frack.duration <- 0.25*rig.duration # Assumed portion of time that rig is onsite that fracking is occuring
+truck.milage <- 2660                # Heavy duty diesel truck (HDDT) miles traveled per well spud (Environ 2011 study Table 6)
+truck.speed <- 16.4                 # HDDT average speed over unpaved roads (Environ 2011 study Table 3)
+gosp.workers <- (4+   # Freewater knockout drums (horizontal three phase vessels)
+                 1    # Vapor recovery and incinerator
+                 )*2  # Design capacity 10e3 bbl (1:1 oil:water), mass flowrate of 1620 ton/day assuming API gravity = 35 deg.
+gosp.capacity <- 5e3  # Design capacity in terms of BPD oil
+gpp.workers <- (1+    # Feed prep - condensate and water removal
+                1+    # Acid gas removal (amine treating)
+                1+    # Dehydration (gylcol unit)
+                1+    # Nitrogen rejection (cyrogenic process)
+                1     # NGL Recovery (turbo-expander and demethanizer tower)  
+                  )*2 # Double # of operators per section since any plant larger than 4.7 MMscfd > 100 ton/day limit
+gpp.capacity <- 300e3 # Design capacity for gas processing plant in Mscfd
 
-# Fracking (assume 3x as many people needed as regular rig)
-frack.workers <- 3*rig.workers
+FTE.hours <- 2080/12  # Man-hours per month equivalent to one full-time employee
 
-# Trucking
+# Predefine matrix space for man-hour calculations
+manhr.drill <- matrix(0, nrow = nrun, ncol = length(all_months))
+manhr.frack <- manhr.drill
+manhr.truck <- manhr.drill
+manhr.gosp  <- manhr.drill
+manhr.gpp   <- manhr.drill
 
+# Calculate man-hours per time step for each process step
+for (i in 1:nrun) {
+  for (j in 1:length(all_months)) {
+    ind.ow <- which(wsim$tDrill == j & wsim$runID == i & wsim$wellType == "OW")
+    ind.gw <- which(wsim$tDrill == j & wsim$runID == i & wsim$wellType == "GW")
+    ind <- length(ind.ow)+length(ind.gw)
+    manhr.drill[i,j] <- ind*rig.workers*rig.duration
+    manhr.frack[i,j] <- ind*frack.workers*frack.duration
+    manhr.truck[i,j] <- ind*truck.milage/truck.speed
+    manhr.gosp[i,j]  <- ceiling(sum(psim[ind.ow,j])/gosp.capacity)*
+                        gosp.workers*FTE.hours
+    manhr.gpp[i,j]   <- ceiling(sum(psim[ind.gw,j])/gpp.capacity)*
+                        gpp.workers*FTE.hours
+  }
+}
+
+# Predefine matrix space for annual man-hour calculations
+manhr.an.drill <- matrix(0, nrow = nrun, floor(length(all_months)/12))
+manhr.an.frack <- manhr.an.drill
+manhr.an.truck <- manhr.an.drill
+manhr.an.gosp  <- manhr.an.drill
+manhr.an.gpp   <- manhr.an.drill
+
+# Sum to annual man-hours
+for (i in 1:nrun) {
+  for (j in 1:ncol(manhr.an.drill)) {
+    tstart <- 12*(j-1)+1
+    tstop <- 12*(j-1)+12
+    ind <- which(wsim$runID == i & wsim$tDrill >= tstart & wsim$tDrill <= tstop)
+    manhr.an.drill[i,j] <- sum(manhr.drill[tstart:tstop])
+    manhr.an.frack[i,j] <- sum(manhr.frack[tstart:tstop])
+    manhr.an.truck[i,j] <- sum(manhr.truck[tstart:tstop])
+    manhr.an.gosp[i,j]  <- sum(manhr.gosp[tstart:tstop])
+    manhr.an.gpp[i,j]   <- sum(manhr.gpp[tstart:tstop])
+  }
+}
+
+# Adjust FTE.hours back to annual hours
+FTE.hours <- FTE.hours*12
+
+# Convert from man-hours to # of FTE employees
+manhr.an.drill <- manhr.an.drill/FTE.hours
+manhr.an.truck <- manhr.an.truck/FTE.hours
+manhr.an.frack <- manhr.an.frack/FTE.hours
+manhr.an.gosp  <- manhr.an.gosp/FTE.hours
+manhr.an.gpp   <- manhr.an.gpp/FTE.hours
