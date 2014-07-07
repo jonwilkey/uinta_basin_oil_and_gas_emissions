@@ -59,9 +59,9 @@ remove(production, histdata)
 
 
 # Other Inputs ------------------------------------------------------------
-# Create a complete set of months between 1999-01-01 and 2014-01-01.
+# Create a complete set of months between 1999-01-01 and 2012-01-01.
 all_months <- seq(from = as.Date("1999-01-01"),
-                  to = as.Date("2013-12-01"),
+                  to = as.Date("2012-12-01"),
                   by = "months")
 
 # Field Selection (i.e. fields that will be analyzed individually). Note that
@@ -84,14 +84,69 @@ m$prod_date <- as.Date(as.yearmon(m[,"h_first_prod"]))
 # Create dataframe containing dates of 1st production for each unique APD # and
 # the field it is located in
 well <- sqldf("select distinct(p_api), prod_date, w_field_num, w_well_type,
-              w_surfowntyp from m")
+              w_surfowntyp, h_td_md, w_surfowntyp
+              from m
+              order by prod_date")
 
 # Drop NA observations
 well <- na.omit(well)
 
-# Only wells between 1999-01-01 and 2013-12-01
+# Only wells between 1999-01-01 and 2013-12-01, and with depths > 0
 well <- subset(well, prod_date >= as.Date("1999-01-01") &
-                     prod_date <= all_months[length(all_months)])
+                     prod_date <= all_months[length(all_months)] &
+                     h_td_md > 0)
+
+# wsim Actual data --------------------------------------------------------
+# This segment shuffles the actual DOGM data into the same format used in
+# conventional_v10.R's "wsim" data.table.
+
+# Relabel p_api as wellID number
+well$p_api <- seq(1:nrow(well))
+
+# Define new column "runID" as runID == 0 for all wells (0 being flag for actual
+# data)
+runID <- rep(0, times = nrow(well))
+
+# Conventiently, use runID to predefine space for "tDrill", which holds timestep
+# that each well is drilled in
+tDrill <- runID
+
+# Match indices where wells were drilled (prod_date) with equivalent timesteps
+# in "all_months"
+for (i in 1:length(all_months)) {
+  ind <- which (well$prod_date == all_months[i])
+  tDrill[ind] <- i
+}
+
+# Create new vector of field numbers
+fieldnum <- well$w_field_num
+
+# Find the indices of any wells not located in one of the 10 fields being
+# tracked individually as defined in the "field" vector
+ind <- which(well$w_field_num != field[1] &
+             well$w_field_num != field[2] &
+             well$w_field_num != field[3] &
+             well$w_field_num != field[4] &
+             well$w_field_num != field[5] &
+             well$w_field_num != field[6] &
+             well$w_field_num != field[7] &
+             well$w_field_num != field[8] &
+             well$w_field_num != field[9] &
+             well$w_field_num != field[10])
+
+# Replace all such fields with the catch-all field "999"
+fieldnum[ind] <- 999
+
+# Create new vector for landownership and retype as numeric vector
+landown <- as.numeric(well$w_surfowntyp.1)
+
+# Generate dataframe for export
+wsim.actual <- data.frame(well$p_api, tDrill, runID, well$w_well_type, fieldnum,
+                          well$h_td_md, landown)
+
+# Rename to match wsim format
+names(wsim.actual) <- c("wellID", "tDrill", "runID", "wellType", "fieldnum",
+                        "depth", "landOwner")
 
 # Oil Wells ********************************************************************
 
@@ -255,4 +310,5 @@ save(file=file.path(data_root, "cdf_schedule_v1.rda"),
             "cdf.fsl",
             "prob.gas",
             "schedule.ow",
-            "schedule.gw"))
+            "schedule.gw",
+            "wsim.actual"))
