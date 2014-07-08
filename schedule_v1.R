@@ -96,9 +96,43 @@ well <- subset(well, prod_date >= as.Date("1999-01-01") &
                      prod_date <= all_months[length(all_months)] &
                      h_td_md > 0)
 
-# wsim Actual data --------------------------------------------------------
+
+# wsim & psim for actual data ---------------------------------------------
 # This segment shuffles the actual DOGM data into the same format used in
-# conventional_v10.R's "wsim" data.table.
+# conventional_v10.R's "wsim" & "psim" data.table/matrix.
+
+# === psim ===
+
+# Initial definition of psim
+psim <- data.frame(all_months)
+
+# WARNING - very slow loop. This loop creates a subset of m for each unique well
+# in "well," then picks which columns to keep based on well type. Finally, the 
+# loop merges the results from the current well with the results from all
+# previous iterations and renames the columns as it goes.
+for (i in 1:nrow(well)) {
+  temp <- unique(subset(m,
+                        subset = m$p_api == well$p_api[i],
+                        select = c("p_rpt_period", "p_oil_prod", "p_gas_prod",
+                                   "w_well_type")))
+  if (temp$w_well_type[1] == "OW") {
+    temp <- temp[,c("p_rpt_period", "p_oil_prod")]
+  } else {
+    temp <- temp[,c("p_rpt_period", "p_gas_prod")]
+  }  
+  psim <- merge(x = psim, y = temp,
+                by.x = "all_months", by.y = "p_rpt_period",
+                all.x = TRUE)
+  names(psim)[i+1] <- i
+}
+
+# Transform from data.frame into matrix
+psim <- as.matrix(psim[,2:(nrow(well)+1)])
+
+# Transpose so that matrix rows = wells and columns = timesteps
+psim <- t(psim)
+
+# === wsim ===
 
 # Relabel p_api as wellID number
 well$p_api <- seq(1:nrow(well))
@@ -148,7 +182,7 @@ wsim.actual <- data.frame(well$p_api, tDrill, runID, well$w_well_type, fieldnum,
 names(wsim.actual) <- c("wellID", "tDrill", "runID", "wellType", "fieldnum",
                         "depth", "landOwner")
 
-# Oil Wells ********************************************************************
+# ********************************************************************
 
 # Select only those wells in "well" dataframe which are oil wells
 well.ow <- subset(well, w_well_type == "OW")
@@ -311,4 +345,5 @@ save(file=file.path(data_root, "cdf_schedule_v1.rda"),
             "prob.gas",
             "schedule.ow",
             "schedule.gw",
-            "wsim.actual"))
+            "wsim.actual",
+            "psim.actual"))
