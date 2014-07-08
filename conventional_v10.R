@@ -475,14 +475,16 @@ truck.milage <- 2660                # Heavy duty diesel truck (HDDT) miles trave
 truck.speed <- 16.4                 # HDDT average speed over unpaved roads (Environ 2011 study Table 3)
 gosp.workers <- (4+   # Freewater knockout drums (horizontal three phase vessels)
                  1    # Vapor recovery and incinerator
-                 )*2  # Design capacity 10e3 bbl (1:1 oil:water), mass flowrate of 1620 ton/day assuming API gravity = 35 deg.
+                 )*2* # Design capacity 10e3 bbl (1:1 oil:water), mass flowrate of 1620 ton/day assuming API gravity = 35 deg.
+                 5    # Shifts for 24/7 operation
 gosp.capacity <- 5e3  # Design capacity in terms of BPD oil
 gpp.workers <- (1+    # Feed prep - condensate and water removal
                 1+    # Acid gas removal (amine treating)
                 1+    # Dehydration (gylcol unit)
                 1+    # Nitrogen rejection (cyrogenic process)
                 1     # NGL Recovery (turbo-expander and demethanizer tower)  
-                  )*2 # Double # of operators per section since any plant larger than 4.7 MMscfd > 100 ton/day limit
+                 )*2* # Double # of operators per section since any plant larger than 4.7 MMscfd > 100 ton/day limit
+                5     # Shifts for 24/7 operation
 gpp.capacity <- 300e3 # Design capacity for gas processing plant in Mscfd
 
 FTE.hours <- 2080/12  # Man-hours per month equivalent to one full-time employee
