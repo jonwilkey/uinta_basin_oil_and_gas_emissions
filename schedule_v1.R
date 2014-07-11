@@ -137,9 +137,8 @@ psim <- t(psim)
 # Relabel p_api as wellID number
 well$p_api <- seq(1:nrow(well))
 
-# Define new column "runID" as runID == 0 for all wells (0 being flag for actual
-# data)
-runID <- rep(0, times = nrow(well))
+# Define new column "runID" as runID == 1 for all wells
+runID <- rep(1, times = nrow(well))
 
 # Conventiently, use runID to predefine space for "tDrill", which holds timestep
 # that each well is drilled in
@@ -174,13 +173,16 @@ fieldnum[ind] <- 999
 # Create new vector for landownership and retype as numeric vector
 landown <- as.numeric(well$w_surfowntyp.1)
 
+# Get maximum production rate for each well
+acoef <- apply(psim.actual, MARGIN = 1, FUN = max)
+
 # Generate dataframe for export
 wsim.actual <- data.frame(well$p_api, tDrill, runID, well$w_well_type, fieldnum,
-                          well$h_td_md, landown)
+                          well$h_td_md, landown, acoef)
 
 # Rename to match wsim format
 names(wsim.actual) <- c("wellID", "tDrill", "runID", "wellType", "fieldnum",
-                        "depth", "landOwner")
+                        "depth", "landOwner", "acoef")
 
 # ********************************************************************
 
@@ -336,14 +338,16 @@ names(cdf.fsl) <- c("Field", "Federal", "Indian", "State", "Fee")
 
 # Export Results ----------------------------------------------------------
 
-# Save everything to "cdf_schedule_v1.rda"
+# Save PDF & CDF results to "cdf_schedule_v1.rda"
 save(file=file.path(data_root, "cdf_schedule_v1.rda"),
      list=c("cdf.drill",
             "cdf.ffg",
             "cdf.ffo",
             "cdf.fsl",
-            "prob.gas",
-            "schedule.ow",
-            "schedule.gw",
-            "wsim.actual",
-            "psim.actual"))
+            "prob.gas"))
+
+# Save wsim.actual data.frame to "wsim_actual.rda"
+save(file=file.path(data_root, "wsim_actual_v1.rda"), list=c("wsim.actual"))
+
+# Save psim.actual matrix to "psim_actual.rda"
+save(file=file.path(data_root, "psim_actual_v1.rda"), list=c("psim.actual"))
