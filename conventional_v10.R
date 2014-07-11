@@ -206,14 +206,12 @@ fieldnum <- ifelse(test = type == "GW",
 #    modifying x-values ($/unit production) in cdf.CI
 cdf.CI$x <- cdf.CI$x*(basis/224.9392)
 
-# 2) Predefine vectors for results (cirSO - corp income rate state oil, cirSG -
-#    state gas, cirFO - fed oil, cirFG - fed gas).
+# 2) Pick corporate income tax conversion factors (cirSO - corp income rate
+# state oil, cirSG - state gas, cirFO - fed oil, cirFG - fed gas).
 cirSO <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$ySO))]
 cirSG <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$ySG))]
 cirFO <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$yFO))]
 cirFG <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$yFG))]
-
-# 3) Run runif() for: 1- state oil, 2- state gas, 3- fed oil, 4- fed
 
 # Predefine vector sizes
 acoef <- rep(0, times = length(type))
