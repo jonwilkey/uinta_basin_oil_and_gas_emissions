@@ -1,0 +1,174 @@
+# Script Info -------------------------------------------------------------
+# conventional_v11.R (Conventional Oil and Gas Model)
+# Version 11
+# 07/09/14
+# Jon Wilkey
+
+
+# Version History ---------------------------------------------------------
+# v11 -Functionalized script to streamline code and enable validation against
+#      actual DOGM data. See commits for changelog.
+
+
+# Options -----------------------------------------------------------------
+# Don't want strings 'typed' as factors but as characters
+options(stringsAsFactors=FALSE)
+
+
+# Paths -------------------------------------------------------------------
+
+# Prepared data directory
+data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
+# Plot directory
+plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
+# Functions directory
+fin <- "C:/Users/Jon/Documents/R/ub_oilandgas/Functions"
+# Working directory
+work_root <- "D:/Dropbox/CLEAR/DOGM Data"
+
+# Set working directory
+setwd(work_root)
+
+
+# Functions ---------------------------------------------------------------
+# List of functions used in this script to be loaded here
+flst <- file.path(fin,c("welldata.R",
+                        "productionsim.R",
+                        "royalty.R",
+                        "severance_tax.R",
+                        "proptax.R",
+                        "RIMS.R",
+                        "workload.R",
+                        "inflation_adjust.R",
+                        "write_excel.R"))
+
+# Load each function in list
+for (f in flst) source(f)
+
+# Remove temporary variables
+remove(fin, flst, f)
+
+
+# Libraries ---------------------------------------------------------------
+library(data.table)
+
+
+# Load required data files ------------------------------------------------
+
+# Oil & gas price history
+load(file.path(data_root, "oil_and_gas_price_history_1999_to_2012.rda"))
+
+
+# Other Inputs ------------------------------------------------------------
+# Create a complete set of months between 1999-01-01 and 2013-12-01.
+all_months <- seq(from = as.Date("1999-01-01"),
+                  to = as.Date("2012-12-01"),
+                  by = "months")
+
+# Field Selection (i.e. fields that will be analyzed individually). Note that
+# "Field 999" is placeholder for all other fields category.
+field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
+
+# CPI value for inflation adjustment
+basis <- 233.049
+
+# Number of iterations
+nrun <- 10^0
+
+# Run type (simulation - sim or validation - valid)
+calltype <- "valid"
+
+# Well Data Simulation ----------------------------------------------------
+
+wsim <- welldata(nrun = nrun,
+                 data_root = data_root,
+                 timesteps = all_months,
+                 basis = basis,
+                 field = field,
+                 calltype = calltype)
+
+
+# Production Simulation ---------------------------------------------------
+
+psim <- productionsim(wsim = wsim,
+                      data_root = data_root,
+                      timesteps = all_months,
+                      calltype = calltype)
+
+
+# Royalties ---------------------------------------------------------------
+
+# Define prices and adjust for inflation - op = oil price, gp = gas price. Given
+# basis (233.049) inflation adjusts to 2013-12-01.
+op <- inf_adj(OGprice$bw, OGprice$cpi, basis)
+gp <- inf_adj(OGprice$uswp, OGprice$cpi, basis)
+
+# Run royalty calculation
+rsim <- royalty(op = op,
+                gp = gp,
+                wsim = wsim,
+                psim = psim)
+
+
+# Severance Taxes ---------------------------------------------------------
+
+# Get indices of oil and gas wells
+ind.ow <- which(wsim$wellType == "OW")
+ind.gw <- which(wsim$wellType == "GW")
+
+# Run severance tax calculation
+stsim <- stax(wsim = wsim,
+              psim = psim,
+              rsim = rsim,
+              op = op,
+              gp = gp,
+              ind.ow = ind.ow,
+              ind.gw = ind.gw)
+
+
+# Property Taxes ----------------------------------------------------------
+
+# Run property tax calculation. Right now there are issues with the NPV < 0 in
+# many cases, so only return from ptax function is lease operating costs (LOC).
+LOC <- ptax(data_root = data_root,
+            wsim = wsim,
+            psim = psim,
+            op = op,
+            gp = gp,
+            ind.ow = ind.ow,
+            ind.gw = ind.gw,
+            basis = basis,
+            rsim = rsim,
+            stsim = stsim)
+
+
+# Corporate Income Taxes --------------------------------------------------
+
+# Predefine matrices for calculation results
+ciSO <- matrix(0, nrow = nrow(psim), ncol = ncol(psim))
+ciSG <- ciSO
+ciFO <- ciSO
+ciFG <- ciSO
+
+# Calculate corporate income taxes for on-type (OOW & GGW) production
+for (i in 1:ncol(psim)) {
+  ciSO[ind.ow,i] <- wsim$cirSO[ind.ow]*psim[ind.ow,i]
+  ciSG[ind.gw,i] <- wsim$cirSG[ind.gw]*psim[ind.gw,i]
+  ciFO[ind.ow,i] <- wsim$cirFO[ind.ow]*psim[ind.ow,i]
+  ciFG[ind.gw,i] <- wsim$cirFG[ind.gw]*psim[ind.gw,i]
+}
+
+
+# Employment --------------------------------------------------------------
+
+# RIMS II model employment estimate
+jobs.RIMS <- RIMS(multiplier = 2.2370,
+                  wsim = wsim,
+                  LOC = LOC,
+                  nrun = nrun)
+
+# Workload-based model employment estimate. See workload.R to change model
+# constants (too many to pass as input arguments here).
+jobs.workload <- workload(wsim = wsim,
+                          psim = psim,
+                          nrun = nrun)
