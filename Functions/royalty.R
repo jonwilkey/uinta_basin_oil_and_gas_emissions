@@ -1,14 +1,54 @@
+# royalty.R (Royalty Calculation)
+# Version 1
+# 07/10/14
+# Jon Wilkey
+
 # Royalty function
-royalty <- function (volume, price, landowner = "state") {
-  # This function determines the royalty payments.
+royalty <- function (op, gp, wsim, psim) {
   
-  # Pick rate based on landownership
-  rate <- switch(landowner,
-                 federal = 0.1250,
-                 indian  = 0.1667,
-                 state   = 0.1250,
-                 fee     = 0.1250)
+  # Actual royalty calculation function
+  calc <- function (volume, price, landowner = "state") {
+    # This function determines the royalty payments.
+    
+    # Pick rate based on landownership
+    rate <- switch(landowner,
+                   federal = 0.1250,
+                   indian  = 0.1667,
+                   state   = 0.1250,
+                   fee     = 0.1250)
+    
+    calc <- rate * volume * price
+    return(calc)
+  }
   
-  royalty <- rate * volume * price
-  return(royalty)
+  # Predefine space for royalties matrix "rsim"
+  rsim <- matrix(0, nrow = nrow(wsim), ncol = ncol(psim))
+  
+  # Get indices for each combination of well type and landowner
+  ind.gw.fed <- which(wsim$wellType == "GW" & wsim$landOwner == "federal")
+  ind.gw.ind <- which(wsim$wellType == "GW" & wsim$landOwner == "indian")
+  ind.gw.sta <- which(wsim$wellType == "GW" & wsim$landOwner == "state")
+  ind.gw.fee <- which(wsim$wellType == "GW" & wsim$landOwner == "fee")
+  
+  ind.ow.fed <- which(wsim$wellType == "OW" & wsim$landOwner == "federal")
+  ind.ow.ind <- which(wsim$wellType == "OW" & wsim$landOwner == "indian")
+  ind.ow.sta <- which(wsim$wellType == "OW" & wsim$landOwner == "state")
+  ind.ow.fee <- which(wsim$wellType == "OW" & wsim$landOwner == "fee")
+  
+  # Apply royalty calc function to each combination
+  for (i in 1:ncol(psim)) {
+    rsim[ind.gw.fed,i] <- calc(psim[ind.gw.fed,i], gp[i], "federal")
+    rsim[ind.gw.ind,i] <- calc(psim[ind.gw.ind,i], gp[i], "indian")
+    rsim[ind.gw.sta,i] <- calc(psim[ind.gw.sta,i], gp[i], "state")
+    rsim[ind.gw.fee,i] <- calc(psim[ind.gw.fee,i], gp[i], "fee")
+    
+    rsim[ind.ow.fed,i] <- calc(psim[ind.ow.fed,i], op[i], "federal")
+    rsim[ind.ow.ind,i] <- calc(psim[ind.ow.ind,i], op[i], "indian")
+    rsim[ind.ow.sta,i] <- calc(psim[ind.ow.sta,i], op[i], "state")
+    rsim[ind.ow.fee,i] <- calc(psim[ind.ow.fee,i], op[i], "fee")
+  }
+  
+  # Return matrix with results
+  return(rsim)
 }
+
