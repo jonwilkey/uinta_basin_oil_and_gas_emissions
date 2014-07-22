@@ -24,7 +24,7 @@ plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
 # Functions directory
 fin <- "C:/Users/Jon/Documents/R/ub_oilandgas/Functions"
 # Working directory
-work_root <- "D:/Dropbox/CLEAR/DOGM Data"
+work_root <- "C:/Users/Jon/Documents/R/ub_oilandgas/"
 
 # Set working directory
 setwd(work_root)
@@ -34,12 +34,13 @@ setwd(work_root)
 # List of functions used in this script to be loaded here
 flst <- file.path(fin,c("welldata.R",
                         "productionsim.R",
+                        "inflation_adjust.R",
                         "royalty.R",
                         "severance_tax.R",
                         "proptax.R",
                         "RIMS.R",
                         "workload.R",
-                        "inflation_adjust.R",
+                        "GHG_v3.R",
                         "write_excel.R"))
 
 # Load each function in list
@@ -50,7 +51,7 @@ remove(fin, flst, f)
 
 
 # Libraries ---------------------------------------------------------------
-library(data.table)
+library(data.table)  # For wsim data.table (maybe others in the future)
 
 
 # Load required data files ------------------------------------------------
@@ -60,8 +61,8 @@ load(file.path(data_root, "oil_and_gas_price_history_1999_to_2012.rda"))
 
 
 # Other Inputs ------------------------------------------------------------
-# Create a complete set of months between 1999-01-01 and 2013-12-01.
-all_months <- seq(from = as.Date("1999-01-01"),
+# Create a complete set of months between 1999-01-01 and 2012-12-01.
+timesteps <- seq(from = as.Date("1999-01-01"),
                   to = as.Date("2012-12-01"),
                   by = "months")
 
@@ -82,7 +83,7 @@ calltype <- "valid"
 
 wsim <- welldata(nrun = nrun,
                  data_root = data_root,
-                 timesteps = all_months,
+                 timesteps = timesteps,
                  basis = basis,
                  field = field,
                  calltype = calltype)
@@ -92,7 +93,7 @@ wsim <- welldata(nrun = nrun,
 
 psim <- productionsim(wsim = wsim,
                       data_root = data_root,
-                      timesteps = all_months,
+                      timesteps = timesteps,
                       calltype = calltype)
 
 
@@ -171,4 +172,17 @@ jobs.RIMS <- RIMS(multiplier = 2.2370,
 # constants (too many to pass as input arguments here).
 jobs.workload <- workload(wsim = wsim,
                           psim = psim,
-                          nrun = nrun)
+                          nrun = nrun,
+                          timesteps = timesteps)
+
+
+# GHG Emissions -----------------------------------------------------------
+
+# Determine GHG emissions as (1) 1e3 kg CO2e and (2) MCF of CH4
+emissions <- GHG(wsim = wsim,
+                 psim = psim,
+                 nrun = nrun,
+                 timesteps = timesteps,
+                 ind.ow = ind.ow,
+                 ind.gw = ind.gw,
+                 truckload = 200)       # Capacity of oil trucks in bbl
