@@ -4,7 +4,7 @@
 # Jon Wilkey
 
 # Workload-Based Employment Calculation Function
-workload <- function (wsim, psim, nrun) {
+workload <- function (wsim, psim, nrun, timesteps) {
   
   # Constants for calculations
   rig.workers <- 23                   # Workers per rig (from Duane Winkler email for directional rig)
@@ -30,7 +30,7 @@ workload <- function (wsim, psim, nrun) {
   FTE.hours <- 2080/12                # Man-hours per month equivalent to one full-time employee
   
   # Predefine matrix space for man-hour calculations
-  manhr.drill <- matrix(0, nrow = nrun, ncol = length(all_months))
+  manhr.drill <- matrix(0, nrow = nrun, ncol = length(timesteps))
   manhr.frack <- manhr.drill
   manhr.truck <- manhr.drill
   manhr.gosp  <- manhr.drill
@@ -45,15 +45,15 @@ workload <- function (wsim, psim, nrun) {
       manhr.drill[i,j] <- ind*rig.workers*rig.duration
       manhr.frack[i,j] <- ind*frack.workers*frack.duration
       manhr.truck[i,j] <- ind*truck.milage/truck.speed
-      manhr.gosp[i,j]  <- ceiling(sum(psim[ind.ow,j])/gosp.capacity)*
+      manhr.gosp[i,j]  <- ceiling(sum(psim[ind.ow,j])/gosp.capacity)* # error only looking at production from wells drilled during indexed timeframe
         gosp.workers*FTE.hours
-      manhr.gpp[i,j]   <- ceiling(sum(psim[ind.gw,j])/gpp.capacity)*
+      manhr.gpp[i,j]   <- ceiling(sum(psim[ind.gw,j])/gpp.capacity)* # error same problem here
         gpp.workers*FTE.hours
     }
   }
   
   # Predefine matrix space for annual man-hour calculations
-  manhr.an.drill <- matrix(0, nrow = nrun, floor(length(all_months)/12))
+  manhr.an.drill <- matrix(0, nrow = nrun, floor(length(timesteps)/12))
   manhr.an.frack <- manhr.an.drill
   manhr.an.truck <- manhr.an.drill
   manhr.an.gosp  <- manhr.an.drill
