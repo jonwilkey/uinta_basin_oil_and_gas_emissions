@@ -631,3 +631,41 @@ legend("topright",
 
 # End PDF file
 dev.off()
+
+
+# Export PDF and CDF data frames ------------------------------------------
+
+# Reformat as data.frame. First column is value of term (x-axis on CDF plot),
+# second column is cumulative probability density of that value occuring (y-axis
+# on CDF plot).
+cdf.dcw        <- data.frame(pdf.dcw$x, cdf.dcw);               names(cdf.dcw) <- c("x", "y")
+cdf.prd        <- data.frame(pdf.prd$x, cdf.prd);               names(cdf.prd) <- c("x", "y")
+cdf.prd.oil    <- data.frame(pdf.prd.oil$x, cdf.prd.oil);       names(cdf.prd.oil) <- c("x", "y")
+cdf.tot        <- data.frame(pdf.tot$x, cdf.tot);               names(cdf.tot) <- c("x", "y")
+cdf.trs        <- data.frame(pdf.trs$x, cdf.trs);               names(cdf.trs) <- c("x", "y")
+cdf.trs.conv   <- data.frame(pdf.trs.conv$x, cdf.trs.conv);     names(cdf.trs.conv) <- c("x", "y")
+cdf.trs.oil    <- data.frame(pdf.trs.oil$x, cdf.trs.oil);       names(cdf.trs.oil) <- c("x", "y")
+cdf.trs.unconv <- data.frame(pdf.trs.unconv$x, cdf.trs.unconv); names(cdf.trs.unconv) <- c("x", "y")
+
+# Make CDF data.frame
+cdf.ghg <- data.frame(pdf.dcw$x,        cdf.dcw,
+                      pdf.prd$x,        cdf.prd,
+                      pdf.prc$x,        cdf.prc,
+                      pdf.trs$x,        cdf.trs,
+                      pdf.tot$x,        cdf.tot,
+                      pdf.trs.unconv$x, cdf.trs.unconv,
+                      pdf.prd.oil$x,    cdf.prd.oil,
+                      x.trs.oil,        cdf.trs.oil)
+
+# Rename columns
+names(cdf.ghg) <- data.frame ("dcw.x",        "dcw.y",
+                              "prd.x",        "prd.y",
+                              "prc.x",        "prc.y",
+                              "trs.x",        "trs.y",
+                              "tot.x",        "tot.y",
+                              "trs.unconv.x", "trs.unconv.y",
+                              "prd.oil.x",    "prd.oil.y",
+                              "trs.oil.x",    "trs.oil.y")
+
+# Save to file
+save(file=file.path(data_root, "GHG_v2.rda"), list=c("cdf.ghg"))
