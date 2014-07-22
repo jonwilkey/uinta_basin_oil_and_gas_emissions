@@ -94,10 +94,10 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
     
     # Predefine vector sizes for decline curve coefficients, well depth, and
     # landownership
-    acoef <- rep(0, times = length(type))
-    bcoef <- acoef
-    ccoef <- acoef
-    depth <- acoef
+    acoef   <- rep(0, times = length(type))
+    bcoef   <- acoef
+    ccoef   <- acoef
+    depth   <- acoef
     landown <- acoef
     
     # Pull indices of oil and gas wells
@@ -181,6 +181,21 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
   cost <- (exp(coef.drill[1]+coef.drill[2]*depth)+
              exp(coef.compl[1]+coef.compl[2]*depth))*(basis/base.index)
   
+  # === Emission Factors ====
+  # Load GHG Emission Factor CDFs
+  load(file.path(data_root, "GHG_v2.rda"))
+  
+  # Use findInterval to pick index and assign value to each emission factor (EF)
+  EF.dcw <- cdf.ghg$dcw.x[findInterval(runif(length(type)), c(0, cdf.ghg$dcw.y))] # Drilling and completion
+  EF.prc <- cdf.ghg$prc.x[findInterval(runif(length(type)), c(0, cdf.ghg$prc.y))] # Processing
+  EF.tot <- cdf.ghg$tot.x[findInterval(runif(length(type)), c(0, cdf.ghg$tot.y))] # CH4 as % total production
+  EF.prd.gas <- cdf.ghg$prd.x[    findInterval(runif(length(type)), c(0, cdf.ghg$prd.y    ))] # Production of gas
+  EF.prd.oil <- cdf.ghg$prd.oil.x[findInterval(runif(length(type)), c(0, cdf.ghg$prd.oil.y))] # Production of oil
+  EF.trs.gas <- cdf.ghg$trs.x[    findInterval(runif(length(type)), c(0, cdf.ghg$trs.y    ))] # Transporting gas
+  EF.trs.oil <- cdf.ghg$trs.oil.x[findInterval(runif(length(type)), c(0, cdf.ghg$trs.oil.y))] # Transporting oil
+  EF.trs.unconv <- cdf.ghg$trs.unconv.x[findInterval(runif(length(type)),
+                                                     c(0, cdf.ghg$trs.unconv.y))] # CH4 as % total production lost to transportation
+  
   # === Format and return as data.table wsim ===
   # Replace landownership #s with strings (switch expression in royalty.R
   # function requires switch to operate on a string, not a numerical value)
@@ -191,14 +206,17 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
   
   # Make a data table
   wsim <- data.table(result, type, fieldnum, acoef, bcoef, ccoef, depth,
-                     landown, cirSO, cirSG, cirFO, cirFG, cost)
+                     landown, cirSO, cirSG, cirFO, cirFG, cost, EF.dcw, EF.prc,
+                     EF.tot, EF.prd.gas, EF.prd.oil, EF.trs.gas, EF.trs.oil,
+                     EF.trs.unconv)
   
   # Set/change column names
   setnames(x = wsim,
            old = 1:ncol(wsim),
            new = c("wellID", "tDrill", "runID", "wellType", "fieldnum", "a",
                    "b", "c", "depth", "landOwner", "cirSO", "cirSG", "cirFO",
-                   "cirFG", "cost"))
+                   "cirFG", "cost", "EF.dcw", "EF.prc", "EF.tot", "EF.prd.gas",
+                   "EF.prd.oil", "EF.trs.gas", "EF.trs.oil", "EF.trs.unconv"))
   
   # Return wsim
   return(wsim)
