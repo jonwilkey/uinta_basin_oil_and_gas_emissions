@@ -18,7 +18,7 @@ RIMS <- function (multiplier, wsim, LOC, nrun) {
                    wsim$tDrill >= tstart &
                    wsim$tDrill <= tstop)
       invest[i,j] <- sum(wsim$cost[ind])+
-        sum(rowSums(LOC[ind,tstart:tstop], na.rm = TRUE), na.rm = TRUE)
+        sum(rowSums(LOC[ind,tstart:tstop], na.rm = TRUE), na.rm = TRUE) # This is erroneous. Doesn't include LOCs for wells outside of tstart/tstop
     }
   }
   
