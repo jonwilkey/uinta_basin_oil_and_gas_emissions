@@ -1,9 +1,38 @@
-# royalty.R (Royalty Calculation)
-# Version 1
-# 07/10/14
-# Jon Wilkey
+### Royalty Calculation ###
 
-# Royalty function
+# Inputs ------------------------------------------------------------------
+
+# op - vector of inflation-adjusted oil prices
+
+# gp - vector of inflation-adjusted gas prices
+
+# wsim - well information data.table with landowner and well type information
+
+# psim - matrix of production volume timeseries (either oil or gas) for each
+# well
+
+
+# Outputs -----------------------------------------------------------------
+
+# rsim - matrix of royalty payments for each well (rows) in each timestep
+# (columns)
+
+
+# Description -------------------------------------------------------------
+
+# This function determines royalty payments according to the following equation:
+
+# (royalty payment) = (rate as function of landownership) * (volume of oil or
+# gas produced) * (price of oil or gas)
+
+# This is accomplished using an internal "calc" function that runs on each 
+# possible combination of well type and surface landownership. An index of all
+# the wells associated with each combination is generated and the resulting
+# royalty payments are calculated in each timestep for each of the combinations.
+# The final resulting matrix of royalty payments is returned as rsim.
+
+
+# Function ----------------------------------------------------------------
 royalty <- function (op, gp, wsim, psim) {
   
   # Actual royalty calculation function
@@ -51,4 +80,3 @@ royalty <- function (op, gp, wsim, psim) {
   # Return matrix with results
   return(rsim)
 }
-

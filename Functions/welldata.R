@@ -1,15 +1,59 @@
-# welldata.R (Well Data Simulation Function)
-# Version 1
-# 07/09/14
-# Jon Wilkey
+### Well Data Simulation Function ###
+
+# Inputs ------------------------------------------------------------------
+
+# nrun - number of iterations in overall simulation
+
+# data_root - location of all prepared CDF files and supporting data
+
+# timesteps - vector of dates comprising timesteps used in simulation
+
+# basis - Consumer price index for desired time to inflation adjust prices to
+
+# field - vector of fields to analyze individually
+
+# calltype - character switch for selecting type of simulation to run
+# (simulation, validation, etc.)
 
 
-# Version History ---------------------------------------------------------
-# v1 -This function generates the wsim data.table, which includes the drilling
-#     schedule, the type of well, field, decline curve coefficients, etc. Script
-#     handles both simulation and validation runs.
+# Outputs -----------------------------------------------------------------
 
-# Function call
+# wsim - data.table containing all of the randomly generated well data
+# information (type, field, decline curve coefficients, depth, surface
+# landowner, etc.)
+
+
+# Description -------------------------------------------------------------
+
+# This function generates all of the randomly selected information about all 
+# wells used in the rest of the simulation. The function begins by determining 
+# whether a simulation or validation run has been called (depending on
+# "calltype" input).
+
+# If the run is a simulation, the function next determines how many wells are 
+# drilled in each timestep of each nrun iteration. This vector is then expanded 
+# so that each well has its own row in a matrix with three other columns 
+# identifying (1) the unique well ID # for this well, (2) the iteration # in 
+# nrun it is associated with (runID), and (3) the timestep in that iteration in 
+# which it is drilled (tDrill). Next, the simulation randomly determines whether
+# the well is going to be an oil well or gas well. Based on that choice, the 
+# function next determines the field number that well is drilled in. Finally,
+# all field dependent variables are randomly generated (surface landownership,
+# decline curve coefficients, etc.).
+
+# Otherwise the simulation is a validation run, and the function begins by
+# loading the prepared data in actual.wsim.
+
+# At this point, most of the information in wsim has either been randomly
+# determined or loaded. Regardless of the simulation type the following
+# infomration is generated randomly: corporate income tax conversion factors,
+# drilling and completion capital costs, and emission factors.
+
+# Finally, the various vectors and matrices are assembled into a data.table and
+# formatted for the function return wsim.
+
+
+# Function ----------------------------------------------------------------
 welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim") {
   
   # For simulation runs, load required PDF and CDF data, generate drilling

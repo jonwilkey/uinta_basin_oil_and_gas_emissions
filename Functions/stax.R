@@ -1,10 +1,57 @@
-# severance_tax.R (Severance Tax Calculation)
-# Version 1
-# 07/10/14
-# Jon Wilkey
+### Severance Tax Function ###
 
-# Severance Tax Function
-stax <- function (wsim, psim, rsim, op, gp, ind.ow, ind.gw) {
+# Inputs ------------------------------------------------------------------
+
+# wsim - well information data.table with information on drilling schedule
+
+# psim - matrix of production volume timeseries (either oil or gas)
+
+# rsim - matrix of royalty payments
+
+# op - vector of inflation-adjusted oil prices
+
+# gp - vector of inflation-adjusted gas prices
+
+# ind.ow - index (row numbers) of oil wells
+
+# ind.gw - index (row numbers) of gas wells
+
+# API - API gravity of oil product (for discounting product at wellhead). By
+# default, no discount is assumed (API = 39.6 degrees)
+
+
+# Outputs -----------------------------------------------------------------
+
+# stsim - matrix of severance tax payments
+
+
+# Description -------------------------------------------------------------
+
+# This function determines the severance tax payments for each well (rows)
+# during each timestep (columns) according to the following set of equations:
+
+# [1] ST = rST * volume
+# [2] rst = (s_low * (1 - f_st) + s_high * f_st) * TV + s_cf * TV
+# [3] TV = WV - royalty_rate
+
+# where ST is the severance tax payment, rST is the severance tax rate ($/bbl or
+# MCF), s_low is the severance tax rate on values below $13, s_high is the 
+# severance tax rate on values above $13, f_st is the fraction of product value
+# that is > $13, TV is the taxable value, s_cf is the conservation fee, WV is
+# the wellhead value of the product, and royalty_rate is the $/bbl or $/MCF paid
+# in royalties on each well at each timestep.
+
+# A generic "calc" function is used to implement equations [1]-[3]. royalty_rate
+# (rrate) is determined by dividing rsim by psim. Volumes from psim, prices from
+# gp and op, and the calculated royatly rates in rrate are then passed to calc, 
+# which calculates severance taxes for oil wells and gas wells by timestep. To
+# exempt the first six months of production from each well from severance taxes
+# the function next scans through each well and overwrites the calculated
+# severance taxes in the first six time steps of its existence with zeroes.
+
+
+# Function ----------------------------------------------------------------
+stax <- function (wsim, psim, rsim, op, gp, ind.ow, ind.gw, API = 39.6) {
   
   # Actual ST calc function
   calc <- function (volume, price, royalty_rate, API = 39.6) {
@@ -50,8 +97,8 @@ stax <- function (wsim, psim, rsim, op, gp, ind.ow, ind.gw) {
   # Calculate severance taxes for oil/gas wells in each month of simulation
   # using calc function
   for (i in 1:ncol(psim)) {
-    stsim[ind.gw,i] <- calc(psim[ind.gw,i], gp[i], rrate[ind.gw,i])
-    stsim[ind.ow,i] <- calc(psim[ind.ow,i], op[i], rrate[ind.ow,i])
+    stsim[ind.gw,i] <- calc(psim[ind.gw,i], gp[i], rrate[ind.gw,i], API)
+    stsim[ind.ow,i] <- calc(psim[ind.ow,i], op[i], rrate[ind.ow,i], API)
   }
   
   # Exempt first six months of production by writing 0 over ST calculations from proceeding loop

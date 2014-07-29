@@ -1,9 +1,35 @@
-# workload.R (Workload-Based Employment Model)
-# Version 1
-# 07/10/14
-# Jon Wilkey
+### Workload-Based Employment Calculation Function ###
 
-# Workload-Based Employment Calculation Function
+# Inputs ------------------------------------------------------------------
+
+# wsim - well information data.table with drilling schedule information
+
+# psim - matrix of production volume timeseries (either oil or gas) for each
+# well
+
+# nrun - number of iterations in overalll simulation
+
+# timesteps - vector of dates comprising the timesteps in each iteration of nrun
+
+
+# Outputs -----------------------------------------------------------------
+
+# jobs.workload - total number of fulltime equivalent jobs required in each year
+# for each iteration in nrun
+
+
+# Description -------------------------------------------------------------
+
+# This function determines the # of man-hours required for drilling a well and 
+# processing the fluids it produces. The function first defines a set of 
+# conversion factors used for estimating the labor requirements in each step of 
+# this process. Next, it generates a labor demand schedule based on the drilling
+# schedule laid out by wsim and the production volumes in psim. Annual labor
+# demands for each work process are then converted from man-hours to FTE
+# employees, and returned as the jobs.workload data.frame.
+
+
+# Function ----------------------------------------------------------------
 workload <- function (wsim, psim, nrun, timesteps) {
   
   # Constants for calculations
@@ -17,7 +43,7 @@ workload <- function (wsim, psim, nrun, timesteps) {
                    1                  # Vapor recovery and incinerator
                    )*2*               # Design capacity 10e3 bbl (1:1 oil:water), mass flowrate of 1620 ton/day assuming API gravity = 35 deg.
                    5                  # Shifts for 24/7 operation
-  gosp.capacity <- 5e3                # Design capacity in terms of BPD oil
+  gosp.capacity <- 5e3*365/12         # Design capacity in terms of BPD oil, then converted to bbl/month
   gpp.workers <- (1+                  # Feed prep - condensate and water removal
                   1+                  # Acid gas removal (amine treating)
                   1+                  # Dehydration (gylcol unit)
@@ -25,7 +51,7 @@ workload <- function (wsim, psim, nrun, timesteps) {
                   1                   # NGL Recovery (turbo-expander and demethanizer tower)  
                   )*2*                # Double # of operators per section since any plant larger than 4.7 MMscfd > 100 ton/day limit
                   5                   # Shifts for 24/7 operation
-  gpp.capacity <- 300e3               # Design capacity for gas processing plant in Mscfd
+  gpp.capacity <- 300e3*365/12        # Design capacity for gas processing plant in Mscfd, then converted to Mscf/month
   
   FTE.hours <- 2080/12                # Man-hours per month equivalent to one full-time employee
   
@@ -38,6 +64,8 @@ workload <- function (wsim, psim, nrun, timesteps) {
   
   # Calculate man-hours per time step for each process step
   for (i in 1:nrun) {
+    
+    # Get labor estimates for processes related to drilling wells
     for (j in 1:ncol(psim)) {
       ind.ow <- which(wsim$tDrill == j & wsim$runID == i & wsim$wellType == "OW")
       ind.gw <- which(wsim$tDrill == j & wsim$runID == i & wsim$wellType == "GW")
@@ -45,9 +73,15 @@ workload <- function (wsim, psim, nrun, timesteps) {
       manhr.drill[i,j] <- ind*rig.workers*rig.duration
       manhr.frack[i,j] <- ind*frack.workers*frack.duration
       manhr.truck[i,j] <- ind*truck.milage/truck.speed
-      manhr.gosp[i,j]  <- ceiling(sum(psim[ind.ow,j])/gosp.capacity)* # error only looking at production from wells drilled during indexed timeframe
+    }
+    
+    # Repeat for labor demands related to oil/gas production
+    ind.ow <- which(wsim$runID == i & wsim$wellType == "OW")
+    ind.gw <- which(wsim$runID == i & wsim$wellType == "GW")
+    for (j in 1:ncol(psim)) {
+      manhr.gosp[i,j]  <- ceiling(sum(psim[ind.ow,j])/gosp.capacity)*
         gosp.workers*FTE.hours
-      manhr.gpp[i,j]   <- ceiling(sum(psim[ind.gw,j])/gpp.capacity)* # error same problem here
+      manhr.gpp[i,j]   <- ceiling(sum(psim[ind.gw,j])/gpp.capacity)*
         gpp.workers*FTE.hours
     }
   }

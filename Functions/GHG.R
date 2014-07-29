@@ -1,9 +1,45 @@
-# GHG_v3.R (Greenhouse Gas Calculation Function)
-# Version 3
-# 07/21/14
-# Jon Wilkey
+### Greenhouse Gas Calculation Function ###
 
-# GHG Calculation Function
+# Inputs ------------------------------------------------------------------
+
+# wsim - well information data.table containing timestep when each well is
+# drilled and emission factors for each well
+
+# psim - matrix of production volume timeseries (of oil or gas) for each well
+
+# nrun - number of iterations in overall Monte-Carlo simulation
+
+# timesteps - vector of dates comprising number of timesteps in each iteration
+# of nrun
+
+# ind.ow - index (of row numbers) of oil wells in wsim and psim
+
+# ind.gw - index (of row numbers) of gas wells in wsim and psim
+
+# truckload - capacity of oil trucks (in bbl/truck) used to ship oil from Basin
+# to North SLC refineries
+
+
+# Outputs -----------------------------------------------------------------
+
+# result - list object containing the matrices CO2e.tot and CH4.tot, which give
+# the total CO2 equivalent emissions (in 1e3 kg) and CH4 (in MCF) for each
+# timestep in each iteration of nrun
+
+# Description -------------------------------------------------------------
+
+# This function uses the information in wsim and psim to calculate the amount of
+# CO2 equivalent (CO2e) and CH4 emissions from oil and gas development. This is 
+# done by summing together emissions from each step of the oil and gas 
+# production process from well drilling and completion through delivery to 
+# market. Emissions factors from each step are referenced from wsim and, where 
+# applicable, are multiplied by production volumes recorded in psim. This is 
+# first done for each individual well in the CO2e and CH4 matrices, and are then
+# reported as a total amount for each simulation run in nrun. The matrices of
+# total emissions are returned as a list object.
+
+
+# Function ----------------------------------------------------------------
 GHG <- function (wsim, psim, nrun, timesteps, ind.ow, ind.gw, truckload) {
   
   # Define CO2e, CH4, and total matrices

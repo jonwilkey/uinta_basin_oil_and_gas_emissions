@@ -1,14 +1,47 @@
-# productionsim.R (Production Simulation)
-# Version 1
-# 07/09/14
-# Jon Wilkey
+### Production Simulation ###
+
+# Inputs ------------------------------------------------------------------
+
+# wsim - well information data.table with decline curve coefficients
+
+# data_root - location of saved data.frame psim_actual_v1.rda with production
+# history of all actual wells in Basin over simulation timeframe
+
+# timesteps - vector of dates comprising number of timesteps in model
+
+# calltype - character switch indicating type of simulation run (full
+# simulation, validation, etc.)
 
 
-# Version History ---------------------------------------------------------
-# v1 -This function generates psim matrix, which gives the amount of oil or gas
-#     produced from a well (depending on well type) as a function of time.
+# Outputs -----------------------------------------------------------------
 
-# Function call
+# psim - matrix with rows = individual wells and columns = timesteps that gives
+# production volume timeseries (of either oil or gas) for each well
+
+# Description -------------------------------------------------------------
+
+# This function calculates the production volumes of oil or gas (depending on
+# well type) for each well in wsim according to the hyperbolic decline curve
+# equation:
+
+# q = a * (1 + b * c * t) ^ (-1 / b)
+
+# where q is prodcution (in bbl oil or MCF gas), a is the initial production 
+# rate, b is the decline exponent, c is the initial decline rate, and t is time.
+
+# If the value of calltype == "sim" then the model calculates the production 
+# volumes using the values of a, b, and c stored in wsim. The calucaltion is 
+# conducted sequentially for all timesteps, simultaneously calculating the 
+# production for all wells drilled in the same timestep. In the event that the
+# coefficients result in any production values that are nonreal (negative, NaN,
+# or NA), those values are overwritten as zeros.
+
+# Else, the function is a validation run and the function loads and returns the
+# actual production histories stored in the prepared data.frame psim.actual and
+# returns that matrix as psim.
+
+
+# Function ----------------------------------------------------------------
 productionsim <- function(wsim, data_root, timesteps, calltype = "sim") {
   
   # If simulation run, generate production data from decline curve coefficients

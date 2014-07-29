@@ -1,9 +1,50 @@
-# proptax.R (Property Tax Calculation)
-# Version 1
-# 07/10/14
-# Jon Wilkey
+### Property Tax Calculation ###
 
-# Property Tax Function
+# Inputs ------------------------------------------------------------------
+
+# data_root - directory path point to location of saved linear model fitted
+# equation for lease operating costs leaseOpCost_v1.rda
+
+# wsim - well information data.table with information on the depth of each well
+
+# psim - matrix of production volume timeseries (either oil or gas) for each
+# well
+
+# op - Vector inflation-adjusted oil prices on $/bbl basis
+
+# gp - Vector of inflation-adjusted gas prices on $/MCF basis
+
+# ind.ow - Index (row numbers) of oil wells
+
+# ind.gw - Index (row numbers) of gas wells
+
+# basis - Consumer price index (CPI) value at the desired time
+
+# rsim - matrix of royalty payments for each well (rows) at each time step
+# (columns)
+
+# stsim - matrix of severance tax payments for each well (rows) at each time
+# step (columns)
+
+
+# Outputs -----------------------------------------------------------------
+
+# result - function returns matrix of lease operating costs LOC. Once issues
+# surrounding negative values of NPV are resolved result will be turned into a
+# list object which will return both LOC and property tax matrix ptax.
+
+# Description -------------------------------------------------------------
+
+# This function determines property taxes for each well during each timestep by 
+# determing the NPV of each well at each timestep and applying the property tax 
+# rates in the Uinta Basin to that NPV. Currently, calculated values of LOCs are
+# on the same order of magnitude as gross revenue from oil and gas sales. 
+# Consequently, the NPV of almost all wells is negative, and no property taxes 
+# are paid (contradicting actual property tax data). Until this issue is
+# resolved only the matrix of LOCs is returned by this function.
+
+
+# Function ----------------------------------------------------------------
 ptax <- function (data_root, wsim, psim, op, gp, ind.ow, ind.gw, basis, rsim, stsim) {
   
   # Load leasing operating cost fits
