@@ -1,13 +1,6 @@
 # Script Info -------------------------------------------------------------
-# conventional_v11.R (Conventional Oil and Gas Model)
-# Version 11
-# 07/09/14
+# simDriver.R (Conventional Oil and Gas Simulation Driver Script)
 # Jon Wilkey
-
-
-# Version History ---------------------------------------------------------
-# v11 -Functionalized script to streamline code and enable validation against
-#      actual DOGM data. See commits for changelog.
 
 
 # Options -----------------------------------------------------------------
@@ -34,20 +27,17 @@ setwd(work_root)
 # List of functions used in this script to be loaded here
 flst <- file.path(fin,c("welldata.R",
                         "productionsim.R",
-                        "inflation_adjust.R",
+                        "inf_adj.R",
                         "royalty.R",
-                        "severance_tax.R",
-                        "proptax.R",
+                        "stax.R",
+                        "ptax.R",
                         "RIMS.R",
                         "workload.R",
-                        "GHG_v3.R",
+                        "GHG.R",
                         "write_excel.R"))
 
 # Load each function in list
 for (f in flst) source(f)
-
-# Remove temporary variables
-remove(fin, flst, f)
 
 
 # Libraries ---------------------------------------------------------------
