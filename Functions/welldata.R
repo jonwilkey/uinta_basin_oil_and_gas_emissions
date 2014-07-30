@@ -117,7 +117,7 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
         }
       }
       b <- b+1
-      if (b >= bstop) {
+      if (b > bstop) {
         b <- 1
         c <- c+1
       }
