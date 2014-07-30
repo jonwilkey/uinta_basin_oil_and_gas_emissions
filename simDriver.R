@@ -12,8 +12,6 @@ options(stringsAsFactors=FALSE)
 
 # Prepared data directory
 data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
-# Plot directory
-plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"
 # Functions directory
 fin <- "C:/Users/Jon/Documents/R/ub_oilandgas/Functions"
 # Working directory
@@ -64,10 +62,14 @@ field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
 basis <- 233.049
 
 # Number of iterations
-nrun <- 10^0
+nrun <- 20
 
 # Run type (simulation - sim or validation - valid)
-calltype <- "valid"
+calltype <- "sim"
+
+# Export results? "yes" or "no"
+exportFlag <- "no"
+
 
 # Well Data Simulation ----------------------------------------------------
 
@@ -176,3 +178,22 @@ emissions <- GHG(wsim = wsim,
                  ind.ow = ind.ow,
                  ind.gw = ind.gw,
                  truckload = 200)       # Capacity of oil trucks in bbl
+
+
+# Save results ------------------------------------------------------------
+
+# Export as *.rda file to Prepared Data file path if exportFlag == "yes"
+if(exportFlag == "yes") {
+  save(file=file.path(data_root, "simResults.rda"),
+       list=c("wsim",
+              "psim",
+              "rsim",
+              "stsim",
+              "ciFG",
+              "ciFO",
+              "ciSG",
+              "ciSO",
+              "jobs.RIMS",
+              "jobs.workload",
+              "timesteps"))
+}
