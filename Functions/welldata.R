@@ -12,8 +12,11 @@
 
 # field - vector of fields to analyze individually
 
-# calltype - character switch for selecting type of simulation to run
-# (simulation, validation, etc.)
+# schedule.type - character switch for selecting method of determining drilling
+# schedule
+
+# production.type - character switch for selecting method of determining decline
+# curve coefficients
 
 
 # Outputs -----------------------------------------------------------------
@@ -26,23 +29,41 @@
 # Description -------------------------------------------------------------
 
 # This function generates all of the randomly selected information about all 
-# wells used in the rest of the simulation. The function begins by determining 
-# whether a simulation or validation run has been called (depending on
-# "calltype" input).
+# wells used in the rest of the simulation. The function begins by checking 
+# which method has been called for to determine the drilling schedule ("a" -
+# simulated schedule, "b" - actual schedule).
 
-# If the run is a simulation, the function next determines how many wells are 
-# drilled in each timestep of each nrun iteration. This vector is then expanded 
-# so that each well has its own row in a matrix with three other columns 
-# identifying (1) the unique well ID # for this well, (2) the iteration # in 
-# nrun it is associated with (runID), and (3) the timestep in that iteration in 
-# which it is drilled (tDrill). Next, the simulation randomly determines whether
-# the well is going to be an oil well or gas well. Based on that choice, the 
-# function next determines the field number that well is drilled in. Finally,
-# all field dependent variables are randomly generated (surface landownership,
-# decline curve coefficients, etc.).
+# If the drilling schedule is simulated, the function next determines how many 
+# wells are drilled in each timestep of each nrun iteration. This vector is then
+# expanded so that each well has its own row in the vector "wellID" with a 
+# unique well ID# for every well. The wellID is then scanned in conjunction with
+# the "Drilled" vector containing the original simulated drilling schedule to 
+# determine for each well: (1) the iteration # in nrun it is associated with 
+# (runID), and (2) the timestep in that iteration in which it is drilled 
+# (tDrill). Next, the simulation randomly determines whether the well is going 
+# to be an oil well or gas well. Based on that choice, the function next 
+# determines the field number that well is drilled in. Finally, the function
+# determines land ownership and well depth.
 
-# Otherwise the simulation is a validation run, and the function begins by
-# loading the prepared data in actual.wsim.
+# Otherwise the drilling schedule to be used is the actual drilling schedule,
+# and the function begins by loading the prepared data in actual.wsim and
+# repeating it however many times are called for in nrun.
+
+# Next, the function generates decline curve coefficients "a" (initial 
+# production rate), "b" (decline exponent), and "c" (initial decline rate) for 
+# use with the Arps hyperbolic decline curve equation q = a*(1+b*c*t)^(-1/b). If
+# the value of "production.type" == 1 then these values are simulated using the 
+# CDFs in the various OOW and GGW decline curve fit *.rda files.
+
+# Otherwise the actual decline curve fits for actual wells are to be used. Note 
+# that the decline curve coefficients for each actual well has not been 
+# collected. Instead only the maximum production rate from each well has been 
+# saved, and this value has been set to == coefficient "a". All other decline 
+# curve values are set == NA. As such, production.type should not be set to "2" 
+# for selecting the actual decline curve coefficients unless the actual 
+# production schedule has also been used. To prevent this, there is no option
+# for schedule.type = 1 and production.type = 2; these options will result in a
+# function error.
 
 # At this point, most of the information in wsim has either been randomly
 # determined or loaded. Regardless of the simulation type the following
@@ -54,19 +75,14 @@
 
 
 # Function ----------------------------------------------------------------
-welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim") {
+welldata <- function(nrun, data_root, timesteps, basis, field, schedule.type,
+                     production.type) {
   
-  # For simulation runs, load required PDF and CDF data, generate drilling
-  # schedule, pick well type, field location, decline curve coefficients, etc.
-  if (calltype == "sim") {
+  if (schedule.type == "a") {
+    # For simulation drilling schedule, load required PDF and CDF data, generate
+    # drilling schedule, pick well type, field location, and depth.
     
     # === Load required files ===
-    # PDF x-values & CDF y-values for MC simulation of DC coefficients
-    load(file.path(data_root, "pdf_oow.rda"))
-    load(file.path(data_root, "cdf_oow.rda"))
-    load(file.path(data_root, "pdf_ggw.rda"))
-    load(file.path(data_root, "cdf_ggw.rda"))
-    
     # CDFs for drilling rates, field assignments, land ownership, and well type
     load(file.path(data_root, "cdf_schedule_v1.rda"))
     
@@ -78,27 +94,18 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
     # know why but won't work otherwise
     cdf.fsl <- cdf.fsl[,-1]; cdf.fsl <- as.matrix(cdf.fsl)
     
-    # Extract and reorder desired decline curve coefficients for selected fields
-    cdf.oow <- cdf.oow[,c(34, 35, 36, 1, 2, 3, 4, 5, 6, 16, 17, 18, 22, 23, 24,
-                          28, 29, 30, 25, 26, 27, 7, 8, 9, 19, 20, 21, 13, 14,
-                          15, 34, 35, 36)]
-    pdf.oow <- pdf.oow[,c(34, 35, 36, 1, 2, 3, 4, 5, 6, 16, 17, 18, 22, 23, 24,
-                          28, 29, 30, 25, 26, 27, 7, 8, 9, 19, 20, 21, 13, 14,
-                          15, 34, 35, 36)]
-    # As placeholder
-    cdf.ggw <- cdf.oow
-    pdf.ggw <- pdf.oow
-    
     # === Generate drilling schedule ===
     # Generate number of wells drilled in each timestep
     Drilled <- round(cdf.drill[findInterval(runif(length(timesteps)*nrun),
                                             c(0, cdf.drill[,2])),1])
     
     # Predefine space for results matrix
-    result <- matrix(0, nrow = sum(Drilled), ncol = 3)
+    wellID <- seq(length.out = sum(Drilled))
+    tDrill <- rep(0, times = length(wellID))
+    runID  <- tDrill
     
     # Loop counters
-    a <- 1 # WellID
+    a <- 1 # wellID
     b <- 1 # Tstep
     c <- 1 # runID
     bstop <- length(timesteps)
@@ -110,9 +117,8 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
     for (i in 1:length(Drilled)) {
       if (Drilled[i] > 0) {
         for (j in 1:Drilled[i]) {
-          result[a,1] <- a
-          result[a,2] <- b
-          result[a,3] <- c
+          tDrill[a] <- b
+          runID[a]  <- c
           a <- a+1
         }
       }
@@ -123,9 +129,9 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
       }
     }
     
-    # === Pick well type, field, DC coefficients, depth, and landownership ===
+    # === Pick well type, field, depth, and landownership ===
     # Pick oil or gas well
-    type <- ifelse(test = runif(nrow(result)) <= prob.gas,
+    type <- ifelse(test = runif(length(wellID)) <= prob.gas,
                    yes = "GW",
                    no = "OW")
     
@@ -136,13 +142,9 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
                        no = cdf.ffo[findInterval(runif(length(type)),
                                                  c(0, cdf.ffo[,2])), 1])
     
-    # Predefine vector sizes for decline curve coefficients, well depth, and
-    # landownership
-    acoef   <- rep(0, times = length(type))
-    bcoef   <- acoef
-    ccoef   <- acoef
-    depth   <- acoef
-    landown <- acoef
+    # Predefine vector sizes for well depth and landownership
+    depth   <- rep(0, times = length(type))
+    landown <- depth
     
     # Pull indices of oil and gas wells
     ind.ow <- which(type == "OW")
@@ -154,7 +156,72 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
     depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)),
                                                  c(0, cdf.depth.gw$y))]
     
-    # Generate decline curve coefficient values for field and well type
+    # Pick surface landowner
+    for (i in 1:length(field)) {
+      ind.ow <- which(type == "OW" & fieldnum == field[i])
+      landown[ind.ow] <- findInterval(runif(length(ind.ow)),
+                                      c(0, cdf.fsl[i,]))
+      
+      ind.gw <- which(type == "GW" & fieldnum == field[i])
+      landown[ind.gw] <- findInterval(runif(length(ind.gw)),
+                                      c(0, cdf.fsl[i,]))
+    }
+  } else {
+    # Else function call is for validation against actual DOGM data. Load actual
+    # results from analysis in schedule_v1.R and define components to match
+    # results of simulation loop above.
+    
+    # Load actual DOGM well data from schedule_v1.R
+    load(file.path(data_root, "wsim_actual_v1.rda"))
+    
+    # Define components
+    wellID   <- rep(wsim.actual$wellID,    times = nrun)
+    tDrill   <- rep(wsim.actual$tDrill,    times = nrun)
+    type     <- rep(wsim.actual$wellType,  times = nrun)
+    fieldnum <- rep(wsim.actual$fieldnum,  times = nrun)
+    depth    <- rep(wsim.actual$depth,     times = nrun)
+    landown  <- rep(wsim.actual$landOwner, times = nrun)
+    
+    # If using actual production decline curve coefficients
+    if (production.type == "b") {
+      acoef    <- rep(wsim.actual$acoef, times = nrun)
+      bcoef    <- rep(NA,                times = length(acoef))
+      ccoef    <- bcoef
+    }
+    
+    # Define runID
+    runID <- rep(1:nrun, each = max(wellID))
+  }
+  
+  if (production.type == "a") {
+    # Generate decline curve coefficients if production type == 1
+    
+    # === Load required files ===
+    # PDF x-values & CDF y-values for MC simulation of DC coefficients
+    load(file.path(data_root, "pdf_oow.rda"))
+    load(file.path(data_root, "cdf_oow.rda"))
+    load(file.path(data_root, "pdf_ggw.rda"))
+    load(file.path(data_root, "cdf_ggw.rda"))
+    
+    # === Prep CDF data ===
+    # Extract and reorder desired decline curve coefficients for selected fields
+    cdf.oow <- cdf.oow[,c(34, 35, 36, 1, 2, 3, 4, 5, 6, 16, 17, 18, 22, 23, 24,
+                          28, 29, 30, 25, 26, 27, 7, 8, 9, 19, 20, 21, 13, 14,
+                          15, 34, 35, 36)]
+    pdf.oow <- pdf.oow[,c(34, 35, 36, 1, 2, 3, 4, 5, 6, 16, 17, 18, 22, 23, 24,
+                          28, 29, 30, 25, 26, 27, 7, 8, 9, 19, 20, 21, 13, 14,
+                          15, 34, 35, 36)]
+    # As placeholder
+    cdf.ggw <- cdf.oow
+    pdf.ggw <- pdf.oow
+    
+    # === Generate decline curve coefficients ===
+    # Predefine space for coefficient vectors
+    acoef <- rep(0, times = length(type))
+    bcoef <- acoef
+    ccoef <- acoef
+    
+    # Pick coefficients
     for (i in 1:length(field)) {
       ind.ow <- which(type == "OW" & fieldnum == field[i])
       acoef[ind.ow] <- pdf.oow[findInterval(runif(length(ind.ow)),
@@ -163,8 +230,6 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
                                             c(0,cdf.oow[,(i-1)*3+2])),(i-1)*3+2]
       ccoef[ind.ow] <- pdf.oow[findInterval(runif(length(ind.ow)),
                                             c(0,cdf.oow[,(i-1)*3+3])),(i-1)*3+3]
-      landown[ind.ow] <- findInterval(runif(length(ind.ow)),
-                                      c(0, cdf.fsl[i,]))
       
       ind.gw <- which(type == "GW" & fieldnum == field[i])
       acoef[ind.gw] <- pdf.ggw[findInterval(runif(length(ind.gw)),
@@ -173,26 +238,7 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
                                             c(0,cdf.ggw[,(i-1)*3+2])),(i-1)*3+2]
       ccoef[ind.gw] <- pdf.ggw[findInterval(runif(length(ind.gw)),
                                             c(0,cdf.ggw[,(i-1)*3+3])),(i-1)*3+3]
-      landown[ind.gw] <- findInterval(runif(length(ind.gw)),
-                                      c(0, cdf.fsl[i,]))
     }
-  } else {
-    # Else function call is for validation against actual DOGM data. Load actual
-    # results from analysis in schedule_v1.R and define components to match
-    # results of simulation loop above
-    
-    # Load actual DOGM well data from schedule_v1.R
-    load(file.path(data_root, "wsim_actual_v1.rda"))
-    
-    # Define components
-    result   <- as.matrix(wsim.actual[,1:3])
-    type     <- wsim.actual$wellType
-    fieldnum <- wsim.actual$fieldnum
-    depth    <- wsim.actual$depth
-    acoef    <- wsim.actual$acoef
-    bcoef    <- rep(NA, times = nrow(result))
-    ccoef    <- bcoef
-    landown  <- wsim.actual$landOwner
   }
     
   # === Generate corporate tax rates for each well ===
@@ -249,10 +295,10 @@ welldata <- function(nrun, data_root, timesteps, basis, field, calltype = "sim")
   landown[which(landown == 4)] <- "fee"
   
   # Make a data table
-  wsim <- data.table(result, type, fieldnum, acoef, bcoef, ccoef, depth,
-                     landown, cirSO, cirSG, cirFO, cirFG, cost, EF.dcw, EF.prc,
-                     EF.tot, EF.prd.gas, EF.prd.oil, EF.trs.gas, EF.trs.oil,
-                     EF.trs.unconv)
+  wsim <- data.table(wellID, tDrill, runID, type, fieldnum, acoef, bcoef, ccoef,
+                     depth, landown, cirSO, cirSG, cirFO, cirFG, cost, EF.dcw,
+                     EF.prc, EF.tot, EF.prd.gas, EF.prd.oil, EF.trs.gas,
+                     EF.trs.oil, EF.trs.unconv)
   
   # Set/change column names
   setnames(x = wsim,
