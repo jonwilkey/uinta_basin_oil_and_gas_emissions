@@ -61,14 +61,26 @@ field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
 # CPI value for inflation adjustment
 basis <- 233.049
 
-# Number of iterations
-nrun <- 20
+# Prompt user for number of iterations
+nrun <- as.numeric(readline(prompt =
+"\n How many times would you like the simulation to run? \n"))
 
-# Run type (simulation - sim or validation - valid)
-calltype <- "sim"
+# Prompt user for drilling schedule type
+schedule.type <- readline(prompt =
+"\n Please select the method for determining the drilling schedule: \n
+(a) Simulated drilling schedule
+(b) Actual drilling schedule \n
+Selection (a or b): \n")
 
-# Export results? "yes" or "no"
-exportFlag <- "no"
+# Prompt user for production type
+production.type <- readline(prompt =
+"\n Please select the method for determining the production volumes: \n
+(a) Simulated production from decline curve coefficients
+(b) Actual production volumes (note: should only be used with actual drilling schedule) \n
+Selection (a or b): \n")
+
+# Prompt for exporting results
+exportFlag <- readline(prompt = "\n Export results (yes or no)? \n")
 
 
 # Well Data Simulation ----------------------------------------------------
@@ -78,15 +90,17 @@ wsim <- welldata(nrun = nrun,
                  timesteps = timesteps,
                  basis = basis,
                  field = field,
-                 calltype = calltype)
+                 schedule.type = schedule.type,
+                 production.type = production.type)
 
 
 # Production Simulation ---------------------------------------------------
 
-psim <- productionsim(wsim = wsim,
+psim <- productionsim(nrun = nrun,
+                      wsim = wsim,
                       data_root = data_root,
                       timesteps = timesteps,
-                      calltype = calltype)
+                      production.type = production.type)
 
 
 # Royalties ---------------------------------------------------------------
@@ -195,5 +209,6 @@ if(exportFlag == "yes") {
               "ciSO",
               "jobs.RIMS",
               "jobs.workload",
+              "emissions",
               "timesteps"))
 }
