@@ -111,18 +111,18 @@ workload <- function (wsim, psim, nrun, timesteps) {
   FTE.hours <- FTE.hours*12
   
   # Convert from man-hours to # of FTE employees
-  manhr.an.drill <- c(manhr.an.drill/FTE.hours)
-  manhr.an.truck <- c(manhr.an.truck/FTE.hours)
-  manhr.an.frack <- c(manhr.an.frack/FTE.hours)
-  manhr.an.gosp  <- c(manhr.an.gosp/FTE.hours)
-  manhr.an.gpp   <- c(manhr.an.gpp/FTE.hours)
+  manhr.an.drill <- manhr.an.drill/FTE.hours
+  manhr.an.truck <- manhr.an.truck/FTE.hours
+  manhr.an.frack <- manhr.an.frack/FTE.hours
+  manhr.an.gosp  <- manhr.an.gosp/FTE.hours
+  manhr.an.gpp   <- manhr.an.gpp/FTE.hours
   
-  # Convert to dataframe with columns = type of work and rows = years in model
-  jobs.workload <- data.frame(manhr.an.drill, manhr.an.frack, manhr.an.truck,
-                               manhr.an.gosp, manhr.an.gpp)
-  
-  # Rename columns
-  names(jobs.workload) <- c("drill", "frack", "truck", "GOSP", "GPP")
+  # Total employment
+  jobs.workload <- manhr.an.drill+
+                   manhr.an.truck+
+                   manhr.an.frack+
+                   manhr.an.gosp+
+                   manhr.an.gpp
   
   # Return result
   return(jobs.workload)
