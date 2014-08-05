@@ -84,7 +84,7 @@ m$prod_date <- as.Date(as.yearmon(m[,"h_first_prod"]))
 # Create dataframe containing dates of 1st production for each unique APD # and
 # the field it is located in
 well <- sqldf("select distinct(p_api), prod_date, w_field_num, w_well_type,
-              w_surfowntyp, h_td_md, w_surfowntyp
+              w_surfowntyp, h_td_md
               from m
               order by prod_date")
 
