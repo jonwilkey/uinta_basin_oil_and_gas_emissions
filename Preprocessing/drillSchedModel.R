@@ -120,7 +120,7 @@ well <- sqldf("select distinct(p_api), prod_date, w_field_num, w_well_type,
 # Drop NA observations
 well <- na.omit(well)
 
-# Only wells between 1999-01-01 and 2013-12-01, and with depths > 0
+# Only wells between 1999-01-01 and 2012-12-01, and with depths > 0
 well <- subset(well, prod_date >= as.Date("1999-01-01") &
                  prod_date <= all_months[length(all_months)] &
                  h_td_md > 0)
@@ -128,7 +128,6 @@ well <- subset(well, prod_date >= as.Date("1999-01-01") &
 # Determine total number of wells drilled each month for all wells (aw), oil
 # wells (ow), and gas wells (gw)
 drill.aw <- sqldf("select prod_date, count(p_api) from well group by prod_date")
-drill.ow <- sqldf("select prod_date, count(p_api) from well where w_well_type = 'OW' group by prod_date")
 drill.gw <- sqldf("select prod_date, count(p_api) from well where w_well_type = 'GW' group by prod_date")
 
 
@@ -168,21 +167,39 @@ result <- NULL
 
 # Get data in desired inc intervals
 for (i in 1:(168/inc)) {
-  temp <- c(sum(test$wells[(inc*(i-1)+1):(inc*i)]),
-            mean(test$op[(inc*(i-1)+1):(inc*i)]),
-            mean(test$gp[(inc*(i-1)+1):(inc*i)]))
-  result <- rbind(result, temp)
+  if (i == 1) {
+    temp <- c(sum(test$wells[(inc*(i-1)+1):(inc*i)]),
+              mean(test$op[(inc*(i-1)+1):(inc*i)]),
+              mean(test$gp[(inc*(i-1)+1):(inc*i)]),
+              0)
+    result <- rbind(result, temp)
+  } else{
+    temp <- c(sum(test$wells[(inc*(i-1)+1):(inc*i)]),
+              mean(test$op[(inc*(i-1)+1):(inc*i)]),
+              mean(test$gp[(inc*(i-1)+1):(inc*i)]))
+    temp <- c(temp, result[(i-1),1])
+    result <- rbind(result, temp)
+  }
 }
+
+# Have to manually edit results data.frame to deal with first prior row:
+#         AW  OW GW
+# Month [ 17  1  16 ]
+# Quart [ 56  8  48 ]
+# Biann [ 109 21 88 ]
+# Annua [ 214 51 163]
+
+result[1,4] <- 214
 
 # Convert to data.frame
 result <- as.data.frame(result, row.names=as.character(1:nrow(result)))
 
 # Add column names
-names(result) <- c("wells", "op", "gp")
+names(result) <- c("wells", "op", "gp", "prior")
 
 # Fit and print summary of linear regression
-summary(lm(wells~op+gp,result))                      # Full Fit
-summary(lm(wells~op+gp,result[1:(nrow(result)/2),])) # Cross-Validation Fit
+summary(lm(wells~op+gp+prior,result))                      # Full Fit
+summary(lm(wells~op+gp+prior,result[1:(nrow(result)/2),])) # Cross-Validation Fit
 
 # Copy result data.frame to clipboard for export to spreadsheet
 write.excel(result)
