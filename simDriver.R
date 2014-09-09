@@ -10,12 +10,19 @@ options(stringsAsFactors=FALSE)
 
 # Paths -------------------------------------------------------------------
 
-# Prepared data directory
-data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
-# Functions directory
-fin <- "C:/Users/Jon/Documents/R/ub_oilandgas/Functions"
-# Working directory
-work_root <- "C:/Users/Jon/Documents/R/ub_oilandgas/"
+# Windows
+raw_root  <- "D:/Dropbox/CLEAR/DOGM Data/Raw Data"             # Raw data
+data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"        # Prepared data
+plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"                # Plots
+fin <-       "C:/Users/Jon/Documents/R/ub_oilandgas/Functions" # Functions
+work_root <- "C:/Users/Jon/Documents/R/ub_oilandgas/"          # Working dir.
+
+# # Mac
+# raw_root  <- "/Users/john/Dropbox/CLEAR/DOGM Data/Raw Data"
+# data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
+# plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
+# fin <-       "/Users/john/Documents/ub_oilandgas/ub_oilandgas/Functions"
+# work_root <- "/Users/john/Documents/ub_oilandgas/ub_oilandgas"
 
 # Set working directory
 setwd(work_root)
