@@ -39,6 +39,7 @@ flst <- file.path(fin,c("welldata.R",
                         "RIMS.R",
                         "workload.R",
                         "GHG.R",
+                        "water.R",
                         "write_excel.R"))
 
 # Load each function in list
@@ -201,6 +202,14 @@ emissions <- GHG(wsim = wsim,
                  truckload = 200)       # Capacity of oil trucks in bbl
 
 
+
+# Water Balance -----------------------------------------------------------
+
+# Determine water balance
+water.balance <- water(wsim = wsim,
+                       psim = psim,
+                       data_root = data_root)
+
 # Save results ------------------------------------------------------------
 
 # Export as *.rda file to Prepared Data file path if exportFlag == "yes"
@@ -217,5 +226,6 @@ if(exportFlag == "yes") {
               "jobs.RIMS",
               "jobs.workload",
               "emissions",
+              "water.balance",
               "timesteps"))
 }
