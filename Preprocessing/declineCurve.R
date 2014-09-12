@@ -23,28 +23,28 @@ options(stringsAsFactors=FALSE)
 
 # Paths -------------------------------------------------------------------
 
-# # Windows
-# data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"        # Prepared data
-# plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"                # Plots
-# fin <-       "C:/Users/Jon/Documents/R/ub_oilandgas/Functions" # Functions
-# work_root <- "C:/Users/Jon/Documents/R/ub_oilandgas/"          # Working dir.
+# Windows
+data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"        # Prepared data
+plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"                # Plots
+fin <-       "C:/Users/Jon/Documents/R/ub_oilandgas/Functions" # Functions
+work_root <- "C:/Users/Jon/Documents/R/ub_oilandgas/"          # Working dir.
 
-# Mac
-data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"        # Prepared data
-plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"                # Plots
-fin <-       "/Users/john/Documents/ub_oilandgas/ub_oilandgas/Functions" # Functions
-work_root <- "/Users/john/Documents/ub_oilandgas/ub_oilandgas"          # Working dir.
+# # Mac
+# data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
+# plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
+# fin <-       "/Users/john/Documents/ub_oilandgas/ub_oilandgas/Functions"
+# work_root <- "/Users/john/Documents/ub_oilandgas/ub_oilandgas"
 
 # Set working directory
 setwd(work_root)
 
 
 # Functions ---------------------------------------------------------------
-# # List of functions used in this script to be loaded here
-# flst <- file.path(fin,c("write_excel.R"))
-# 
-# # Load each function in list
-# for (f in flst) source(f)
+# List of functions used in this script to be loaded here
+flst <- file.path(fin,c("write_excel.R"))
+
+# Load each function in list
+for (f in flst) source(f)
 
 
 # Libraries ---------------------------------------------------------------
@@ -82,3 +82,9 @@ p <- subset(production,
 
 # Omit NAs (none at present, but just in case)
 p <- na.omit(p)
+
+
+nlsLM(oil ~ qo*exp(-(time/tau)^n),
+      data = test,
+      start = list(qo = 1340, tau = 1, n = 1),
+      control = list(maxiter = 1e3))
