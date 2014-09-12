@@ -75,13 +75,27 @@ load(file.path(data_root, "psim_actual_v1.rda"))
 load(file.path(data_root, "wsim_actual_v1.rda"))
 
 
-# Queries and Calculations ------------------------------------------------
+# Format Simulation Results -----------------------------------------------
+
+# Pull water balance terms out of water list
+prod.water      <- water.balance[[1]]
+disp.water      <- water.balance[[2]]
+evap.water      <- water.balance[[3]]
+rec.water       <- water.balance[[4]]
+drill.water     <- water.balance[[5]]
+frac.water      <- water.balance[[6]]
+flood.water     <- water.balance[[7]]
+water.in        <- water.balance[[8]]
+water.intensity <- water.balance[[9]]
 
 # Pull GHG cO2 data.frame out of emissions list
 ghg <- emissions[[1]]
 ch4 <- emissions[[2]]
 
-### Number of wells drilled and oil Production as timeseries simulated vs actual ###
+
+# Queries and Calculations ------------------------------------------------
+
+# Number of wells drilled and oil Production as timeseries simulated vs actual
 pmt <- proc.time()
 wellcount.sim <- matrix(0, nrow = max(wsim$runID), ncol = max(wsim$tDrill))
 ptot.sim.oil <- wellcount.sim
@@ -101,11 +115,13 @@ wellcount.sim.quant <- matrix(0, nrow = length(quant), ncol = max(wsim$tDrill))
 ptot.sim.oil.quant <- wellcount.sim.quant
 ghg.quant <- wellcount.sim.quant
 ch4.quant <- wellcount.sim.quant
+water.quant <- wellcount.sim.quant
 for (i in 1:max(wsim$tDrill)) {
   wellcount.sim.quant[,i] <- quantile(wellcount.sim[,i], quant)
   ptot.sim.oil.quant[,i] <- quantile(ptot.sim.oil[,i], quant)
   ghg.quant[,i] <- quantile(ghg[,i], quant)
   ch4.quant[,i] <- quantile(ch4[,i], quant)
+  water.quant[,i] <- quantile(water.intensity[,i], quant)
 }
 
 jobs.RIMS.quant <- matrix(0, nrow = length(quant), ncol = max(wsim$tDrill)/12)
@@ -127,7 +143,8 @@ results <- data.frame(timesteps,
                       t(wellcount.sim.quant),
                       t(ptot.sim.oil.quant),
                       t(ghg.quant),
-                      t(ch4.quant))
+                      t(ch4.quant),
+                      t(water.quant))
 
 # Rename for review
 names(results) <- c("Time Step",
@@ -150,7 +167,12 @@ names(results) <- c("Time Step",
                     "CH4 Emissions (MCF CH4) - 70%",
                     "CH4 Emissions (MCF CH4) - 50%",
                     "CH4 Emissions (MCF CH4) - 30%",
-                    "CH4 Emissions (MCF CH4) - 10%")
+                    "CH4 Emissions (MCF CH4) - 10%",
+                    "Water In Ratio (water)/(oil) - 90%",
+                    "Water In Ratio (water)/(oil) - 70%",
+                    "Water In Ratio (water)/(oil) - 50%",
+                    "Water In Ratio (water)/(oil) - 30%",
+                    "Water In Ratio (water)/(oil) - 10%")
 
 # Call GGobi
 ggobi(results)
