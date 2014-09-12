@@ -286,6 +286,18 @@ welldata <- function(nrun, data_root, timesteps, basis, field, schedule.type,
   EF.trs.unconv <- cdf.ghg$trs.unconv.x[findInterval(runif(length(type)),
                                                      c(0, cdf.ghg$trs.unconv.y))] # CH4 as % total production lost to transportation
   
+  # === Water Balance Terms and Ratios ====
+  # Load Water Balance CDFs
+  load(file.path(data_root, "water_models.rda"))
+  
+  # Use findInterval to pick index and assign value to each water balance term  
+  frack <- ifelse(test = type == "OW",
+                  yes = fw.ow.cdf$frackwater[findInterval(runif(length(type)),
+                                                          c(0, fw.ow.cdf$CDF))],
+                  no = fw.gw.cdf$frackwater[findInterval(runif(length(type)),
+                                                         c(0, fw.gw.cdf$CDF))]) # Amount of water used for fracking the well (bbl)
+  
+  
   # === Format and return as data.table wsim ===
   # Replace landownership #s with strings (switch expression in royalty.R
   # function requires switch to operate on a string, not a numerical value)
@@ -298,7 +310,7 @@ welldata <- function(nrun, data_root, timesteps, basis, field, schedule.type,
   wsim <- data.table(wellID, tDrill, runID, type, fieldnum, acoef, bcoef, ccoef,
                      depth, landown, cirSO, cirSG, cirFO, cirFG, cost, EF.dcw,
                      EF.prc, EF.tot, EF.prd.gas, EF.prd.oil, EF.trs.gas,
-                     EF.trs.oil, EF.trs.unconv)
+                     EF.trs.oil, EF.trs.unconv, frack)
   
   # Set/change column names
   setnames(x = wsim,
@@ -306,7 +318,8 @@ welldata <- function(nrun, data_root, timesteps, basis, field, schedule.type,
            new = c("wellID", "tDrill", "runID", "wellType", "fieldnum", "a",
                    "b", "c", "depth", "landOwner", "cirSO", "cirSG", "cirFO",
                    "cirFG", "cost", "EF.dcw", "EF.prc", "EF.tot", "EF.prd.gas",
-                   "EF.prd.oil", "EF.trs.gas", "EF.trs.oil", "EF.trs.unconv"))
+                   "EF.prd.oil", "EF.trs.gas", "EF.trs.oil", "EF.trs.unconv",
+                   "frack"))
   
   # Return wsim
   return(wsim)
