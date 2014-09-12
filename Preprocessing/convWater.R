@@ -1,62 +1,69 @@
-#-------------------------------------------------------------------------------
-# Script Info
-#-------------------------------------------------------------------------------
-# convWater_v1.R (Conventional Oil and Gas Water Model)
-# Version 2
-# 04/08/14
+# Script Info -------------------------------------------------------------
+# convWater.R (Conventional Oil and Gas Water Model)
 # Jon Wilkey
-#-------------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------------
-# Version History
-#-------------------------------------------------------------------------------
-# --- Version 1 ---
-# 1. Loads *.rda files, compared production dataframes field numbers to
-#    project_volumes project numbers, determined they didn't match up
-# 2. Created time series of water injection, disposal, and production for Basin.
 
-#-------------------------------------------------------------------------------
-# Options 
-#-------------------------------------------------------------------------------
+# Inputs ------------------------------------------------------------------
+
+# 
+
+
+# Outputs -----------------------------------------------------------------
+
+# 
+
+
+# Description -------------------------------------------------------------
+
+# blah
+
+
+# Options -----------------------------------------------------------------
+
 # Don't want strings 'typed' as factors but as characters
 options(stringsAsFactors=FALSE)
 
-#-------------------------------------------------------------------------------
-# Paths
-#-------------------------------------------------------------------------------
-# Raw data directory
-raw_root <- "D:/Dropbox/CLEAR/DOGM Data/Raw Data"
-# Prepared data directory
-data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"
-# Working directory
-work_root <- "D:/Dropbox/CLEAR/DOGM Data"
+
+# Paths -------------------------------------------------------------------
+
+# Windows
+raw_root  <- "D:/Dropbox/CLEAR/DOGM Data/Raw Data"             # Raw data
+data_root <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"        # Prepared data
+plot_root <- "D:/Dropbox/CLEAR/DOGM Data/Plots"                # Plots
+fin <-       "C:/Users/Jon/Documents/R/ub_oilandgas/Functions" # Functions
+work_root <- "C:/Users/Jon/Documents/R/ub_oilandgas/"          # Working dir.
+
+# # Mac
+# raw_root  <- "/Users/john/Dropbox/CLEAR/DOGM Data/Raw Data"
+# data_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
+# plot_root <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
+# fin <-       "/Users/john/Documents/ub_oilandgas/ub_oilandgas/Functions"
+# work_root <- "/Users/john/Documents/ub_oilandgas/ub_oilandgas"
+
+# Set working directory
 setwd(work_root)
-# Functions 
-fin <- "D:/Dropbox/CLEAR/DOGM Data/Functions"
 
-#-------------------------------------------------------------------------------
-# Functions
-#-------------------------------------------------------------------------------
-# Copy/Paste function
-write.excel <- function(x,row.names=FALSE,col.names=TRUE,...) {
-  write.table(x,"clipboard",sep="\t",row.names=row.names,col.names=col.names,...)
-}
 
-# Diff month function
-flst <- file.path(fin,c("diffMonPOSIX.R"))
+# Functions ---------------------------------------------------------------
+
+# List of functions used in this script to be loaded here
+flst <- file.path(fin, c("write_excel.R",
+                         "diffMonPOSIX.R"))
+
+# Load each function in list
 for (f in flst) source(f)
 
-#-------------------------------------------------------------------------------
-# Libraries
-#-------------------------------------------------------------------------------
+
+# Libraries ---------------------------------------------------------------
+
 library(sqldf)
 library(zoo)
 library(foreign)
 library(data.table)
 
-#-------------------------------------------------------------------------------
-# Load required data files
-#-------------------------------------------------------------------------------
+
+# Load required data files ------------------------------------------------
+
 # Load *.rda files
 load(file.path(raw_root, "uic_projects.rda"))
 load(file.path(raw_root, "uic_wells.rda"))
@@ -65,6 +72,8 @@ load(file.path(raw_root, "disposal.rda"))
 load(file.path(data_root, "fieldata.rda"))
 load(file.path(data_root, "production.rda"))
 load(file.path(data_root, "histdata.rda"))
+load(file.path(data_root, "frackWater.rda"))
+load(file.path(data_root, "qtr_evap.rda"))
 
 # Rename some dataframes for brevity
 d <- disposal
@@ -73,9 +82,9 @@ p <- production
 h <- histdata
 remove(disposal, project_volumes, production, histdata)
 
-#-------------------------------------------------------------------------------
-# Process data - Water Injected as Time Series
-#-------------------------------------------------------------------------------
+
+# Process data - Water Injected as Time Series ----------------------------
+
 # Select distinct project numbers located in Uintah and Duchesne counties
 project.num <- na.omit(sqldf("select distinct(project_unit_number)
                              from uic_wells
@@ -102,11 +111,9 @@ for (i in 1:length(date)) {
 }
 inj <- rowSums(inj)
 
-#-------------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------------
-# Process data - Water Disposal as Time Series 
-#-------------------------------------------------------------------------------
+# Process data - Water Disposal as Time Series ----------------------------
+
 # Disposal data is listed by API #, so to select all data located in Uintah and 
 # Duchesne counties start by defining list of API #s located in each county (013
 # - Duchesne, 047 - Uintah)
@@ -154,11 +161,9 @@ for (i in 1:length(date)) {
 }
 disp <- rowSums(disp)
 
-#-------------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------------
-# Process data - Water Produced as Time Series 
-#-------------------------------------------------------------------------------
+# Process data - Water Produced as Time Series ----------------------------
+
 # Create list of wells that have dates of first production
 h.first <- na.omit(sqldf("select distinct(h_api), h_first_prod from h"))
 
@@ -179,19 +184,24 @@ m[, time := 1 + diffMonPOSIX(first = min(h_first_prod), last = p_rpt_period),
 m <- as.data.frame(m)
 
 # Determine time series for water production from m
-prod <- sqldf("select p_rpt_period, sum(p_water_prod)
-              from m
-              group by p_rpt_period")
+prod.ow <- sqldf("select p_rpt_period, sum(p_water_prod)
+                 from m
+                 where w_well_type = 'OW'
+                 group by p_rpt_period")
+prod.gw <- sqldf("select p_rpt_period, sum(p_water_prod)
+                 from m
+                 where w_well_type = 'GW'
+                 group by p_rpt_period")
 # Drop NA values and last month (p has data through 2013-12-01), drop dates
-prod <- prod[2:248,2]
+prod.ow <- prod.ow[2:248,2]
+prod.gw <- prod.gw[2:248,2]
 # Convert to numeric variable type
-prod <- as.numeric(prod)
+prod.ow <- as.numeric(prod.ow)
+prod.gw <- as.numeric(prod.gw)
 
-#-------------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------------
-# Process data - Average Well Age as Time Series
-#-------------------------------------------------------------------------------
+# Process data - Average Well Age as Time Series --------------------------
+
 # Use SQL statement to determine average well age
 age <- sqldf("select p_rpt_period, avg(time)
              from m
@@ -201,11 +211,9 @@ age <- age[2:248,2]
 # Convert to numeric variable type
 age <- as.numeric(age)
 
-#-------------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------------
-# Process data - Oil production as Time Series
-#-------------------------------------------------------------------------------
+# Process data - Oil production as Time Series ----------------------------
+
 # Use SQL statement to determine total oil production as series of time
 oil <- sqldf("select p_rpt_period, sum(p_oil_prod)
              from m
@@ -215,13 +223,121 @@ oil <- oil[2:248,2]
 # Convert to numeric variable type
 oil <- as.numeric(oil)
 
-#-------------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------------
-# Plot Output
-#-------------------------------------------------------------------------------
+
+# Process data - Gas production as Time Series ----------------------------
+
+# Use SQL statement to determine total oil production as series of time
+gas <- sqldf("select p_rpt_period, sum(p_gas_prod)
+             from m
+             group by p_rpt_period")
+# Drop NA values and last month, drop dates
+gas <- gas[2:248,2]
+# Convert to numeric variable type
+gas <- as.numeric(gas)
+
+# Fit Fracking Water Usage Model ------------------------------------------
+
+# Produced water - linear regression
+prod.all <- prod.ow+prod.gw
+prod.water.lm <- lm(prod.all~oil)
+
+
+# Disposal well injection water - linear model
+disp.water.lm <- lm(disp~prod.all)
+
+
+# Evaporation pond water - CDF
+
+# Get PDF
+evap.pdf <- density(qtr.evap$evap/qtr.evap$prod)
+
+# Calculate cumulative sum
+evap.cdf <- cumsum(evap.pdf$y*diff(evap.pdf$x[1:2]))
+
+# Normalize
+evap.cdf <- evap.cdf/max(evap.cdf)
+
+# Create data.frame for export
+evap.cdf <- data.frame(evap.pdf$x, evap.cdf)
+names(evap.cdf) <- c("ratio","CDF")
+
+
+# Fracking water - CDF
+
+# Select only entries from fracfocus.org data.frame which are not NA
+fw <- frackWater[which(!is.na(frackWater$water)),]
+
+# Drop the single row which has 1 gal of frac water usage
+fw <- fw[-which(fw$water == 1),]
+
+# Get subsets for oil wells and gas wells
+fw.ow <- fw[which(fw$wellType == "OW"),]
+fw.gw <- fw[which(fw$wellType == "GW"),]
+
+# Convert water units from gal to bbl
+fw.ow$water <- fw.ow$water/42
+fw.gw$water <- fw.gw$water/42
+
+# Get PDFs
+fw.ow.pdf <- with(fw.ow, density(water, from = min(water), to = max(water)))
+fw.gw.pdf <- with(fw.gw, density(water, from = min(water), to = max(water)))
+
+# Calculate cumulative sum
+fw.ow.cdf <- cumsum(fw.ow.pdf$y*diff(fw.ow.pdf$x[1:2]))
+fw.gw.cdf <- cumsum(fw.gw.pdf$y*diff(fw.gw.pdf$x[1:2]))
+
+# Normalize
+fw.ow.cdf <- fw.ow.cdf/max(fw.ow.cdf)
+fw.gw.cdf <- fw.gw.cdf/max(fw.gw.cdf)
+
+# Create data.frame for export
+fw.ow.cdf <- data.frame(fw.ow.pdf$x, fw.ow.cdf)
+fw.gw.cdf <- data.frame(fw.gw.pdf$x, fw.gw.cdf)
+names(fw.ow.cdf) <- c("frackwater", "CDF")
+names(fw.gw.cdf) <- c("frackwater", "CDF")
+
+
+# Flooding water - CDF
+
+# Get PDF for ratio (flooding water):(oil production)
+flood.pdf <- density(inj/oil, from  = min(inj/oil), to = max(inj/oil))
+
+# Calculate CDF
+flood.cdf <- cumsum(flood.pdf$y*diff(flood.pdf$x[1:2]))
+
+# Normalize
+flood.cdf <- flood.cdf/max(flood.cdf)
+
+# Create data.frame for export
+flood.cdf <- data.frame(flood.pdf$x, flood.cdf)
+names(flood.cdf) <- c("ratio", "CDF")
+
+
+# Drilling water - CDF
+
+# Need to do some data gathering from DOGM for this. There is too much 
+# variability in reports on water usage for drilling in the literature to be 
+# confident that there is any "national" average water usage for drilling. In
+# the meantime, assume that 10% of all water used for to drill and fracture a
+# well is used in drilling.
+
+
+# Data export -------------------------------------------------------------
+
+# Save to file
+save(file=file.path(data_root, "water_models.rda"),
+     list=c("prod.water.lm",
+            "disp.water.lm",
+            "evap.cdf",
+            "fw.ow.cdf",
+            "fw.gw.cdf",
+            "flood.cdf"))
+
+# Plot Output -------------------------------------------------------------
+
 # Save to pdf
-pdf("convWater_v2 Results.pdf")
+pdf("convWater_v3 Results.pdf")
 
 # Water balance terms
 plot(date, prod,
@@ -260,4 +376,14 @@ plot(age, bal,
 
 dev.off()
 
-#-------------------------------------------------------------------------------
+pdf(file.path(plot_root, "Flood water vs oil.pdf"))
+hexbinplot(inj ~ oil,
+           #data = fw.ow,
+           aspect = 1,
+           xbins = 30,
+           type = "r",
+           lwd = 2,
+           xlab = "Oil Production (bbl)",
+           ylab = "Water Flood (bbl)",
+           main = "Water Flooding vs Oil Production")
+dev.off()
