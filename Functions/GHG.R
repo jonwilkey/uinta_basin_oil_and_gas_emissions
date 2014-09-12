@@ -40,7 +40,7 @@
 
 
 # Function ----------------------------------------------------------------
-GHG <- function (wsim, psim, nrun, timesteps, ind.ow, ind.gw, truckload) {
+GHG <- function(wsim, psim, nrun, timesteps, ind.ow, ind.gw, truckload) {
   
   # Define CO2e, CH4, and total matrices
   CO2e <- matrix(0, nrow = nrow(psim), ncol = ncol(psim))
