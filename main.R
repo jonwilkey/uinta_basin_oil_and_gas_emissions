@@ -12,26 +12,37 @@
 #    and loading user input/output options.
 # 2. Process DOGM *.dbf database files
 
+
 # Paths -------------------------------------------------------------------
 
 # Predefine list object "path" for holding directory path listings
 path <- NULL
 
-# Windows
-path$raw  <- "D:/Dropbox/CLEAR/DOGM Data/Raw Data"             # Raw data
-path$data <- "D:/Dropbox/CLEAR/DOGM Data/Prepared Data"        # Prepared data
-path$plot <- "D:/Dropbox/CLEAR/DOGM Data/Plots"                # Plots
-path$fun  <- "C:/Users/Jon/Documents/R/ub_oilandgas/Functions" # Functions
-path$work <- "C:/Users/Jon/Documents/R/ub_oilandgas/"          # Working dir.
-path$look <- "D:/Dropbox/CLEAR/DOGM Data/Lookup Tables"        # Lookup Tables
+# Path switch - uncomment and/or replace with the path directory for your local
+# copy of the Git repository and Dropbox files.
+# pwd.drop <- "D:/"                                  # Windows
+# pwd.git  <- "C:/Users/Jon/Documents/R/"
+# pwd.drop <- "/Users/john/"                         # Mac
+# pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
+  pwd.drop <- "/home/slyleaf/"                       # Linux
+  pwd.git  <- "/home/slyleaf/Documents/"
+  
+# Define paths.
+# "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
+# "data" is prepared data files (typically *.rda).
+# "look" is lookup tables. 
+# "plot" is the directory for saving plot *.pdf files.
+# "work" is the working directory where main.R and IO_options.R are located.
+# "fun"  is the directory for all *.R functions.
+path$raw  <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Raw Data", sep = "")
+path$data <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Prepared Data", sep = "")
+path$look <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Lookup Tables", sep = "")
+path$plot <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Plots", sep = "")
+path$work <- paste(pwd.git,  "ub_oilandgas/", sep = "")
+path$fun  <- paste(pwd.git,  "ub_oilandgas/Functions", sep = "")
 
-# # Mac
-# path$raw  <- "/Users/john/Dropbox/CLEAR/DOGM Data/Raw Data"
-# path$data <- "/Users/john/Dropbox/CLEAR/DOGM Data/Prepared Data"
-# path$plot <- "/Users/john/Dropbox/CLEAR/DOGM Data/Plots"
-# path$fun  <- "/Users/john/Documents/ub_oilandgas/ub_oilandgas/Functions"
-# path$work <- "/Users/john/Documents/ub_oilandgas/ub_oilandgas"
-# path$look <- "/Users/john/Dropbox/CLEAR/DOGM Data/Lookup Tables"
+# Remove temporary path objects
+remove(pwd.drop, pwd.git)
 
 # Set working directory
 setwd(path$work)
@@ -41,6 +52,8 @@ setwd(path$work)
 
 # List of functions used in this script to be loaded here
 flst <- file.path(path$fun, c("dogmDataUpdate.R",
+                              "scheduleUpdate.R",
+                              "corpIncomeUpdate.R",
                               "welldata.R",
                               "productionsim.R",
                               "inf_adj.R",
@@ -51,7 +64,7 @@ flst <- file.path(path$fun, c("dogmDataUpdate.R",
                               "workload.R",
                               "GHG.R",
                               "water.R",
-                              "write_excel.R"))
+                              "clipboard.R"))
 
 # Load each function in list then remove temporary file list variables
 for (f in flst) source(f); remove(f, flst)
@@ -74,6 +87,18 @@ options(stringsAsFactors=FALSE)
 source("IO_options.R")
 
 
+# Load Data Files ---------------------------------------------------------
+
+# Load price history for oil and gas in the Uinta Basin according to Chevron 
+# price history: (http://crudemarketing.chevron.com/posted_pricing_daily.asp). 
+# These prices have been collected by a web-scraper, sorted by date, and matched
+# with the CPI index values for each month into a single data.frame called 
+# OGprice, which is used in several economic fits (drilling activity, corporate 
+# income tax conversion factors, etc.). Presently there is no script that
+# updates this data.frame...
+load(file.path(path$data, "oil_and_gas_price_history_1999_to_2012.rda"))
+
+
 # 2.1 DOGM *.dbf database file processing ---------------------------------
 
 # Run function if opt$DOGM.update flag is set to "TRUE"
@@ -83,11 +108,12 @@ if(opt$DOGM.update == TRUE) {
 
 # Load production.rda and rename as "p" for brevity
 load(file.path(path$data, "production.rda"))
-p <- production
-remove(production)
 
-# Pullout subset of p based on criteria in opt$keeps
-p <- subset(p, subset = (w_county == "UINTAH" | w_county == "DUCHESNE"),
+# Make subset of "production" called "p" based on criteria in opt$keeps
+p <- production
+p <- subset(p, subset = switch(opt$psub,
+                               a = {(w_county == "UINTAH" |
+                                     w_county == "DUCHESNE")}),
             select = opt$p.keep)
 
 
@@ -98,4 +124,20 @@ if(opt$schedule.update == TRUE) {
   scheduleUpdate(path = path,
                  p = p,
                  tsteps = opt$tsteps)
+}
+
+
+# 2.3 Corporate income tax conversion factor CDF generation ---------------
+
+# Run function if opt$corptax.update flag is set to "TRUE"
+if(opt$corptax.update == TRUE) {
+  corpIncomeUpdate(production =   production,
+                   NTI =          opt$NTI,
+                   CIrate.state = opt$CIrate.state,
+                   CIrate.fed =   opt$CIrate.fed,
+                   basis =        opt$cpi,
+                   CI.pdf.min =   opt$CI.pdf.min,
+                   CI.pdf.max =   opt$CI.pdf.max,
+                   version =      opt$file_ver,
+                   path =         path)
 }
