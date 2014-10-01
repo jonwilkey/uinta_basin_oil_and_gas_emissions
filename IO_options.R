@@ -31,12 +31,15 @@ opt <- NULL
 opt$DOGM.update     <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
 opt$schedule.update <- FALSE  # Generates CDF for drilling rates, field numbers, lease type, and well type. Extracts actual drilling and production history from production.rda.
 opt$water.update    <- FALSE  # Generates all CDFs and linear regression models for water balance terms
-opt$corptax.update  <- FALSE  # Generates corporate income tax coversion factor CDFs
+opt$corptax.update  <- TRUE  # Generates corporate income tax coversion factor CDFs
 opt$DCA.update      <- FALSE  # Generates CDFs for decline curves
 opt$emission.update <- FALSE  # Generates CDFs for emission factors
 opt$lease.update    <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
 opt$depth.update    <- FALSE  # Generates CDFs for well depth by well type
 
+# Version filename. If any of the update flags above is set to "TRUE", change
+# the version number below so that previous *.rda versions will be retained.
+opt$file_ver <- "v2"
 
 # 1.2 Subsetting options for production.rda file ------------------------------
 
@@ -99,7 +102,7 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                 "h_td_md",      # Total Depth of the Well -- Measured Depth
                #"h_pbtd_md",    # Plug Back Total Depth of the Well -- Measured Depth
                #"h_wellstatus", # The status of the well at the time the identified work was completed. See above URL on h_work_type for meaning of abbreviations.
-               #"h_well_type",  # The type of the well at the time the proposed work was completed. See above URL on h_work_type for meaning of abbreviations.
+                "h_well_type",  # The type of the well at the time the proposed work was completed. See above URL on h_work_type for meaning of abbreviations.
                 "h_first_prod", # The date of first production from the well as reported by the operator.
                #"h_testmethod", # The method used for testing the well: Flow, pump, swab, other.
                #"h_choke",      # Well choke during initial production test.
@@ -124,7 +127,6 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"everpa",       # Boolean for whether well was ever plugged and abandoned
                #"padiff",       # Number of months between w_abndondate and p_rpt_period
                 "time")         # Months since given well first appeared in proddata (i.e. since well's h_first_prod date)
-
 
 
 # 1.3 Monte-Carlo simulation options --------------------------------------
@@ -165,6 +167,32 @@ opt$cpi <- 233.049
 # the fields listed).
 opt$field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
 
+# "production.rda" subsetting options for "p". Each string represents a possible
+# argument for subsetting the DOGM database. Options are:
+#   a  - Selects only wells located in Uintah or Duchesne counties
+#  ... - Others must be coded first in main.R section 2.1
+opt$psub <- "a"
+
+
+# 1.6 Finance related options ---------------------------------------------
+
+# Corporate income tax rates (fraction of net earnings paid in corporate income
+# taxes)
+opt$CIrate.state <- 0.05 # State
+opt$CIrate.fed   <- 0.35 # Federal
+
+# 1.7 Hard-coded data input -----------------------------------------------
+
+# Net taxable income (NTI) from UT State Tax Comission.
+NTI <- c(66341510, 209171843, 220215146)
+year <- c(2009, 2010, 2011)
+opt$NTI <- data.frame(year, NTI); remove(NTI, year)
+
+# Min/max values for setting range of $/bbl or $/MCF oil/gas corporate income
+# tax conversion factors in corporate income tax probability distribution
+# function
+opt$CI.pdf.min <- 0
+opt$CI.pdf.max <- 3
 
 # Outputs -----------------------------------------------------------------
 
