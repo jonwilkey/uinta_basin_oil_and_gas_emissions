@@ -54,6 +54,7 @@ setwd(path$work)
 flst <- file.path(path$fun, c("dogmDataUpdate.R",
                               "scheduleUpdate.R",
                               "corpIncomeUpdate.R",
+                              "leaseOpCostUpdate.R",
                               "welldata.R",
                               "productionsim.R",
                               "inf_adj.R",
@@ -103,11 +104,13 @@ load(file.path(path$data, "oil_and_gas_price_history_1999_to_2012.rda"))
 
 # Run function if opt$DOGM.update flag is set to "TRUE"
 if(opt$DOGM.update == TRUE) {
-  dogmDataUpdate(path = path)
+  dogmDataUpdate(path = path,
+                 version = opt$file_ver)
 }
 
 # Load production.rda and rename as "p" for brevity
-load(file.path(path$data, "production.rda"))
+load(file.path(path$data,
+               paste("production_", opt$file_ver, ".rda", sep = "")))
 
 # Make subset of "production" called "p" based on criteria in opt$keeps
 p <- production
@@ -123,7 +126,12 @@ p <- subset(p, subset = switch(opt$psub,
 if(opt$schedule.update == TRUE) {
   scheduleUpdate(path = path,
                  p = p,
-                 tsteps = opt$tsteps)
+                 field = opt$field,
+                 tsteps = opt$tsteps,
+                 min.depth = opt$min.well.depth,
+                 max.depth = opt$max.well.depth,
+                 well.depth.step = opt$well.depth.step,
+                 version = opt$file_ver)
 }
 
 
@@ -140,4 +148,16 @@ if(opt$corptax.update == TRUE) {
                    CI.pdf.max =   opt$CI.pdf.max,
                    version =      opt$file_ver,
                    path =         path)
+}
+
+
+# 2.4 Lease opearting cost lm() fit update --------------------------------
+
+# Run function if opt$lease.update flag is set to "TRUE"
+if(opt$lease.update == TRUE) {
+  leaseOpCostUpdate(path = path,
+                    version = opt$file_ver,
+                    tstart = opt$tstart,
+                    tstop = opt$tstop,
+                    full = opt$fullDataFit)
 }
