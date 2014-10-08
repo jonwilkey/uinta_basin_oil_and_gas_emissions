@@ -28,14 +28,15 @@ opt <- NULL
 #...............................................................................
 #  Flag Name           Value                          Notes
 #...............................................................................
-opt$DOGM.update     <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
-opt$schedule.update <- FALSE  # Generates CDF for drilling rates, field numbers, lease type, and well type. Extracts actual drilling and production history from production.rda.
-opt$water.update    <- FALSE  # Generates all CDFs and linear regression models for water balance terms
-opt$corptax.update  <- TRUE  # Generates corporate income tax coversion factor CDFs
-opt$DCA.update      <- FALSE  # Generates CDFs for decline curves
-opt$emission.update <- FALSE  # Generates CDFs for emission factors
-opt$lease.update    <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
-opt$depth.update    <- FALSE  # Generates CDFs for well depth by well type
+opt$DOGM.update       <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
+opt$schedule.update   <- FALSE  # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
+opt$water.update      <- FALSE  # Generates all CDFs and linear regression models for water balance terms
+opt$corptax.update    <- FALSE  # Generates corporate income tax coversion factor CDFs
+opt$DCA.update        <- FALSE  # Generates CDFs for decline curves
+opt$emission.update   <- FALSE  # Generates CDFs for emission factors
+opt$lease.update      <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
+opt$drillmodel.update <- TRUE   # Fits drilling schedule model to energy prices
+opt$EIAprice.update   <- TRUE   # Generates CDFs for EIA price forecasts
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
@@ -117,6 +118,7 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"h_comp_type",  # Completion method: Perforated, open hole, slotted liner, other.
                #"h_direction",  # Directional drilling flag ('H' = horizontal; 'D' = directional)
                #"h_lat_count",  # The number of horizontal laterals drilled on the permit.
+                "h_rec_seq",    # Record sequence number
                #"h_conf_flag",  # Confidentiality Flag ('T' = confidential; 'F' = not confidential)
                #"nrec",         # Number of records for given well in proddata
                #"maxtime",      # Maximum value of "time" column for given well
@@ -135,14 +137,18 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
 opt$nrun <- 10
 
 # Select drilling schedule type. Valid options are:
+#
 #  1 - Simulated drilling schedule
 #  2 - Actual drilling schedule
+#
 opt$sched.type <- 1
 
 # Select production type. Valid options are:
+#
 #  1 - Simulated production from decline curve coefficients
 #  2 - Actual production volumes (note: should only be used with actual drilling
 #      schedule)
+#
 opt$prod.type <- 1
 
 
@@ -156,9 +162,13 @@ opt$tsteps <- seq(from = opt$tstart,
                      to = opt$tstop,
                      by = "months")
 
-# Enter CPI value for inflation adjustment
-opt$cpi <- 233.049
-
+# Flag for whether or not to fit all data or just data that lies within 
+# tstart/tstop time period. If set to "TRUE" then model uses all data, otherwise
+# the data is subsetted to just the modeled time period. Effected datasets:
+#
+# (1) leaseOpCostUpdate.R
+#
+opt$fullDataFit <- TRUE
 
 # 1.5 Geography related options -------------------------------------------
 
@@ -169,9 +179,19 @@ opt$field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
 
 # "production.rda" subsetting options for "p". Each string represents a possible
 # argument for subsetting the DOGM database. Options are:
+#
 #   a  - Selects only wells located in Uintah or Duchesne counties
 #  ... - Others must be coded first in main.R section 2.1
+#
 opt$psub <- "a"
+
+# Well depth criteria (minimum, maximum, and resolution of well depth CDF) in 
+# feet. Note that one important use of these values is to generate well depth 
+# probability distributions. In that context, the # of bins generate is 
+# (max.depth-min.depth)/depth.step. This result **MUST** be a whole number.
+opt$min.well.depth <- 1e3
+opt$max.well.depth <- 20e3
+opt$well.depth.step <- 20
 
 
 # 1.6 Finance related options ---------------------------------------------
@@ -180,6 +200,14 @@ opt$psub <- "a"
 # taxes)
 opt$CIrate.state <- 0.05 # State
 opt$CIrate.fed   <- 0.35 # Federal
+
+# EIA Historical Energy Prices CPI Basis (i.e. the CPI index value for the year
+# to which all oil/gas prices in the EIA_HistPrice.csv file have been adjusted
+# to for use in drillingModel.R function).
+opt$EP.CPI.basis <- 229.594 # Annual CPI index for 2012
+
+# Enter CPI value for inflation adjustment
+opt$cpi <- 233.049
 
 # 1.7 Hard-coded data input -----------------------------------------------
 
