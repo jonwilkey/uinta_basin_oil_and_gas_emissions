@@ -8,6 +8,8 @@
 
 # path - list object containing directory paths for file I/O
 
+# version - Version number for file naming of exported data.frames
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -25,7 +27,7 @@
 
 
 # Function ----------------------------------------------------------------
-dogmDataUpdate <- function(path) {
+dogmDataUpdate <- function(path, version) {
   
   # Options -----------------------------------------------------------------
   
@@ -260,7 +262,7 @@ dogmDataUpdate <- function(path) {
                            "character", # comp_type
                            "character", # directiona
                            "numeric",   # lat_count
-                           "character", # rec_seq
+                           "integer",   # rec_seq
                            "character") # conf_flag
   
   histdata <- read.csv(file.path(path$raw,"histdata.txt"),
@@ -277,7 +279,7 @@ dogmDataUpdate <- function(path) {
   
   # Assign these new names to histdata.
   names(histdata) <- new_names
-  omits <- c("h_td_tvd","h_pbtd_tvd","h_rec_seq")
+  omits <- c("h_td_tvd","h_pbtd_tvd")
   if (all((omits %in% names(histdata)))) {
     histdata <- histdata[,setdiff(names(histdata), omits)]
   } else stop("Check column names")
@@ -352,5 +354,7 @@ dogmDataUpdate <- function(path) {
   
   # Saved merged data.frame -------------------------------------------------
   
-  save(file=file.path(path$data, "production.rda"), list=c("production"))
+  save(file=file.path(path$data,
+                      paste("production_", version, ".rda", sep = "")),
+       list=c("production"))
 }
