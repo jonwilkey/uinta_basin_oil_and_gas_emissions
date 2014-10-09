@@ -35,8 +35,8 @@ opt$corptax.update    <- FALSE  # Generates corporate income tax coversion facto
 opt$DCA.update        <- FALSE  # Generates CDFs for decline curves
 opt$emission.update   <- FALSE  # Generates CDFs for emission factors
 opt$lease.update      <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
-opt$drillmodel.update <- TRUE   # Fits drilling schedule model to energy prices
-opt$EIAprice.update   <- TRUE   # Generates CDFs for EIA price forecasts
+opt$drillmodel.update <- FALSE  # Fits drilling schedule model to energy prices
+opt$EIAprice.update   <- FALSE  # Generates CDFs for EIA price forecasts
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
