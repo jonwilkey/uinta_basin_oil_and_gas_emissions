@@ -55,7 +55,8 @@ flst <- file.path(path$fun, c("dogmDataUpdate.R",
                               "scheduleUpdate.R",
                               "corpIncomeUpdate.R",
                               "leaseOpCostUpdate.R",
-                              #"drillingModel.R",
+                              "drillingModel.R",
+                              "GBMfit.R",
                               "welldata.R",
                               "productionsim.R",
                               "inf_adj.R",
@@ -66,6 +67,7 @@ flst <- file.path(path$fun, c("dogmDataUpdate.R",
                               "workload.R",
                               "GHG.R",
                               "water.R",
+                              "GBMsim.R",
                               "clipboard.R"))
 
 # Load each function in list then remove temporary file list variables
@@ -161,4 +163,28 @@ if(opt$lease.update == TRUE) {
                     tstart = opt$tstart,
                     tstop = opt$tstop,
                     full = opt$fullDataFit)
+}
+
+
+# 2.5 Drilling Schedule Model lm() fit update -----------------------------
+
+# Run function if opt$drillmodel.update flag is set to "TRUE"
+if(opt$drillmodel.update == TRUE) {
+  drillingModel(path = path,
+                p = p,
+                EP.CPI.basis = opt$EP.CPI.basis,
+                cpi = opt$cpi,
+                min.depth = opt$min.well.depth,
+                version = opt$file_ver)
+}
+
+
+# 2.6 GBM parameter fit update --------------------------------------------
+
+# Run function if opt$GBMfit.update flag is set to "TRUE"
+if(opt$GBMfit.update == TRUE) {
+  GBMfit(path = path,
+         EP.CPI.basis = opt$EP.CPI.basis,
+         cpi = opt$cpi,
+         version = opt$file_ver)
 }
