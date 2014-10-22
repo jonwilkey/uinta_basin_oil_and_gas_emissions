@@ -36,6 +36,7 @@ opt$DCA.update        <- FALSE  # Generates CDFs for decline curves
 opt$emission.update   <- FALSE  # Generates CDFs for emission factors
 opt$lease.update      <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
 opt$drillmodel.update <- FALSE  # Fits drilling schedule model to energy prices
+opt$GBMfit.update     <- FALSE  # Fits GBM parameters "v" and "mu" to energy prices
 opt$EIAprice.update   <- FALSE  # Generates CDFs for EIA price forecasts
 
 # Version filename. If any of the update flags above is set to "TRUE", change
@@ -208,6 +209,23 @@ opt$EP.CPI.basis <- 229.594 # Annual CPI index for 2012
 
 # Enter CPI value for inflation adjustment
 opt$cpi <- 233.049
+
+# Price differentials between UT first purchase price (FPP) and spot prices for
+# (1) WTI crude price, and (2) Henry Hub natural gas, such that
+# (ratio)*(spot)=(FPP)
+opt$WTI.to.Oilfpp <- 0.9086103492
+opt$HH.to.Gasfpp  <- 0.7446302868
+
+# Initial prices for GBM price path simulation (from last recorded EIA FPP).
+# Sources:
+# Gas [1] http://tonto.eia.gov/dnav/ng/hist/na1140_sut_3a.htm
+#     [2] http://www.eia.gov/dnav/ng/hist/n9190us3A.htm
+# Oil [3] http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=f004049__3&f=a
+# Note that gas FPP are calculated by converting US national average price (UT
+# gas prices are only recorded by EIA on annual basis, by nation gas FPPs are
+# recorded on monthly basis)
+opt$oil.fpp.init <- 76.66766251 # Both values are from 2012-12-15 in 2012 $ per
+opt$gas.fpp.init <- 2.925932004 # bbl (for oil) or MMBtu (for gas)
 
 # 1.7 Hard-coded data input -----------------------------------------------
 
