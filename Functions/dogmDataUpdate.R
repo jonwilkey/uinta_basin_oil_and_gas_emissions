@@ -292,23 +292,33 @@ dogmDataUpdate <- function(path, version) {
   save(file=file.path(path$data, "histdata.rda"), list=c("histdata"))
   
   
-  # Merge using data.table --------------------------------------------------
+  # Cleanup histdata and merge with well data & proddata --------------------
   
-  # Create data.tables from data.frames of each DOGM database file
-  p_dt <- data.table(proddata)
-  w_dt <- data.table(welldata)
-  h_dt <- data.table(histdata)
+  # Reorder h by API# and h_rec_seq
+  a <- with(histdata, histdata[order(h_api, h_rec_seq),])
   
-  # Assign keys
-  setkey(p_dt, p_api, p_rpt_period)
-  setkey(w_dt, w_api)
-  setkey(h_dt, h_api)
+  # Get list of unique API #s in a
+  b <- unique(a$h_api)
   
-  # Merge proddata with welldata
-  pw_dt <- p_dt[w_dt, allow.cartesian = TRUE]
+  # Predefine dummy variable for holding row indices
+  c <- rep(0, length(b))
   
-  # And now merge with histdata
-  pwh_dt <- pw_dt[h_dt, allow.cartesian = TRUE]
+  # Get row indices for first entry in h for each API #
+  for (i in 1:length(b)) {
+    c[i] <- which(a$h_api == b[i])[1]
+  }
+  
+  # Redefine data.frame using row indices found in loop above
+  a <- a[c,]
+  
+  d <- merge(x = w, y = a, by.x = "w_api", by.y = "h_api")
+  e <- merge(x = p, y = d, by.x = "p_api", by.y = "w_api")
+  
+  # Convert to data.table
+  pwh_dt <- data.table(e)
+  
+  # Remove temp variables
+  remove(a,b,c,d,e)
   
   
   #-------------------------------------------------------------------------------
