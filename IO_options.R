@@ -79,9 +79,9 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"w_abndondate", # Abandonment date of the APD or well -- Location Abandoned (permit rescinded; WellStatus = 'LA') or Plugged and Abandoned (well plugged; WellStatus = 'PA').
                #"w_wellstatus", # Most current status on record for the well or permit to drill. See following URL for description of types (https://oilgas.ogm.utah.gov/Data_Center/DataDown/Read_Well.htm)
                 "w_well_type",  # Most current well type on record. See above URL for description of types
-               #"w_totcum_oil", # Total cumulative oil production. Oil volumes are reported in Barrels (1 Barrel = 42 U.S. Gallons).
-               #"w_totcum_gas", # Total cumulative natural gas production. Gas volumes are reported in MCF (1 MCF = 1,000 cubic feet).
-               #"w_totcum_wtr", # Total cumulative water production. Water volumes are reported in Barrels (1 Barrel = 42 U.S. Gallons).
+                "w_totcum_oil", # Total cumulative oil production. Oil volumes are reported in Barrels (1 Barrel = 42 U.S. Gallons).
+                "w_totcum_gas", # Total cumulative natural gas production. Gas volumes are reported in MCF (1 MCF = 1,000 cubic feet).
+                "w_totcum_wtr", # Total cumulative water production. Water volumes are reported in Barrels (1 Barrel = 42 U.S. Gallons).
                #"w_ind_tribe",  # Designates Native American Indian allottee or tribe if applicable ('Navajo' or 'Ute').
                #"w_multi_lats", # Count from completion report(s) showing how many horizontal 'laterals' a well has.
                #"w_cbmethflag", # Flag ('T' = yes; 'F' = no) showing if well is a coalbed methane gas well.
