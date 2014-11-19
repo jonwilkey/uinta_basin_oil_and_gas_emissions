@@ -20,12 +20,12 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-# pwd.drop <- "D:/"                                  # Windows
-# pwd.git  <- "C:/Users/Jon/Documents/R/"
+  pwd.drop <- "D:/"                                  # Windows
+  pwd.git  <- "C:/Users/Jon/Documents/R/"
 # pwd.drop <- "/Users/john/"                         # Mac
 # pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
-  pwd.drop <- "/home/slyleaf/"                       # Linux
-  pwd.git  <- "/home/slyleaf/Documents/"
+# pwd.drop <- "/home/slyleaf/"                       # Linux
+# pwd.git  <- "/home/slyleaf/Documents/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
@@ -80,6 +80,7 @@ library(plyr)
 library(zoo)
 library(data.table)
 library(sqldf)
+library(minpack.lm)
 
 
 # Options -----------------------------------------------------------------

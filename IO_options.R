@@ -57,7 +57,7 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"p_entity",     # Entity number assignment for the given report period. An "entity" is an identifying number used mainly for product disposition tracking by the Division of Oil, Gas and Mining, the Utah State Tax Commission, and the School and Institutional Trust Lands Administration. It usually represents a well or group of wells that have identical division of interest, have the same operator, produce from the same formation, and have product sales from a common tank, tank battery, LACT meter, gas meter, or are in the same participating area of a properly designated unit.
                #"p_wellstatus", # Status of the well for the report period as reported by the well operator. Well statuses were not reported on the production report prior to April 1993. See following URL for description of types: (https://oilgas.ogm.utah.gov/Data_Center/DataDown/Read_Prod.htm)
                #"p_well_type",  # Type of well for the report period as reported by the well operator, either OW (oil well) or GW (gas well).
-               #"p_days_prod",  # Number of days the well operated during the report period.
+                "p_days_prod",  # Number of days the well operated during the report period.
                 "p_oil_prod",   # Oil production. Oil volumes are reported in Barrels (1 Barrel = 42 U.S. Gallons).
                 "p_gas_prod",   # Natural gas production. Gas volumes are reported in MCF (1 MCF = 1,000 cubic feet).
                 "p_water_prod", # Water production. Water volumes are reported in Barrels (1 Barrel = 42 U.S. Gallons).
@@ -121,7 +121,7 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"h_lat_count",  # The number of horizontal laterals drilled on the permit.
                 "h_rec_seq",    # Record sequence number
                #"h_conf_flag",  # Confidentiality Flag ('T' = confidential; 'F' = not confidential)
-               #"nrec",         # Number of records for given well in proddata
+                "nrec",         # Number of records for given well in proddata
                #"maxtime",      # Maximum value of "time" column for given well
                #"lastrecord",   # Boolean indicating whether or not given row contains a maxtime record. Currently broken, all values are NA
                #"complete",     # Boolean for whether records are complete.  Records are complete IFF actual number of records equals maxtime.

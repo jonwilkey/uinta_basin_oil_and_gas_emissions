@@ -21,7 +21,7 @@
 
 
 # Function ----------------------------------------------------------------
-clipboard <- function(x, sep="\t", row.names = FALSE, col.names = TRUE, OS = "unix") {
+clipboard <- function(x, sep="\t", row.names = FALSE, col.names = TRUE, OS = "win") {
   switch(OS,
          unix = {con <- pipe("xclip -selection clipboard -i", open="w");
                  write.table(x, con, sep=sep, row.names=row.names, col.names=col.names);
