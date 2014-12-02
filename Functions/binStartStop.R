@@ -17,6 +17,14 @@
 # diff.bin.cutoff - minimum relative % difference between any two bins required
 # for well to be considered restarted/reworked
 
+# n.stopB.min - integer value which drops any stopB bin indentified that is less
+# than the value of this variable
+
+# n.startT.search - when identifying start points, the script will search for 
+# the "n" largest production points inbetween each set of stop points, where "n"
+# is the value of this variable. Next, it will select as the start point the
+# production value which has the lowest time index value.
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -38,7 +46,7 @@
 
 # Function ----------------------------------------------------------------
 
-binStartStop <- function(w, bin, diff.bin.cutoff) {
+binStartStop <- function(w, bin, diff.bin.cutoff, n.stopB.min, n.startT.search) {
   
   # Predefine temporary vector for results of binning summation
   temp <- rep(0, times = ceiling(nrow(w)/bin))
@@ -54,6 +62,11 @@ binStartStop <- function(w, bin, diff.bin.cutoff) {
   # Get indices in temp which have a normalized positive diff value larger
   # than cutoff fraction. These bins contain the stop points.
   stopB <- which(diff(temp/max(temp)) >= diff.bin.cutoff)
+  
+  # Drop stop points found in bins less than n.stopB.min bins into production
+  # record. Example: stopB bin identified in 1st bin, if n.stopB.min == 2 then
+  # this stopB bin will be omitted since it is less than 2.
+  stopB <- stopB[which(stopB >= n.stopB.min)]
   
   # If there are any stopB bins identified
   if (length(stopB) >= 1) {
@@ -75,10 +88,18 @@ binStartStop <- function(w, bin, diff.bin.cutoff) {
   # Define startT vector
   startT <- rep(0, times = length(stopT))
   
-  # Next, look for local maximum between stop points - these will be the start points
+  # Next, look for local maximum between stop points - these will be the start 
+  # points. The n.startT.search largest production points will be selected from 
+  # the production data between the beginning of the last decline curve segment 
+  # and the stop point at stopT[n]. The production point in this selection with 
+  # the lowest time value (i.e. that gives longest curve) will be selected as
+  # the start point.
   t0 <- 1
   for (n in 1:length(stopT)) {
-    startT[n] <- t0+which.max(w[t0:stopT[n],2])-1
+    temp <- w[t0:stopT[n],]
+    temp <- temp[order(-temp[,2],temp[,1]),][1:n.startT.search,]
+    temp <- min(temp[,1], na.rm = TRUE)
+    startT[n] <- which(w[,1] == temp)
     t0 <- stopT[n]
   }
   
