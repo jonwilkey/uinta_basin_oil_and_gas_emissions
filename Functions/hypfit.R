@@ -61,7 +61,7 @@
 # Function ----------------------------------------------------------------
 
 hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
-                   lower, upper, plotFlag, type) {
+                   lower, upper, plotFlag, type, n.stopB.min, n.startT.search) {
   
   # Predefine data.frame "r" for returning results with following columns:
   qo <- rep(0, times = 2) # Initial production rate coefficient
@@ -82,7 +82,9 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
   # Run binning algorithm to get first decline curve and last delcine curve
   stsp <- binStartStop(w = ws,
                        bin = bin,
-                       diff.bin.cutoff = diff.bin.cutoff)
+                       diff.bin.cutoff = diff.bin.cutoff,
+                       n.stopB.min = n.stopB.min,
+                       n.startT.search = n.startT.search)
   
   # Get time delay
   r$tdelay <- ws[stsp[1,1],1]-ws[1,1]
