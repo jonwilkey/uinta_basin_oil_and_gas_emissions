@@ -28,15 +28,17 @@ DCA <- function(path, p, tsteps, field, min.depth, max.depth,
 
 minProdRec        <- 12   # Minimum number of non-zero production records
 oil.measure.error <- 1    # Assuming +/- 1 bbl accuracy in production records for oil
-diff.bin.cutoff   <- 0.25 # Minimum production differential on normalized scale required to consider a well as being restarted
+diff.bin.cutoff   <- 0.15 # Minimum production differential on normalized scale required to consider a well as being restarted
 bin               <- 12   # Bin size
 DCAplot           <- TRUE # True/False flag indicating whether or not to print
 b.start.oil       <- 1.78
 Di.start.oil      <- 1.16
 lower.oil         <- c(0, 0, 0)
-upper.oil         <- c(10^5, 10, Inf)
+upper.oil         <- c(Inf, 10, Inf)
 field             <- opt$field
-ver               <- opt$file_ver
+ver               <- "v3"#opt$file_ver
+n.stopB.min       <- 4 # any stop points identified that are lower than this value will be ignored
+n.startT.search   <- 3 # look at the top "n" number of production points and pick the one with the lowest time value
 
 
 # Subset data -------------------------------------------------------------
@@ -107,11 +109,11 @@ for (g in 1:(length(field)-1)) {
   for (h in 1:length(apilist)) {
     # Get subset of production records for this individual well
     w <- subset(ps,
-                subset = (p_api == well$p_api[apilist[h]]),
+                subset = (p_api == 4301310496),#well$p_api[apilist[h]]),
                 select = c("time", "p_oil_prod"))
     
-    # Add subsets of oil and gas production records which are non-zero
-    w <- w[-which(w$p_oil_prod <= 0),c("time","p_oil_prod")]
+    # Only oil and gas production records which are non-zero
+    w <- w[which(w$p_oil_prod > 0),]
     
     # Check - is number of rows in w >= minProdRec requirement?
     if (nrow(w) >= minProdRec) {
@@ -130,11 +132,16 @@ for (g in 1:(length(field)-1)) {
                                lower = lower.oil,
                                upper = upper.oil,
                                plotFlag = DCAplot,
-                               type = "Oil")
+                               type = "Oil",
+                               n.stopB.min = n.stopB.min,
+                               n.startT.search = n.startT.search)
     } else {
       
       # Skip and note failure
       ro$skipped[row1:row2] <- 1
+      
+      # Note well's API #
+      ro$api[row1:row2] <- well$p_api[apilist[h]]
     }
     
     # Increment row counters (hopefully this is faster than using rbind)
@@ -166,8 +173,8 @@ for (h in 1:length(apilist)) {
               subset = (p_api == apilist[h]),
               select = c("time", "p_oil_prod"))
   
-  # Add subsets of oil and gas production records which are non-zero
-  w <- w[-which(w$p_oil_prod <= 0),c("time","p_oil_prod")]
+  # Only oil and gas production records which are non-zero
+  w <- w[which(w$p_oil_prod > 0),]
   
   # Check - is number of rows in w >= minProdRec requirement?
   if (nrow(w) >= minProdRec) {
@@ -186,11 +193,16 @@ for (h in 1:length(apilist)) {
                              lower = lower.oil,
                              upper = upper.oil,
                              plotFlag = DCAplot,
-                             type = "Oil")
+                             type = "Oil",
+                             n.stopB.min = n.stopB.min,
+                             n.startT.search = n.startT.search)
   } else {
     
     # Skip and note failure
     ro$skipped[row1:row2] <- 1
+    
+    # Note well's API #
+    ro$api[row1:row2] <- well$p_api[apilist[h]]
   }
   
   # Increment row counters (hopefully this is faster than using rbind)
