@@ -67,7 +67,6 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
   qo <- rep(0, times = 2) # Initial production rate coefficient
   b        <- qo          # Decline exponent
   Di       <- qo          # Initial decline rate
-  red.chi  <- qo          # Reduced chi-squared value
   tdelay   <- qo          # Time delay (in months) between start of first decline curve and first production of the well
   fitFirst <- qo          # Binary indicating 1 if fit of first curve was successful, 0 otherwise
   fitLast  <- qo          # Binary for last decline curve
@@ -75,7 +74,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
   failed   <- qo          # Binary indicating at least one curve was not fit by nlsLM
   
   # Make data.frame for r
-  r <- data.frame(api, qo, b, Di, red.chi, tdelay, fitFirst, fitLast, skipped, failed)
+  r <- data.frame(api, qo, b, Di, tdelay, fitFirst, fitLast, skipped, failed)
   
   # Set initial value for plotType flag - binary, 1 indicates yes, 0 no.
   
@@ -94,7 +93,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
   if (all(stsp[1,] == stsp[2,])) {
     
     # Check if minimum records requirement is met for decline curve segment
-    if ((stsp[1,2]-stsp[1,1]) >= minProdRec) {
+    if ((stsp[1,2]-stsp[1,1]+1) >= minProdRec) {
       
       # Set hyp object to initial value of NULL
       hyp = NULL
@@ -114,7 +113,6 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
         r$qo[1:2]       <- coef(hyp)[1]
         r$b[1:2]        <- coef(hyp)[2]
         r$Di[1:2]       <- coef(hyp)[3]
-        r$red.chi[1:2]  <- 1/(nrow(ws)-3-1)*sum((residuals(hyp))^2/oil.measure.error)
         r$fitFirst[1:2] <- 1
         r$fitLast[1:2]  <- 1
       } else {
@@ -134,7 +132,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     
     # --- First Curve ---
     # Check if minimum records requirement is met for first decline curve
-    if ((stsp[1,2]-stsp[1,1]) >= minProdRec) {
+    if ((stsp[1,2]-stsp[1,1]+1) >= minProdRec) {
       
       # Set hyp object to initial value of NULL
       hyp1 = NULL
@@ -154,7 +152,6 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
         r$qo[1]       <- coef(hyp1)[1]
         r$b[1]        <- coef(hyp1)[2]
         r$Di[1]       <- coef(hyp1)[3]
-        r$red.chi[1]  <- 1/(nrow(ws)-3-1)*sum((residuals(hyp1))^2/oil.measure.error)
         r$fitFirst[1] <- 1
       } else {
         # The fit failed for first curve However we can still note the initial
@@ -171,7 +168,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     
     # --- Last Curve ---
     # Check if minimum records requirement is met for last decline curve
-    if ((stsp[2,2]-stsp[2,1]) >= minProdRec) {
+    if ((stsp[2,2]-stsp[2,1]+1) >= minProdRec) {
       
       # Set hyp object to initial value of NULL
       hyp2 = NULL
@@ -191,7 +188,6 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
         r$qo[2]       <- coef(hyp2)[1]
         r$b[2]        <- coef(hyp2)[2]
         r$Di[2]       <- coef(hyp2)[3]
-        r$red.chi[2]  <- 1/(nrow(ws)-3-1)*sum((residuals(hyp2))^2/oil.measure.error)
         r$fitLast[2]  <- 1
       } else {
         # The fit failed for last curve. However we can still note the initial 
@@ -223,7 +219,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     if (exists("hyp")) {
       if (!is.null(hyp)) {
         lines(ws[stsp[1,1]:stsp[1,2],1], fitted(hyp), col = "blue")
-        abline(v = ws$time[stsp[1,1]], col = "blue")
+        abline(v = ws$time[stsp[1,1]], col = "blue", lty = 2)
         abline(v = ws$time[stsp[1,2]], col = "blue", lty = 2)
       }
     }
@@ -232,7 +228,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     if (exists("hyp1")) {
       if (!is.null(hyp1)) {
         lines(ws[stsp[1,1]:stsp[1,2],1], fitted(hyp1), col = "red")
-        abline(v = ws$time[stsp[1,1]], col = "red")
+        abline(v = ws$time[stsp[1,1]], col = "red", lty = 2)
         abline(v = ws$time[stsp[1,2]], col = "red", lty = 2) 
       }
     }
@@ -241,7 +237,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     if (exists("hyp2")) {
       if (!is.null(hyp2)) {
         lines(ws[stsp[2,1]:stsp[2,2],1], fitted(hyp2), col = "green")
-        abline(v = ws$time[stsp[2,1]], col = "green")
+        abline(v = ws$time[stsp[2,1]], col = "green", lty = 2)
         abline(v = ws$time[stsp[2,2]], col = "green", lty = 2)
       }
     }
