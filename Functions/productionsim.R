@@ -1,24 +1,29 @@
-### Production Simulation ###
+# Function Info -----------------------------------------------------------
+# Name:      productionsim.R (Production Simulation)
+# Author(s): Jon Wilkey
+# Contact:   jon.wilkey@gmail.com
+
 
 # Inputs ------------------------------------------------------------------
 
-# nrun - number of iterations in simulation
+# path - List object containing directory paths for file I/O
 
-# wsim - well information data.table with decline curve coefficients
+# nrun - Number of overall iterations in simulation
 
-# data_root - location of saved data.frame psim_actual_v1.rda with production
-# history of all actual wells in Basin over simulation timeframe
+# timesteps - Number of months to be simulated
 
-# timesteps - vector of dates comprising number of timesteps in model
-
-# production.type - character switch indicating method for determining prodution
+# production.type - Character switch indicating method for determining prodution
 # volumes (simulated or actual)
+
+# ver - File version number (used to differentiate various version of
+# preprocessing data files)
 
 
 # Outputs -----------------------------------------------------------------
 
-# psim - matrix with rows = individual wells and columns = timesteps that gives
-# production volume timeseries (of either oil or gas) for each well
+# osim/gsim - Matrix with rows = individual wells and columns = timesteps that
+# gives production volume timeseries (of oil/gas) for each well
+
 
 # Description -------------------------------------------------------------
 
@@ -26,64 +31,99 @@
 # well type) for each well in wsim according to the hyperbolic decline curve
 # equation:
 
-# q = a*(1+b*c*t)^(-1/b)
+# q = qo*(1+b*Di*t)^(-1/b)
 
-# where q is prodcution (in bbl oil or MCF gas), a is the initial production 
-# rate, b is the decline exponent, c is the initial decline rate, and t is time.
+# where q is prodcution (in bbl oil or MCF gas), qo is the initial production 
+# rate, b is the decline exponent, Di is the initial decline rate, and t is time.
 
-# If the value of production.type == "a" then the model calculates the
+# If the value of production.type == "a" then the model calculates the 
 # production volumes using the values of a, b, and c stored in wsim. The
-# calucaltion is conducted sequentially for all timesteps, simultaneously
-# calculating the production for all wells drilled in the same timestep. In the
-# event that the coefficients result in any production values that are nonreal
-# (negative, NaN, or NA), those values are overwritten as zeros.
+# calculation is peformed using the apply() function on each row of wsim.
 
-# Else, the function is a validation run and the function loads and returns the 
-# actual production histories stored in the prepared data.frame psim.actual and 
-# returns that matrix as psim. If nrun > 1 then matrix is concatonated "nrun"
+# If the value of production.type == "a" then the function call is for a 
+# validation run and the function loads and returns the actual production 
+# histories stored in the prepared data.frame osim.actual/gsim.actual and these 
+# matrices are returned. If nrun > 1 then matrices are concatonated "nrun"
 # times.
 
 
-# Function ----------------------------------------------------------------
-productionsim <- function(nrun, wsim, data_root, timesteps, production.type) {
+# Function ---------------------------------------------------------------- 
+productionsim <- function(path, nrun, timesteps, production.type, ver) {
   
-  if (production.type == "a") {
-    # If simulation run, generate production data from decline curve
-    # coefficients in wsim
-    
-    # Predefine production matrix (rows = individual wells, columns = timesteps)
-    psim <- matrix(0, nrow = nrow(wsim), ncol = length(timesteps))
-    
-    # Calculate production by selecting all wells drilled in a given timestep
-    # and calculating production simultaneously for all selected wells
-    for (i in 1:length(timesteps)) {
-      ind <- which(wsim$tDrill == i)
-      for (t in 1:(length(timesteps)+1-i)) {
-        psim[ind,(i+t-1)] <- wsim$a[ind]*(1+wsim$b[ind]*wsim$c[ind]*t)^(-1/wsim$b[ind])
-      }
-    }
-  } else {
-    # Else load actual DOGM data on production from schedule_v1.R
-    load(file.path(data_root, "psim_actual_v1.rda"))
-    
-    # Concatonate actual production matrix "nrun" times
-    temp <- psim.actual
-    if (nrun > 1) {
-      for (i in 1:(nrun-1)) {
-        temp <- rbind(temp, psim.actual)
-      }
-    }
-    
-    # Define as psim
-    psim <- temp
-  }
+  # Switch for production simulation type. Options are "a" for calculating 
+  # production from decline curve coefficients in wsim, or "b" for loading the 
+  # actual production schedule from DOGM database records processed and saved in
+  # scheduleUpdate() function.
+  switch(production.type,
+         
+         # Calculated from decline curve coefficients
+         a = {
+           
+           # Extract required coefficients from wsim. These columns are lated
+           # called (in the order specified here) by the function prodfun.
+           coef.oil <- with(wsim, matrix(c(tDrill, td.oil, qo.oil, b.oil, Di.oil), ncol = 5))
+           coef.gas <- with(wsim, matrix(c(tDrill, td.gas, qo.gas, b.gas, Di.gas), ncol = 5))
+           
+           # Function for calculating production schedule for individual well
+           prodfun <- function(x) {
+             
+             # Get number of zeros to include (from months before well was
+             # drilled and from delay between well drilling and start of first
+             # decline curve)
+             TDzeros <- (x[1]-1)+x[2]
+             
+             # If equal to or greater than timesteps
+             if (TDzeros >= timesteps) {
+               
+               # Then all production values for this well are zero
+               TD <- rep(0, times = timesteps)
+               
+               # And the production volume vector Q is null
+               Q <- NULL
+               
+             } else {
+               
+               # The number of zero values is equal to TDzeros
+               TD <- rep(0, times = TDzeros)
+               
+               # Create vector of months for which production will be calculated
+               tvec <- c(1:(timesteps-TDzeros))
+               
+               # Calculate production for each time step in tvec
+               Q <- x[3]*(1+x[4]*x[5]*tvec)^(-1/x[4])
+             }
+             
+             # Return concatonated result
+             return(c(TD, Q))
+           }
+           
+           # Apply prodfun on each row of coefficient matrices to calculate oil
+           # and gas production schedule
+           osim <- t(apply(coef.oil, MARGIN = 1, FUN = prodfun))
+           gsim <- t(apply(coef.gas, MARGIN = 1, FUN = prodfun))
+         },
+         
+         # Actual production schedule from DOGM database
+         b = {
+           
+           # Load actual DOGM data on production from scheduleUpdate() function
+           load(file.path(path$data, paste("psim_actual_", ver, ".rda", sep = "")))
+           
+           # Concatonate actual production matrix "nrun" times
+           otemp <- osim.actual
+           gtemp <- gsim.actual
+           if (nrun > 1) {
+             for (i in 1:(nrun-1)) {
+               otemp <- rbind(otemp, osim.actual)
+               gtemp <- rbind(gtemp, gsim.actual)
+             }
+           }
+           
+           # Redefine as osim/gsim
+           osim <- otemp
+           gsim <- gtemp
+         })
   
-  # Cleanup NA, NaN, and negative values from psim
-  for (i in 1:length(timesteps)) {
-    ind <- which(is.na(psim[,i]) | psim[,i] == "NaN" | psim[,i] < 0)
-    psim[ind,i] <- 0
-  }
-    
-  # Return psim as result
-  return(psim)
+  # Return results
+  return(list(osim, gsim))
 }
