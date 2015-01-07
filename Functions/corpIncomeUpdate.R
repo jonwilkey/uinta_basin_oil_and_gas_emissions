@@ -6,7 +6,10 @@
 
 # Inputs ------------------------------------------------------------------
 
-# production - full DOGM proddata database (or merged database)
+# production - full DOGM database (without subsetting out wells not located in
+# Uinta Basin)
+
+# path - list object containing directory paths for file I/O
 
 # NTI - net corporate income tax received by Utah State Tax Commission,
 #       structured as data.frame with columns for year and NTI
@@ -21,9 +24,7 @@
 
 # CI.pdf.max - Maximum value of CI conversion factor PDF
 
-# version - version # for numbering *.rda output with unique filename
-
-# path - list object containing directory paths for file I/O
+# ver - version # for numbering *.rda output with unique filename
 
 
 # Outputs -----------------------------------------------------------------
@@ -63,8 +64,8 @@
 
 # Function ----------------------------------------------------------------
 
-corpIncomeUpdate <- function(production, NTI, CIrate.state, CIrate.fed, basis,
-                             CI.pdf.min, CI.pdf.max, version, path) {
+corpIncomeUpdate <- function(production, path, NTI, CIrate.state, CIrate.fed,
+                             basis, CI.pdf.min, CI.pdf.max, ver) {
   
   # Oil and Gas Data Selection ----------------------------------------------
   
@@ -155,6 +156,6 @@ corpIncomeUpdate <- function(production, NTI, CIrate.state, CIrate.fed, basis,
   # Export results as *.rda file --------------------------------------------
   
   save(file=file.path(path$data,
-                      paste("cdf_corpIncomeTax_", version, ".rda", sep = "")),
+                      paste("cdf_corpIncomeTax_", ver, ".rda", sep = "")),
        list=c("cdf.CI"))
 }
