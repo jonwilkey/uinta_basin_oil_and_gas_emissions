@@ -345,11 +345,21 @@ psim <- productionsim(path =            path,
                       production.type = opt$prod.type,
                       ver =             opt$file_ver)
 
-# # 3.3 Royalties -----------------------------------------------------------
+# Pullout list components opsim (oil production records) and gpsim (gas
+# production records)
+opsim <- psim[[1]]
+gpsim <- psim[[2]]
+
+# Remove original
+remove(psim)
+
+# # # 3.3 Royalties -----------------------------------------------------------
 # 
-# # Run royalty calculation
+# # Run royalty calculation for oil
 # rsim <- royalty(op =   op,
-#                 gp =   gp)
+#                 gp =   gp,
+#                 wsim = wsim,
+#                 psim = opsim)
 # 
 # 
 # # 3.4 Severance Taxes -----------------------------------------------------
