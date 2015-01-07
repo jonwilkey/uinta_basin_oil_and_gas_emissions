@@ -28,16 +28,17 @@ opt <- NULL
 #...............................................................................
 #  Flag Name           Value                          Notes
 #...............................................................................
-opt$DOGM.update       <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
-opt$schedule.update   <- FALSE  # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
-opt$water.update      <- FALSE  # Generates all CDFs and linear regression models for water balance terms
-opt$corptax.update    <- FALSE  # Generates corporate income tax coversion factor CDFs
-opt$DCA.update        <- FALSE  # Generates CDFs for decline curves
-opt$emission.update   <- FALSE  # Generates CDFs for emission factors
-opt$lease.update      <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
-opt$drillmodel.update <- FALSE  # Fits drilling schedule model to energy prices
-opt$GBMfit.update     <- FALSE  # Fits GBM parameters "v" and "mu" to energy prices
-opt$EIAprice.update   <- FALSE  # Generates CDFs for EIA price forecasts
+opt$DOGM.update         <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
+opt$schedule.update     <- FALSE  # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
+opt$water.update        <- FALSE  # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
+opt$corptax.update      <- FALSE  # Generates corporate income tax coversion factor CDFs
+opt$DCA.update          <- FALSE  # Generates CDFs for decline curves
+opt$emission.update     <- FALSE  # *** WRITE ME *** Generates CDFs for emission factors
+opt$lease.update        <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
+opt$drillmodel.update   <- FALSE  # Fits drilling schedule model to energy prices
+opt$GBMfit.update       <- FALSE  # Fits GBM parameters "v" and "mu" to energy prices
+opt$EIAprice.update     <- FALSE  # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
+opt$drillCapCost.update <- FALSE  # *** WRITE ME *** Generates CDFs for EIA price forecasts
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
@@ -139,19 +140,26 @@ opt$nrun <- 10
 
 # Select drilling schedule type. Valid options are:
 #
-#  1 - Simulated drilling schedule
-#  2 - Actual drilling schedule
+#  a - Simulated drilling schedule
+#  b - Actual drilling schedule
 #
-opt$sched.type <- 1
+opt$sched.type <- "a"
 
 # Select production type. Valid options are:
 #
-#  1 - Simulated production from decline curve coefficients
-#  2 - Actual production volumes (note: should only be used with actual drilling
+#  a - Simulated production from decline curve coefficients
+#  b - Actual production volumes (note: should only be used with actual drilling
 #      schedule)
 #
-opt$prod.type <- 1
+opt$prod.type <- "a"
 
+# Number of simulation time steps (in months)
+opt$MC.tsteps <- 60
+
+# Initial number of wells drilled during prior time step at start of simulated 
+# time (value here is for wells in Uintah and Duchesne counties with dates of
+# first production in Dec. 2012).
+opt$drilled.init <- 63
 
 # 1.4 Time related options ------------------------------------------------
 
@@ -170,6 +178,7 @@ opt$tsteps <- seq(from = opt$tstart,
 # (1) leaseOpCostUpdate.R
 #
 opt$fullDataFit <- TRUE
+
 
 # 1.5 Geography related options -------------------------------------------
 
@@ -193,6 +202,11 @@ opt$psub <- "a"
 opt$min.well.depth <- 1e3
 opt$max.well.depth <- 20e3
 opt$well.depth.step <- 20
+
+# API gravity of crude oil. Used in severance tax calculations. Inputting an API
+# gravity of 39.6 results in no discount for low-grade oil, while any API
+# gravity over 39.6 will result in higher severance tax rates.
+opt$API <- 39.6
 
 
 # 1.6 Finance related options ---------------------------------------------
@@ -227,8 +241,6 @@ opt$HH.to.Gasfpp  <- 0.7446302868
 opt$oil.fpp.init <- 76.66766251 # Both values are from 2012-12-15 in 2012 $ per
 opt$gas.fpp.init <- 2.925932004 # bbl (for oil) or MMBtu (for gas)
 
-# 1.7 Hard-coded data input -----------------------------------------------
-
 # Net taxable income (NTI) from UT State Tax Comission.
 NTI <- c(66341510, 209171843, 220215146)
 year <- c(2009, 2010, 2011)
@@ -239,6 +251,32 @@ opt$NTI <- data.frame(year, NTI); remove(NTI, year)
 # function
 opt$CI.pdf.min <- 0
 opt$CI.pdf.max <- 3
+
+
+# 1.7 Decline curve analysis options --------------------------------------
+
+opt$minProdRec      <- 12              # Minimum number of non-zero production records
+opt$minDayProd      <- 28              # Minimum number of days of a well produced in a given month required to include production data point
+opt$diff.bin.cutoff <- 0.15            # Minimum production differential on normalized scale required to consider a well as being restarted
+opt$bin             <- 12              # Bin size
+opt$DCAplot         <- TRUE            # True/False flag indicating whether or not to print
+opt$n.stopB.min     <- 4               # Any stop points identified that are lower than this value will be ignored
+opt$n.startT.search <- 3               # Look at the top "n" number of production points and pick the one with the lowest time value
+opt$b.start.oil     <- 1.78            # Initial guess value for b coefficient for oil decline curve
+opt$Di.start.oil    <- 1.16            # Initial guess value for Di coefficient for oil decline curve
+opt$lower.oil       <- c(0, 0, 0)      # Lower limits for NLS for oil decline curve for (qo, b, Di) coefficients
+opt$upper.oil       <- c(Inf, 10, Inf) # Upper limits for NLS for oil decline curve for (qo, b, Di) coefficients
+opt$b.start.gas     <- 1.32            # Same as above but for gas
+opt$Di.start.gas    <- 0.24            # Same as above but for gas
+opt$lower.gas       <- c(0, 0, 0)      # Same as above but for gas
+opt$upper.gas       <- c(Inf, 10, Inf) # Same as above but for gas
+opt$cdf.oil.from    <- c(0,0,0,0)             # Lower limit for CDF function for (qo, b, Di, tdelay)
+opt$cdf.oil.to      <- c(3e7, 4,   15e3, 360) # Upper limit for CDF function for (qo, b, Di, tdelay)
+opt$cdf.oil.np      <- c(3e5, 4e3, 15e4, 360) # Number of points at which to estimate CDF for (qo, b, Di, tdelay)
+opt$cdf.gas.from    <- c(0,0,0,0)             # Same as above but for gas
+opt$cdf.gas.to      <- c(4e7, 4,   4e3, 360)  # Same as above but for gas
+opt$cdf.gas.np      <- c(4e5, 4e3, 4e4, 360)  # Same as above but for gas
+
 
 # Outputs -----------------------------------------------------------------
 
