@@ -6,10 +6,9 @@
 
 # gp - vector of inflation-adjusted gas prices
 
-# wsim - well information data.table with landowner and well type information
+# wsim - data.table with information about each well
 
-# psim - matrix of production volume timeseries (either oil or gas) for each
-# well
+# psim - matrix with production records for each simulated well
 
 
 # Outputs -----------------------------------------------------------------
@@ -36,7 +35,7 @@
 royalty <- function (op, gp, wsim, psim) {
   
   # Actual royalty calculation function
-  calc <- function (volume, price, landowner = "state") {
+  calc <- function (volume, price, landowner) {
     # This function determines the royalty payments.
     
     # Pick rate based on landownership
