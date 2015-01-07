@@ -6,9 +6,9 @@
 
 # Inputs ------------------------------------------------------------------
 
-# path - List object containing directory paths for file I/O
+# path - list object containing directory paths for file I/O
 
-# p - DOGM databse data.frame
+# p - DOGM database data.frame
 
 # tsteps - Range of time steps in modeling period
 
@@ -16,7 +16,7 @@
 
 # min.depth - Minimum well depth, used as subsetting criteria
 
-# version - Version number for file naming of exported data.frames
+# ver - Version number for file naming of exported data.frames
 
 
 # Outputs -----------------------------------------------------------------
@@ -26,6 +26,10 @@
 #          located in a particular field
 
 # cdf.flt - CDF for lease type by field
+
+# cdf.depth.ow - CDF for well depth for oil wells
+
+# cdf.depth.gw - CDF for well depth for gas wells
 
 # prob - The probability that a well is going to be (1) dry, and if not then (2)
 #        that it is a gas well.
@@ -50,7 +54,7 @@
 
 # Function ----------------------------------------------------------------
 scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
-                           well.depth.step, version) {
+                           well.depth.step, ver) {
   
   # Extract well data from p ------------------------------------------------
   
@@ -347,7 +351,7 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
   
   # Save CDF and probability results
   save(file=file.path(path$data,
-                      paste("cdf_schedule_", version, ".rda", sep = "")),
+                      paste("cdf_schedule_", ver, ".rda", sep = "")),
        list=c("cdf.ff",
               "cdf.flt",
               "cdf.depth.ow",
@@ -356,12 +360,12 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
   
   # Save wsim.actual data.frame
   save(file=file.path(path$data,
-                      paste("wsim_actual_", version, ".rda", sep = "")),
+                      paste("wsim_actual_", ver, ".rda", sep = "")),
        list=c("wsim.actual"))
   
   # Save osim.actual & gsim.actual matrices
   save(file=file.path(path$data,
-                      paste("psim_actual_", version, ".rda", sep = "")),
+                      paste("psim_actual_", ver, ".rda", sep = "")),
        list=c("osim.actual",
               "gsim.actual"))
 }
