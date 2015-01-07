@@ -8,7 +8,7 @@
 
 # path - list object containing directory paths for file I/O
 
-# version - Version number for file naming of exported data.frames
+# ver - Version number for file naming of exported data.frames
 
 
 # Outputs -----------------------------------------------------------------
@@ -27,7 +27,7 @@
 
 
 # Function ----------------------------------------------------------------
-dogmDataUpdate <- function(path, version) {
+dogmDataUpdate <- function(path, ver) {
   
   # Options -----------------------------------------------------------------
   
@@ -365,6 +365,6 @@ dogmDataUpdate <- function(path, version) {
   # Saved merged data.frame -------------------------------------------------
   
   save(file=file.path(path$data,
-                      paste("production_", version, ".rda", sep = "")),
+                      paste("production_", ver, ".rda", sep = "")),
        list=c("production"))
 }
