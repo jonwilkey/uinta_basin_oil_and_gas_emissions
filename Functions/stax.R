@@ -16,8 +16,7 @@
 
 # ind.gw - index (row numbers) of gas wells
 
-# API - API gravity of oil product (for discounting product at wellhead). By
-# default, no discount is assumed (API = 39.6 degrees)
+# API - API gravity of oil product (for discounting product at wellhead)
 
 
 # Outputs -----------------------------------------------------------------
@@ -51,10 +50,10 @@
 
 
 # Function ----------------------------------------------------------------
-stax <- function (wsim, psim, rsim, op, gp, ind.ow, ind.gw, API = 39.6) {
+stax <- function (wsim, psim, rsim, op, gp, ind.ow, ind.gw, API) {
   
   # Actual ST calc function
-  calc <- function (volume, price, royalty_rate, API = 39.6) {
+  calc <- function (volume, price, royalty_rate, API) {
     # This function determines severance tax payments.
     # Severance tax rates
     s_low  <- 0.030 # for values <= $13/bbl
