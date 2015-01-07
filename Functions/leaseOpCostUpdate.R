@@ -8,14 +8,14 @@
 
 # path - list object containing directory paths for file I/O
 
-# version - version # for numbering *.rda output with unique filename
+# ver - version # for numbering *.rda output with unique filename
 
 # tstart - start of modeling period
 
 # tstop - end of modeling period
 
-# "LOC oil.csv" & "LOC gas.csv" - implied input, formatted *.csv files from EIA
-#                                 LOC report (see description for further info)
+# "LOC oil.csv" & "LOC gas.csv" - implied input, formatted *.csv files from EIA 
+# LOC report (see description for further info)
 
 
 # Outputs -----------------------------------------------------------------
@@ -44,7 +44,7 @@
 
 # Function ----------------------------------------------------------------
 
-leaseOpCostUpdate <- function(path, version, tstart, tstop, full) {
+leaseOpCostUpdate <- function(path, ver, tstart, tstop, full) {
   
   # Load EIA *.csv files ----------------------------------------------------
   LOC.oil <- read.csv(file.path(path$raw, "LOC oil.csv"))
@@ -79,6 +79,6 @@ leaseOpCostUpdate <- function(path, version, tstart, tstop, full) {
   # Save results ------------------------------------------------------------
   
   save(file=file.path(path$data, 
-                      paste("leaseOpCost_", version, ".rda", sep = "")),
+                      paste("leaseOpCost_", ver, ".rda", sep = "")),
                       list=c("fit.LOC.oil", "fit.LOC.gas"))
 }
