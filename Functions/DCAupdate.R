@@ -48,29 +48,12 @@
 
 # ver - Version number for results version tracking
 
-# cdf.oil.from - Lower limit for CDF function for (qo, b, Di, tdelay)
-
-# cdf.oil.to - Upper limit for CDF function for (qo, b, Di, tdelay)
-
-# cdf.oil.np - Number of points at which to estimate CDF for (qo, b, Di, tdelay)
-
-# cdf.gas.from - Same as above, but for gas
-
-# cdf.gas.to - Same as above, but for gas
-
-# cdf.gas.np - Same as above, but for gas
-
 # path - path names for file directoires (data, plotting, etc.)
 
 # p - production database
 
 
 # Outputs -----------------------------------------------------------------
-
-# DCA.cdf.coef.oil - List object containing CDF results for oil for all
-# coefficients for each field.
-
-# DCA.cdf.coef.gas - same as above, but for gas
 
 # mo - data.frame containing full summary of every well in Basin with first and
 # last curve fit results.
@@ -93,19 +76,15 @@
 # nlsLM() solver on each of these curves (see each of the functions names for 
 # additional details). Results from the fits are stored in the matrices ro and 
 # rg for oil and gas, respectively. Fit results are then merged back into the 
-# listing of unique wells and subsets are pulled from this list to generate 
-# cumulative distribution functions (CDF) for each parameter in the above
-# equation for each field. These CDF results are saved as a list and exported,
-# along with the final data.frame containing the fit results.
+# listing of unique wells to create the data.frames mo and mg, which give a
+# complete set of fit results for each well.
 
 
 # Function ----------------------------------------------------------------
 DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                       DCAplot, n.stopB.min, n.startT.search, b.start.oil,
                       Di.start.oil, lower.oil, upper.oil, b.start.gas,
-                      Di.start.gas, lower.gas, upper.gas, field, ver,
-                      cdf.oil.from, cdf.oil.to, cdf.oil.np, cdf.gas.from,
-                      cdf.gas.to, cdf.gas.np, path, p) {
+                      Di.start.gas, lower.gas, upper.gas, field, ver, path, p) {
   
   # Internal Debug Variables  -----------------------------------------------
   
@@ -127,12 +106,6 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
 #   upper.gas = opt$upper.gas
 #   field = opt$field
 #   ver = opt$file_ver
-#   cdf.oil.from = opt$cdf.oil.from
-#   cdf.oil.to = opt$cdf.oil.to
-#   cdf.oil.np = opt$cdf.oil.np
-#   cdf.gas.from = opt$cdf.gas.from
-#   cdf.gas.to = opt$cdf.gas.to
-#   cdf.gas.np = opt$cdf.gas.np
 
   
   # Internal Functions ------------------------------------------------------
@@ -503,107 +476,8 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   mo <- merge(x = mo, y = ro.last, by.x = "p_api", by.y = "api", all.x = TRUE)
   mg <- merge(x = mg, y = rg.last, by.x = "p_api", by.y = "api", all.x = TRUE)
   
-  # Predefine coefficient CDF list
-  DCA.cdf.coef.oil <- NULL
-  DCA.cdf.coef.gas <- NULL
-  
-  # Set initial value of list element counter
-  list.ind <- 1
-  
-  # Define coefficient names vector
-  coef.name <- c("qo", "b", "Di", "tdelay")
-  
-  # Define ind999 vector
-  ind999 <- NULL
-  
-  # For each field, get cumulative distribution function for each decline curve 
-  # coefficient for first curve fits and time-delay between first production and
-  # start of first curve.
-  for (i in 1:(length(field)-1)) {
-    
-    # Get subset of fits for this field
-    otemp <- subset(mo,
-                    subset = (fit.1 == 1 &
-                                w_field_num == field[i]),
-                    select = c("qo.1",
-                               "b.1",
-                               "Di.1",
-                               "tdelay"))
-    gtemp <- subset(mg,
-                    subset = (fit.1 == 1 &
-                                w_field_num == field[i]),
-                    select = c("qo.1",
-                               "b.1",
-                               "Di.1",
-                               "tdelay"))
-    
-    # Get CDF for each coefficient
-    for (j in 1:ncol(otemp)) {
-      
-      # CDF call, assigned to DCA as list element "list.ind"
-      DCA.cdf.coef.oil[[list.ind]] <- CDF(vector = otemp[,j],
-                                          from =   cdf.oil.from[j],
-                                          to =     cdf.oil.to[j],
-                                          np =     cdf.oil.np[j])
-      
-      DCA.cdf.coef.gas[[list.ind]] <- CDF(vector = gtemp[,j],
-                                          from =   cdf.gas.from[j],
-                                          to =     cdf.gas.to[j],
-                                          np =     cdf.gas.np[j])
-      
-      # Set name for list
-      names(DCA.cdf.coef.oil)[[list.ind]] <- paste("OF.", field[i], ".", coef.name[j], sep = "")
-      names(DCA.cdf.coef.gas)[[list.ind]] <- paste("GF.", field[i], ".", coef.name[j], sep = "")
-      
-      # Increment list element counter
-      list.ind <- list.ind+1
-    }
-    
-    # Find row indices in this field (mo and mg have same p_api index) and use
-    # them to build ind999 exclusion list
-    ind <- which(mo$w_field_num == field[i])
-    ind999 <- c(ind999, ind)
-  }
-  
-  # For Field 999, start by dropping all rows in exclusion index
-  otemp <- mo[-ind999,]
-  gtemp <- mg[-ind999,]
-  
-  # Next, drop anything which doesn't have fit and only select desired columns
-  otemp <- otemp[which(otemp$fit.1 == 1),][,8:11]
-  gtemp <- gtemp[which(gtemp$fit.1 == 1),][,8:11]
-  
-  # Finally, increment i and get CDFs for coefficients
-  i <- 11
-  for (j in 1:ncol(otemp)) {
-    
-    # CDF call, assigned to DCA as list element "list.ind"
-    DCA.cdf.coef.oil[[list.ind]] <- CDF(vector = otemp[,j],
-                                        from =   cdf.oil.from[j],
-                                        to =     cdf.oil.to[j],
-                                        np =     cdf.oil.np[j])
-    
-    DCA.cdf.coef.gas[[list.ind]] <- CDF(vector = gtemp[,j],
-                                        from =   cdf.gas.from[j],
-                                        to =     cdf.gas.to[j],
-                                        np =     cdf.gas.np[j])
-    
-    # Set name for list
-    names(DCA.cdf.coef.oil)[[list.ind]] <- paste("OF.", field[i], ".", coef.name[j], sep = "")
-    names(DCA.cdf.coef.gas)[[list.ind]] <- paste("GF.", field[i], ".", coef.name[j], sep = "")
-    
-    # Increment list element counter
-    list.ind <- list.ind+1
-  }
-  
   
   # Export Results ----------------------------------------------------------
-  
-  # Save CDF results
-  save(file=file.path(path$data,
-                      paste("DCA_CDF_coef_", ver, ".rda", sep = "")),
-       list=c("DCA.cdf.coef.oil",
-              "DCA.cdf.coef.gas"))
   
   # Save fit results
   save(file=file.path(path$data,
