@@ -20,8 +20,8 @@
 
 # Outputs -----------------------------------------------------------------
 
-# Drilled - matrix with rows = timesteps in model and columns = MC simulation
-# runs
+# Drilled - matrix with rows = MC simulation runs in model and columns =
+# timesteps
 
 
 # Description -------------------------------------------------------------
@@ -57,27 +57,27 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, ver) {
   
   # Calculate drilling schedule ---------------------------------------------
   
-  # Predefine matrix for drilling schedule results. Rows = timesteps,
-  # columns = simulation runs.
-  Drilled <- matrix(0, nrow = nrow(GBMsim.OP), ncol = nrun)
+  # Predefine matrix for drilling schedule results. Rows = simulation runs,
+  # columns = timesteps.
+  Drilled <- matrix(0, nrow = nrun, ncol = ncol(GBMsim.OP))
   
   # Set initial "prior" drilling value (number of wells drilled in
   # timestep immediately proceeding start of simulation period)
-  Drilled[1,] <- drilled.init
+  Drilled[,1] <- drilled.init
   
   # For each timestep in simulation period, calculate wells drilled
-  for (i in 1:(nrow(Drilled)-1)) {
-    Drilled[(i+1),] <- round(drillsched(OP = GBMsim.OP[(i+1),],
-                                        GP = GBMsim.GP[(i+1),],
-                                        Wo = Drilled[i,],
+  for (i in 1:(ncol(Drilled)-1)) {
+    Drilled[,(i+1)] <- round(drillsched(OP = GBMsim.OP[,(i+1)],
+                                        GP = GBMsim.GP[,(i+1)],
+                                        Wo = Drilled[,i],
                                         a = drillModel$coefficients["OP"],
                                         b = drillModel$coefficients["GP"],
                                         c = drillModel$coefficients["prior"],
                                         d = drillModel$coefficients["(Intercept)"]))
   }
   
-  # Drop first row (prior time period)
-  Drilled <- Drilled[-1,]
+  # Drop first column (# of wells drilled in prior time period)
+  Drilled <- Drilled[,-1]
   
   # Return result
   return(Drilled)

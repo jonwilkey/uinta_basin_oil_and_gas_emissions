@@ -11,6 +11,9 @@
 # sched.type - Character switch for selecting method of determining drilling.
 # Valid options are "a" for simulated schedule, "b" for actual schedule
 
+# Drilled - matrix with rows = MC simulation runs in model and columns =
+# timesteps
+
 # timesteps - Number of months to be simulated
 
 # nrun - number of iterations in overall simulation
@@ -30,7 +33,7 @@
 
 # wsim - data.table containing all of the randomly generated well data
 # information (type, field, decline curve coefficients, depth, surface
-# landowner, etc.)
+# lease type, etc.)
 
 
 # Description -------------------------------------------------------------
@@ -103,9 +106,6 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            # (4) cdf.depth.xx - well depth based on well type
            load(file.path(path$data, paste("cdf_schedule_", ver, ".rda", sep = "")))
            
-           # CDFs for DCA coefficients by field
-           load(file.path(path$data, paste("DCA_CDF_coef_", ver, ".rda", sep = "")))
-           
            
            # Preprocess CDF data -----------------------------------------------
            
@@ -119,8 +119,8 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            
            # Concatonate drilling schedule matrix into single vector
            temp <- NULL
-           for (i in 1:ncol(Drilled)) {
-             temp <- c(temp, Drilled[,i])
+           for (i in 1:nrow(Drilled)) {
+             temp <- c(temp, Drilled[i,])
            }
            
            # Reassign temp vector as "Drilled"
@@ -185,9 +185,9 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                                              no = "OW"))
            }
            
-           # Predefine vector sizes for well depth and landownership
+           # Predefine vector sizes for well depth and lease type
            depth   <- rep(0, times = length(type))
-           landown <- depth
+           lease <- depth
            
            # Pull indices of oil and gas wells
            ind.ow <- which(type == "OW")
@@ -197,11 +197,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            depth[ind.ow] <- cdf.depth.ow$x[findInterval(runif(length(ind.ow)), c(0, cdf.depth.ow$y))]
            depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)), c(0, cdf.depth.gw$y))]
            
-           # Pick surface landowner (1 - Federal, 2 - Indian, 3 - State, 4 -
-           # Fee)
+           # Pick surface lease (1 - Federal, 2 - Indian, 3 - State, 4 - Fee)
            for (i in 1:length(field)) {
              ind <- which(fieldnum == field[i])
-             landown[ind] <- findInterval(runif(length(ind)), c(0, cdf.flt[i,]))
+             lease[ind] <- findInterval(runif(length(ind)), c(0, cdf.flt[i,]))
            }
          },
          b = {
@@ -218,7 +217,7 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            type     <- rep(wsim.actual$wellType, times = nrun)
            fieldnum <- rep(wsim.actual$fieldnum, times = nrun)
            depth    <- rep(wsim.actual$depth,    times = nrun)
-           landown  <- rep(wsim.actual$lease,    times = nrun)
+           lease  <- rep(wsim.actual$lease,    times = nrun)
            
            # If using actual production decline curve coefficients
            if (production.type == "b") {
@@ -242,6 +241,9 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # If production type flag is set to "a", then simulate DCA coefficients here
   if (production.type == "a") {
+    
+    # Load CDFs for DCA coefficients by field
+    load(file.path(path$data, paste("DCA_CDF_coef_", ver, ".rda", sep = "")))
     
     # Define DCA coefficient vectors and time delay
     qo.oil <- rep(0, times = length(type))
@@ -357,10 +359,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # Replace lease type #s with strings (switch expression in royalty.R function
   # requires switch to operate on a string, not a numerical value)
-  landown[which(landown == 1)] <- "federal"
-  landown[which(landown == 2)] <- "indian"
-  landown[which(landown == 3)] <- "state"
-  landown[which(landown == 4)] <- "fee"
+  lease[which(lease == 1)] <- "federal"
+  lease[which(lease == 2)] <- "indian"
+  lease[which(lease == 3)] <- "state"
+  lease[which(lease == 4)] <- "fee"
   
   # Make data table
   wsim <- data.table(wellID,
@@ -377,7 +379,7 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                      Di.gas,
                      td.gas,
                      depth,
-                     landown,
+                     lease,
                      cirSO,
                      cirSG,
                      cirFO,
@@ -411,7 +413,7 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                    "Di.gas",
                    "td.gas",
                    "depth",
-                   "landOwner",
+                   "lease",
                    "cirSO",
                    "cirSG",
                    "cirFO",

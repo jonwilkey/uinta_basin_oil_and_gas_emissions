@@ -24,7 +24,7 @@
 # Outputs -----------------------------------------------------------------
 
 # GBMsim.OP/GP - data.frame containing simulated energy price paths where rows =
-# timesteps and columns = simulation runs
+# simulation runs and columns = timesteps
 
 
 # Description -------------------------------------------------------------
@@ -51,19 +51,19 @@ GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, ver) {
   sim <- function(p.init, mu, v, timesteps, N) {
     
     # Predefine space for results
-    sim.data <- matrix(nrow=timesteps+1, ncol=N)
+    sim.data <- matrix(nrow=N, ncol=timesteps+1)
     
-    # Assign initial price to first row of results matrix
-    sim.data[1,] <- rep(p.init, ncol(sim.data))
+    # Assign initial price to first column of results matrix
+    sim.data[,1] <- rep(p.init, nrow(sim.data))
     
     # For each N price path
-    for (j in 1:ncol(sim.data)) {
+    for (j in 1:nrow(sim.data)) {
       
       # For each timestep
-      for (i in 2:nrow(sim.data)) {
+      for (i in 2:ncol(sim.data)) {
         
         # Calculate price using GBM function
-        sim.data[i,j] <- (1+mu)*sim.data[i-1,j]+sqrt(v)*sim.data[i-1,j]*rnorm(1,0,1)
+        sim.data[j,i] <- (1+mu)*sim.data[j,i-1]+sqrt(v)*sim.data[j,i-1]*rnorm(1,0,1)
       }
     }
     return(sim.data)
@@ -77,10 +77,10 @@ GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, ver) {
   
   # Generate price paths --------------------------------------------------
   
-  # Call for GBMsim for oil prices. Columns are simulations, rows are timesteps.
-  # First row is simply p.init price, total number of rows = value given in
-  # timesteps + 1. Prices returned are UT crude oil FPP in opt$cpi dollars per
-  # bbl.
+  # Call for GBMsim for oil prices. Rows are simulations, columns are timesteps.
+  # First column is simply p.init price, total number of columns = value given
+  # in timesteps + 1. Prices returned are UT crude oil FPP in opt$cpi dollars
+  # per bbl.
   GBMsim.OP <- sim(p.init = oil.fpp.init,
                       mu = GBMfitOP$mu,
                       v = GBMfitOP$v,
