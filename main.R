@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-  pwd.drop <- "D:/"                                  # Windows
-  pwd.git  <- "C:/Users/Jon/Documents/R/"
-# pwd.drop <- "/Users/john/"                         # Mac
-# pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
+# pwd.drop <- "D:/"                                  # Windows
+# pwd.git  <- "C:/Users/Jon/Documents/R/"
+pwd.drop <- "/Users/john/"                         # Mac
+pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
 # pwd.drop <- "/home/slyleaf/"                       # Linux
 # pwd.git  <- "/home/slyleaf/Documents/"
   
@@ -65,7 +65,8 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               #"water.R",
                               "clipboard.R",
                               "inf_adj.R",
-                              "CDF.R"))
+                              "CDFd.R",
+                              "CDFq.R"))
 
 # Load each function in list then remove temporary file list variables
 for (f in flst) source(f); remove(f, flst)
@@ -206,6 +207,12 @@ if(opt$drillmodel.update == TRUE) {
                       ver =       opt$file_ver)
 }
 
+# Load wsim.actual data.frame
+load(file.path(path$data, paste("wsim_actual_", opt$file_ver, ".rda", sep = "")))
+
+# Load osim/gsim.actual data.frames
+load(file.path(path$data, paste("psim_actual_", opt$file_ver, ".rda", sep = "")))
+
 
 # 2.6 GBM parameter fit update --------------------------------------------
 
@@ -224,7 +231,7 @@ if(opt$GBMfit.update == TRUE) {
 
 # 2.7 Decline curve analysis update ---------------------------------------
 
-# Run function if opt$GBMfit.update flag is set to "TRUE"
+# Run function if opt$DCA.update flag is set to "TRUE"
 if(opt$DCA.update == TRUE) {
   
   # Source function to load
@@ -248,14 +255,31 @@ if(opt$DCA.update == TRUE) {
             upper.gas =       opt$upper.gas,
             field =           opt$field,
             ver =             opt$file_ver,
-            cdf.oil.from =    opt$cdf.oil.from,
-            cdf.oil.to =      opt$cdf.oil.to,
-            cdf.oil.np =      opt$cdf.oil.np,
-            cdf.gas.from =    opt$cdf.gas.from,
-            cdf.gas.to =      opt$cdf.gas.to,
-            cdf.gas.np =      opt$cdf.gas.np,
             path =            path,
             p =               p)
+}
+
+
+# 2.8 DCA CDF Update ------------------------------------------------------
+
+# Run function if opt$DCA.CDF.update flag is set to "TRUE"
+if(opt$DCA.CDF.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "DCAupdateCDF.R"))
+  
+  # Function call
+  DCAupdateCDF(field =        opt$field,
+               ver =          opt$file_ver,
+               DCA.CDF.type = opt$DCA.CDF.type,
+               cdf.oil.from = opt$cdf.oil.from,
+               cdf.oil.to =   opt$cdf.oil.to,
+               cdf.oil.np =   opt$cdf.oil.np,
+               cdf.gas.from = opt$cdf.gas.from,
+               cdf.gas.to =   opt$cdf.gas.to,
+               cdf.gas.np =   opt$cdf.gas.np,
+               DCA.CDF.xq =   opt$DCA.CDF.xq,
+               path =         path)
 }
 
 
@@ -304,8 +328,8 @@ epsim <- GBMsim(path =         path,
                 ver =          opt$file_ver)
 
 # Extract individual data.frames from list object
-opsim <- epsim[[1]]
-gpsim <- epsim[[1]]
+op <- epsim[[1]]
+gp <- epsim[[1]]
 
 # Remove list
 remove(epsim)
@@ -315,8 +339,8 @@ remove(epsim)
 
 # Run well drilling simulation given price paths opsim and gpsim
 Drilled <- drillsim(path =         path,
-                    GBMsim.OP =    opsim,
-                    GBMsim.GP =    gpsim,
+                    GBMsim.OP =    op,
+                    GBMsim.GP =    gp,
                     nrun =         opt$nrun,
                     drilled.init = opt$drilled.init,
                     ver =          opt$file_ver)
@@ -339,29 +363,46 @@ wsim <- welldata(path =            path,
 # 3.2 Production simulation -----------------------------------------------
 
 # Run production simulation function
-psim <- productionsim(path =            path,
+psim <- productionsim(wsim =            wsim,
+                      path =            path,
                       nrun =            opt$nrun,
                       timesteps =       opt$MC.tsteps,
                       production.type = opt$prod.type,
                       ver =             opt$file_ver)
 
-# Pullout list components opsim (oil production records) and gpsim (gas
+# Pullout list components osim (oil production records) and gsim (gas
 # production records)
-opsim <- psim[[1]]
-gpsim <- psim[[2]]
+osim <- psim[[1]]
+gsim <- psim[[2]]
 
 # Remove original
 remove(psim)
 
-# # # 3.3 Royalties -----------------------------------------------------------
-# 
-# # Run royalty calculation for oil
-# rsim <- royalty(op =   op,
-#                 gp =   gp,
-#                 wsim = wsim,
-#                 psim = opsim)
-# 
-# 
+# # 3.3 Royalties -----------------------------------------------------------
+
+# Predefine royalty results matrices
+roy.oil <- NULL
+roy.gas <- NULL
+
+# For each runID
+for (i in 1:max(wsim$runID)) {
+  
+  # Get row index of wells that were a part of that run
+  ind <- which(wsim$runID == i)
+  
+  # Calculate royalty for oil and gas production and row bind to previous result
+  roy.oil <- rbind(roy.oil, royalty(royaltyRate = opt$royaltyRate,
+                                    ep =          op[i,],
+                                    lease =       wsim$lease[ind],
+                                    psim =        osim[ind,]))
+  
+  roy.gas <- rbind(roy.gas, royalty(royaltyRate = opt$royaltyRate,
+                                    ep =          gp[i,],
+                                    lease =       wsim$lease[ind],
+                                    psim =        gsim[ind,]*opt$cf.MCF.to.MMBtu))
+}
+
+
 # # 3.4 Severance Taxes -----------------------------------------------------
 # 
 # # Get indices of oil and gas wells
