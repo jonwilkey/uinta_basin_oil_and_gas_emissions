@@ -6,6 +6,8 @@
 
 # Inputs ------------------------------------------------------------------
 
+# wsim - data.table with information about each well
+
 # path - List object containing directory paths for file I/O
 
 # nrun - Number of overall iterations in simulation
@@ -21,8 +23,9 @@
 
 # Outputs -----------------------------------------------------------------
 
-# osim/gsim - Matrix with rows = individual wells and columns = timesteps that
-# gives production volume timeseries (of oil/gas) for each well
+# osim/gsim - Matrix with rows = individual wells and columns = timesteps that 
+# gives production volume timeseries (of oil/gas) for each well in bbl (for oil)
+# or MCF (for gas)
 
 
 # Description -------------------------------------------------------------
@@ -33,7 +36,7 @@
 
 # q = qo*(1+b*Di*t)^(-1/b)
 
-# where q is prodcution (in bbl oil or MCF gas), qo is the initial production 
+# where q is production (in bbl oil or MCF gas), qo is the initial production 
 # rate, b is the decline exponent, Di is the initial decline rate, and t is time.
 
 # If the value of production.type == "a" then the model calculates the 
@@ -48,7 +51,7 @@
 
 
 # Function ---------------------------------------------------------------- 
-productionsim <- function(path, nrun, timesteps, production.type, ver) {
+productionsim <- function(wsim, path, nrun, timesteps, production.type, ver) {
   
   # Switch for production simulation type. Options are "a" for calculating 
   # production from decline curve coefficients in wsim, or "b" for loading the 
