@@ -32,7 +32,8 @@ opt$DOGM.update         <- FALSE  # Turns *.dbf files from DOGM () into single f
 opt$schedule.update     <- FALSE  # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
 opt$water.update        <- FALSE  # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
 opt$corptax.update      <- FALSE  # Generates corporate income tax coversion factor CDFs
-opt$DCA.update          <- FALSE  # Generates CDFs for decline curves
+opt$DCA.update          <- FALSE  # Fits decline curves
+opt$DCA.CDF.update      <- FALSE  # Generates CDFs from decline curve fits
 opt$emission.update     <- FALSE  # *** WRITE ME *** Generates CDFs for emission factors
 opt$lease.update        <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
 opt$drillmodel.update   <- FALSE  # Fits drilling schedule model to energy prices
@@ -154,12 +155,13 @@ opt$sched.type <- "a"
 opt$prod.type <- "a"
 
 # Number of simulation time steps (in months)
-opt$MC.tsteps <- 60
+opt$MC.tsteps <- 168
 
 # Initial number of wells drilled during prior time step at start of simulated 
-# time (value here is for wells in Uintah and Duchesne counties with dates of
-# first production in Dec. 2012).
-opt$drilled.init <- 63
+# time. Some specific values: 63 in Dec. 2012, 19 in Dec. 1998 (value here is
+# for wells in Uintah and Duchesne counties with dates of first production in
+# Dec. 2012).
+opt$drilled.init <- 19
 
 # 1.4 Time related options ------------------------------------------------
 
@@ -208,6 +210,12 @@ opt$well.depth.step <- 20
 # gravity over 39.6 will result in higher severance tax rates.
 opt$API <- 39.6
 
+# Conversion factor for switching from MCF of gas to MMBtu of gas. Equation:
+#
+# (Factor in MMBtu/MCF) = (Median HV of gas in Btu/SCF) * (1e3 SCF / 1 MCF) * (1 MMBtu / 1e6 Btu)
+#
+opt$cf.MCF.to.MMBtu <- (1081)*(1e3)*(1/1e6)
+
 
 # 1.6 Finance related options ---------------------------------------------
 
@@ -215,6 +223,11 @@ opt$API <- 39.6
 # taxes)
 opt$CIrate.state <- 0.05 # State
 opt$CIrate.fed   <- 0.35 # Federal
+
+# Royatly rates for Federal, Indian, State, and Fee type leases (in that order).
+# Second command adds names to each element to match.
+opt$royaltyRate <- c(0.1250, 0.1667, 0.1250, 0.1250)
+names(opt$royaltyRate) <- c("federal", "indian", "state", "fee")
 
 # EIA Historical Energy Prices CPI Basis (i.e. the CPI index value for the year
 # to which all oil/gas prices in the EIA_HistPrice.csv file have been adjusted
@@ -230,16 +243,16 @@ opt$cpi <- 233.049
 opt$WTI.to.Oilfpp <- 0.9086103492
 opt$HH.to.Gasfpp  <- 0.7446302868
 
-# Initial prices for GBM price path simulation (from last recorded EIA FPP).
-# Sources:
-# Gas [1] http://tonto.eia.gov/dnav/ng/hist/na1140_sut_3a.htm
-#     [2] http://www.eia.gov/dnav/ng/hist/n9190us3A.htm
-# Oil [3] http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=f004049__3&f=a
-# Note that gas FPP are calculated by converting US national average price (UT
-# gas prices are only recorded by EIA on annual basis, by nation gas FPPs are
-# recorded on monthly basis)
-opt$oil.fpp.init <- 76.66766251 # Both values are from 2012-12-15 in 2012 $ per
-opt$gas.fpp.init <- 2.925932004 # bbl (for oil) or MMBtu (for gas)
+# Initial prices for GBM price path simulation (from last recorded EIA FPP). 
+# Sources: Gas [1] http://tonto.eia.gov/dnav/ng/hist/na1140_sut_3a.htm [2]
+# http://www.eia.gov/dnav/ng/hist/n9190us3A.htm Oil [3]
+# http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=f004049__3&f=a Note
+# that gas FPP are calculated by converting US national average price (UT gas
+# prices are only recorded by EIA on annual basis, by nation gas FPPs are 
+# recorded on monthly basis). Both values are from 2012-12-15 in 2012 $ per bbl
+# (for oil) or MMBtu (for gas).
+opt$oil.fpp.init <- 12.96 # Dec. 1998: $12.96 | Dec. 2012: $76.67
+opt$gas.fpp.init <- 2.93  # Dec. 1998:  $2.39 | Dec. 2012:  $2.93
 
 # Net taxable income (NTI) from UT State Tax Comission.
 NTI <- c(66341510, 209171843, 220215146)
@@ -255,6 +268,7 @@ opt$CI.pdf.max <- 3
 
 # 1.7 Decline curve analysis options --------------------------------------
 
+# DCA Fitting
 opt$minProdRec      <- 12              # Minimum number of non-zero production records
 opt$minDayProd      <- 28              # Minimum number of days of a well produced in a given month required to include production data point
 opt$diff.bin.cutoff <- 0.15            # Minimum production differential on normalized scale required to consider a well as being restarted
@@ -270,16 +284,20 @@ opt$b.start.gas     <- 1.32            # Same as above but for gas
 opt$Di.start.gas    <- 0.24            # Same as above but for gas
 opt$lower.gas       <- c(0, 0, 0)      # Same as above but for gas
 opt$upper.gas       <- c(Inf, 10, Inf) # Same as above but for gas
+
+# DCA CDF Generation
+opt$DCA.CDF.type    <- "Quantile"             # Character string for switch funtion, valid options are either "Density" or "Quantile"
 opt$cdf.oil.from    <- c(0,0,0,0)             # Lower limit for CDF function for (qo, b, Di, tdelay)
-opt$cdf.oil.to      <- c(3e7, 4,   15e3, 360) # Upper limit for CDF function for (qo, b, Di, tdelay)
+opt$cdf.oil.to      <- c(2e3, Inf, Inf, Inf)  # Upper limit for CDF function for (qo, b, Di, tdelay) - was 3e7, 4, 15e3, Inf
 opt$cdf.oil.np      <- c(3e5, 4e3, 15e4, 360) # Number of points at which to estimate CDF for (qo, b, Di, tdelay)
 opt$cdf.gas.from    <- c(0,0,0,0)             # Same as above but for gas
-opt$cdf.gas.to      <- c(4e7, 4,   4e3, 360)  # Same as above but for gas
+opt$cdf.gas.to      <- c(4e4, Inf, Inf, Inf)  # Same as above but for gas - was 4e7, 4, 4e3, 360
 opt$cdf.gas.np      <- c(4e5, 4e3, 4e4, 360)  # Same as above but for gas
+opt$DCA.CDF.xq      <- seq(0, 1, 0.001)       # Sequence of xq probabilities at which to estimate quantile values
 
 
 # Outputs -----------------------------------------------------------------
 
 # Export plot results as PDF? Valid options are TRUE/FALSE
 opt$exportFlag <- FALSE
-
+opt$pdfName <- "MC v2 results with quantile.pdf"
