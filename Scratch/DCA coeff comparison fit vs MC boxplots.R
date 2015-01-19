@@ -78,9 +78,8 @@ gm <- rbind(gcf, gcfMC)
 
 # Plots -------------------------------------------------------------------
 
-# # Start PDF printer
-# pdf(file.path(path$plot, "DCA coefficients boxplot comparison - fit vs MC.pdf"),
-#     width = 11, height = 8.5)
+# Start PDF printer
+pdf(file.path(path$plot, "DCA coefficients boxplot comparison - fit vs MC - quantile.pdf"))
 
 # Plots for oil -----------------------------------------------------------
 
@@ -125,42 +124,42 @@ boxplot(td ~ field,
 
 # Plots for gas -----------------------------------------------------------
 
-# # qo for gas
-# boxplot(qo ~ field,
-#         gm,
-#         log = "y",
-#         range = 0,
-#         ylim = c(1, 1.1*max(gm$qo)),
-#         xlab = "Field Number (by pairs - fit then MC)",
-#         ylab = "qo value for gas (MCF)",
-#         main = "Comparison of Gas qo values - fit vs. MC")
-# 
-# # b for gas
-# boxplot(b ~ field,
-#         gm,
-#         range = 0,
-#         ylim = c(0, 1.1*max(gm$b)),
-#         xlab = "Field Number (by pairs - fit then MC)",
-#         ylab = "b value for gas (dimensionless)",
-#         main = "Comparison of Gas b values - fit vs. MC")
-# 
-# # Di for gas
-# boxplot(Di ~ field,
-#         gm,
-#         log = "y",
-#         range = 0,
-#         ylim = c(0.001, 1.1*max(gm$Di)),
-#         xlab = "Field Number (by pairs - fit then MC)",
-#         ylab = "Di value for gas (dimensionless)",
-#         main = "Comparison of Gas Di values - fit vs. MC")
-# 
-# # td for oil
-# boxplot(td ~ field,
-#         gm,
-#         range = 0,
-#         ylim = c(0, 30),
-#         xlab = "Field Number (by pairs - fit then MC)",
-#         ylab = "Time delay value for gas production (months)",
-#         main = "Comparison of Gas Production Time Delay Values - fit vs. MC")
+# qo for gas
+boxplot(qo ~ field,
+        gm,
+        log = "y",
+        range = 0,
+        ylim = c(1, 1.1*max(gm$qo)),
+        xlab = "Field Number (by pairs - fit then MC)",
+        ylab = "qo value for gas (MCF)",
+        main = "Comparison of Gas qo values - fit vs. MC")
 
-# dev.off()
+# b for gas
+boxplot(b ~ field,
+        gm,
+        range = 0,
+        ylim = c(0, 1.1*max(gm$b)),
+        xlab = "Field Number (by pairs - fit then MC)",
+        ylab = "b value for gas (dimensionless)",
+        main = "Comparison of Gas b values - fit vs. MC")
+
+# Di for gas
+boxplot(Di ~ field,
+        gm,
+        log = "y",
+        range = 0,
+        ylim = c(0.001, 1.1*max(gm$Di)),
+        xlab = "Field Number (by pairs - fit then MC)",
+        ylab = "Di value for gas (dimensionless)",
+        main = "Comparison of Gas Di values - fit vs. MC")
+
+# td for oil
+boxplot(td ~ field,
+        gm,
+        range = 0,
+        ylim = c(0, 30),
+        xlab = "Field Number (by pairs - fit then MC)",
+        ylab = "Time delay value for gas production (months)",
+        main = "Comparison of Gas Production Time Delay Values - fit vs. MC")
+
+dev.off()

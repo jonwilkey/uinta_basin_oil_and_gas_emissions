@@ -20,7 +20,7 @@ mmo <- mo[ind,2:3]
 names(mmo) <- c("field", "totoil")
 mmo <- rbind(mmo, m)
 
-pdf(file.path(path$plot, "Cumulative oil comparison.pdf"))
+pdf(file.path(path$plot, "Cumulative oil comparison - quantile.pdf"))
 boxplot(totoil ~ field,
         mmo,
         range = 0,
