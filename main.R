@@ -56,8 +56,8 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "welldata.R",
                               "productionsim.R",
                               "royalty.R",
-                              "stax.R",
-                              "ctax.R",
+                              #"stax.R",
+                              #"ctax.R",
                               #"ptax.R",
                               #"RIMS.R",
                               #"workload.R",
@@ -135,27 +135,6 @@ if(opt$schedule.update == TRUE) {
 }
 
 
-# 2.3 Corporate income tax conversion factor CDF generation ---------------
-
-# Run function if opt$corptax.update flag is set to "TRUE"
-if(opt$corptax.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "corpIncomeUpdate.R"))
-  
-  # Function call
-  corpIncomeUpdate(production =   production,
-                   path =         path,
-                   NTI =          opt$NTI,
-                   CIrate.state = opt$CIrate.state,
-                   CIrate.fed =   opt$CIrate.fed,
-                   basis =        opt$cpi,
-                   CI.pdf.min =   opt$CI.pdf.min,
-                   CI.pdf.max =   opt$CI.pdf.max,
-                   ver =          opt$file_ver)
-}
-
-
 # 2.4 Lease opearting cost lm() fit update --------------------------------
 
 # Run function if opt$lease.update flag is set to "TRUE"
@@ -190,6 +169,30 @@ if(opt$EIAprice.update == TRUE) {
 
 # Load EIAprices_v*.rda to load eia.hp (EIA historical energy prices) data.frame
 load(file.path(path$data, paste("EIAprices_", opt$file_ver, ".rda", sep = "")))
+
+
+# 2.3 Corporate income tax conversion factor CDF generation ---------------
+
+# *** NOTE ***
+# Adjust this script to use eia.hp instead of OGprice data.frame
+
+# Run function if opt$corptax.update flag is set to "TRUE"
+if(opt$corptax.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "corpIncomeUpdate.R"))
+  
+  # Function call
+  corpIncomeUpdate(production =   production,
+                   path =         path,
+                   NTI =          opt$NTI,
+                   CIrate.state = opt$CIrate.state,
+                   CIrate.fed =   opt$CIrate.fed,
+                   basis =        opt$cpi,
+                   CI.pdf.min =   opt$CI.pdf.min,
+                   CI.pdf.max =   opt$CI.pdf.max,
+                   ver =          opt$file_ver)
+}
 
 
 # 2.5 Drilling Schedule Model lm() fit update -----------------------------
@@ -256,7 +259,15 @@ if(opt$DCA.update == TRUE) {
             field =           opt$field,
             ver =             opt$file_ver,
             path =            path,
-            p =               p)
+            p =               p,
+            Cp.start.oil =    opt$Cp.start.oil,
+            c1.start.oil =    opt$c1.start.oil,
+            Qlower.oil =      opt$Qlower.oil,
+            Qupper.oil =      opt$Qupper.oil,
+            Cp.start.gas =    opt$Cp.start.gas,
+            c1.start.gas =    opt$c1.start.gas,
+            Qlower.gas =      opt$Qlower.gas,
+            Qupper.gas =      opt$Qupper.gas)
 }
 
 
@@ -265,10 +276,11 @@ if(opt$DCA.update == TRUE) {
 # Run function if opt$DCA.CDF.update flag is set to "TRUE"
 if(opt$DCA.CDF.update == TRUE) {
   
-  # Source function to load
+  # Source functions to load
   source(file.path(path$fun, "DCAupdateCDF.R"))
+  source(file.path(path$fun, "QfitDCAupdateCDF.R"))
   
-  # Function call
+  # Function call for hyperbolic DCA CDFs
   DCAupdateCDF(field =        opt$field,
                ver =          opt$file_ver,
                DCA.CDF.type = opt$DCA.CDF.type,
@@ -280,6 +292,19 @@ if(opt$DCA.CDF.update == TRUE) {
                cdf.gas.np =   opt$cdf.gas.np,
                DCA.CDF.xq =   opt$DCA.CDF.xq,
                path =         path)
+  
+  # Function call for cumulative DCA CDFs
+  QfitDCAupdateCDF(field =          opt$field,
+                   ver =            opt$file_ver,
+                   DCA.CDF.type   = opt$DCA.CDF.type,
+                   Q.cdf.oil.from = opt$Q.cdf.oil.from,
+                   Q.cdf.oil.to =   opt$Q.cdf.oil.to,
+                   Q.cdf.oil.np =   opt$Q.cdf.oil.np,
+                   Q.cdf.gas.from = opt$Q.cdf.gas.from,
+                   Q.cdf.gas.to =   opt$Q.cdf.gas.to,
+                   Q.cdf.gas.np =   opt$Q.cdf.gas.np,
+                   DCA.CDF.xq =     opt$DCA.CDF.xq,
+                   path =           path)
 }
 
 
@@ -364,11 +389,12 @@ wsim <- welldata(path =            path,
 
 # Run production simulation function
 psim <- productionsim(wsim =            wsim,
-                      path =            path,
                       nrun =            opt$nrun,
                       timesteps =       opt$MC.tsteps,
                       production.type = opt$prod.type,
-                      ver =             opt$file_ver)
+                      decline.type =    opt$mc.decline.type,
+                      osim.actual =     osim.actual,
+                      gsim.actual =     gsim.actual)
 
 # Pullout list components osim (oil production records) and gsim (gas
 # production records)
@@ -378,7 +404,7 @@ gsim <- psim[[2]]
 # Remove original
 remove(psim)
 
-# # 3.3 Royalties -----------------------------------------------------------
+# 3.3 Royalties -----------------------------------------------------------
 
 # Predefine royalty results matrices
 roy.oil <- NULL
@@ -403,23 +429,37 @@ for (i in 1:max(wsim$runID)) {
 }
 
 
-# # 3.4 Severance Taxes -----------------------------------------------------
-# 
-# # Get indices of oil and gas wells
-# ind.ow <- which(wsim$wellType == "OW")
-# ind.gw <- which(wsim$wellType == "GW")
-# 
-# # Run severance tax calculation
-# stsim <- stax(wsim =   wsim,
-#               psim =   psim,
-#               rsim =   rsim,
-#               op =     op,
-#               gp =     gp,
-#               ind.ow = ind.ow,
-#               ind.gw = ind.gw,
-#               API =    opt$API)
-# 
-# 
+# 3.4 Severance Taxes -----------------------------------------------------
+
+# *** NOTE *** NOT FINISHED, NEED TO IMPLEMENT SEVERANCE TAX RULES FOR GAS
+
+# Predefine severance tax results matrices
+st.oil <- NULL
+st.gas <- NULL
+
+# For each runID
+for (i in 1:max(wsim$runID)) {
+  
+  # Get row index of wells that were a part of that run
+  ind <- which(wsim$runID == i)
+  
+  # Calculate ST for oil and gas production and row bind to previous result
+  st.oil <- rbind(st.oil, stax(type =   "oil",
+                               tDrill = wsim$tDrill[ind],
+                               psim =   osim[ind,],
+                               rsim =   roy.oil[ind,],
+                               ep =     op[i,],
+                               API =    opt$API))
+  
+  st.gas <- rbind(st.gas, stax(type =   "gas",
+                               tDrill = wsim$tDrill[ind],
+                               psim =   gsim[ind,],
+                               rsim =   roy.gas[ind,],
+                               ep =     gp[i,],
+                               API =    opt$API))
+}
+
+
 # # 3.5 Property taxes ------------------------------------------------------
 # 
 # # Run property tax calculation. Right now there are issues with the NPV < 0 in

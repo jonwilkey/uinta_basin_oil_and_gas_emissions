@@ -84,7 +84,9 @@
 DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                       DCAplot, n.stopB.min, n.startT.search, b.start.oil,
                       Di.start.oil, lower.oil, upper.oil, b.start.gas,
-                      Di.start.gas, lower.gas, upper.gas, field, ver, path, p) {
+                      Di.start.gas, lower.gas, upper.gas, field, ver, path, p,
+                      Cp.start.oil, c1.start.oil, Qlower.oil, Qupper.oil,
+                      Cp.start.gas, c1.start.gas, Qlower.gas, Qupper.gas) {
   
   # Internal Debug Variables  -----------------------------------------------
   
@@ -106,7 +108,15 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
 #   upper.gas = opt$upper.gas
 #   field = opt$field
 #   ver = opt$file_ver
-
+#   Cp.start.oil = opt$Cp.start.oil
+#   c1.start.oil = opt$c1.start.oil
+#   Qlower.oil = opt$Qlower.oil
+#   Qupper.oil = opt$Qupper.oil
+#   Cp.start.gas = opt$Cp.start.gas
+#   c1.start.gas = opt$c1.start.gas
+#   Qlower.gas = opt$Qlower.gas
+#   Qupper.gas = opt$Qupper.gas
+  
   
   # Internal Functions ------------------------------------------------------
   
@@ -154,15 +164,21 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   ind999 <- NULL
   
   # Predefine results data.frame for oil and gas
-  ro <- data.frame(api= as.character(rep(0, times = nrow(well)*2)),
-                   qo = rep(0, times = nrow(well)*2),
-                   b = rep(0, times = nrow(well)*2),
-                   Di = rep(0, times = nrow(well)*2),
-                   tdelay = rep(0, times = nrow(well)*2),
-                   fitFirst = rep(0, times = nrow(well)*2),
-                   fitLast = rep(0, times = nrow(well)*2),
-                   skipped = rep(0, times = nrow(well)*2),
-                   failed = rep(0, times = nrow(well)*2))
+  temp <- nrow(well)*2
+  ro <- data.frame(api=        as.character(rep(0, times = temp)),
+                   qo =        rep(0, times = temp),
+                   b =         rep(0, times = temp),
+                   Di =        rep(0, times = temp),
+                   tdelay =    rep(0, times = temp),
+                   fitFirst =  rep(0, times = temp),
+                   fitLast =   rep(0, times = temp),
+                   skipped =   rep(0, times = temp),
+                   failed =    rep(0, times = temp),
+                   Cp =        rep(0, times = temp),
+                   c1 =        rep(0, times = temp),
+                   QfitFirst = rep(0, times = temp),
+                   QfitLast =  rep(0, times = temp),
+                   Qfailed =   rep(0, times = temp))
   
   # Set initial value for row counters "row1" and "row2"
   row1 <- 1; row2 <- 2
@@ -200,19 +216,23 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
         names(w) <- c("time", "prod")
         
         # Run hypfit function
-        ro[row1:row2,] <- hypfit(ws = w,
-                                 bin = bin,
+        ro[row1:row2,] <- hypfit(ws =              w,
+                                 bin =             bin,
                                  diff.bin.cutoff = diff.bin.cutoff,
-                                 minProdRec = minProdRec,
-                                 api = well$p_api[apilist[h]],
-                                 b.start = b.start.oil,
-                                 Di.start = Di.start.oil,
-                                 lower = lower.oil,
-                                 upper = upper.oil,
-                                 plotFlag = DCAplot,
-                                 type = "Oil",
-                                 n.stopB.min = n.stopB.min,
-                                 n.startT.search = n.startT.search)
+                                 minProdRec =      minProdRec,
+                                 api =             well$p_api[apilist[h]],
+                                 b.start =         b.start.oil,
+                                 Di.start =        Di.start.oil,
+                                 lower =           lower.oil,
+                                 upper =           upper.oil,
+                                 plotFlag =        DCAplot,
+                                 type =            "Oil",
+                                 n.stopB.min =     n.stopB.min,
+                                 n.startT.search = n.startT.search,
+                                 Cp.start =        Cp.start.oil,
+                                 c1.start =        c1.start.oil,
+                                 Qlower =          Qlower.oil,
+                                 Qupper =          Qupper.oil)
       } else {
         
         # Skip and note failure
@@ -266,19 +286,23 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
       names(w) <- c("time", "prod")
       
       # Run hypfit function
-      ro[row1:row2,] <- hypfit(ws = w,
-                               bin = bin,
+      ro[row1:row2,] <- hypfit(ws =              w,
+                               bin =             bin,
                                diff.bin.cutoff = diff.bin.cutoff,
-                               minProdRec = minProdRec,
-                               api = apilist[h],
-                               b.start = b.start.oil,
-                               Di.start = Di.start.oil,
-                               lower = lower.oil,
-                               upper = upper.oil,
-                               plotFlag = DCAplot,
-                               type = "Oil",
-                               n.stopB.min = n.stopB.min,
-                               n.startT.search = n.startT.search)
+                               minProdRec =      minProdRec,
+                               api =             apilist[h],
+                               b.start =         b.start.oil,
+                               Di.start =        Di.start.oil,
+                               lower =           lower.oil,
+                               upper =           upper.oil,
+                               plotFlag =        DCAplot,
+                               type =            "Oil",
+                               n.stopB.min =     n.stopB.min,
+                               n.startT.search = n.startT.search,
+                               Cp.start =        Cp.start.oil,
+                               c1.start =        c1.start.oil,
+                               Qlower =          Qlower.oil,
+                               Qupper =          Qupper.oil)
     } else {
       
       # Skip and note failure
@@ -305,15 +329,21 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   ind999 <- NULL
   
   # Predefine results data.frame for oil and gas
-  rg <- data.frame(api= as.character(rep(0, times = nrow(well)*2)),
-                   qo = rep(0, times = nrow(well)*2),
-                   b = rep(0, times = nrow(well)*2),
-                   Di = rep(0, times = nrow(well)*2),
-                   tdelay = rep(0, times = nrow(well)*2),
-                   fitFirst = rep(0, times = nrow(well)*2),
-                   fitLast = rep(0, times = nrow(well)*2),
-                   skipped = rep(0, times = nrow(well)*2),
-                   failed = rep(0, times = nrow(well)*2))
+  temp <- nrow(well)*2
+  rg <- data.frame(api=        as.character(rep(0, times = temp)),
+                   qo =        rep(0, times = temp),
+                   b =         rep(0, times = temp),
+                   Di =        rep(0, times = temp),
+                   tdelay =    rep(0, times = temp),
+                   fitFirst =  rep(0, times = temp),
+                   fitLast =   rep(0, times = temp),
+                   skipped =   rep(0, times = temp),
+                   failed =    rep(0, times = temp),
+                   Cp =        rep(0, times = temp),
+                   c1 =        rep(0, times = temp),
+                   QfitFirst = rep(0, times = temp),
+                   QfitLast =  rep(0, times = temp),
+                   Qfailed =   rep(0, times = temp))
   
   # Set initial value for row counters "row1" and "row2"
   row1 <- 1; row2 <- 2
@@ -351,19 +381,23 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
         names(w) <- c("time", "prod")
         
         # Run hypfit function
-        rg[row1:row2,] <- hypfit(ws = w,
-                                 bin = bin,
+        rg[row1:row2,] <- hypfit(ws =              w,
+                                 bin =             bin,
                                  diff.bin.cutoff = diff.bin.cutoff,
-                                 minProdRec = minProdRec,
-                                 api = well$p_api[apilist[h]],
-                                 b.start = b.start.gas,
-                                 Di.start = Di.start.gas,
-                                 lower = lower.gas,
-                                 upper = upper.gas,
-                                 plotFlag = DCAplot,
-                                 type = "Gas",
-                                 n.stopB.min = n.stopB.min,
-                                 n.startT.search = n.startT.search)
+                                 minProdRec =      minProdRec,
+                                 api =             well$p_api[apilist[h]],
+                                 b.start =         b.start.gas,
+                                 Di.start =        Di.start.gas,
+                                 lower =           lower.gas,
+                                 upper =           upper.gas,
+                                 plotFlag =        DCAplot,
+                                 type =            "Gas",
+                                 n.stopB.min =     n.stopB.min,
+                                 n.startT.search = n.startT.search,
+                                 Cp.start =        Cp.start.gas,
+                                 c1.start =        c1.start.gas,
+                                 Qlower =          Qlower.gas,
+                                 Qupper =          Qupper.gas)
       } else {
         
         # Skip and note failure
@@ -417,19 +451,23 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
       names(w) <- c("time", "prod")
       
       # Run hypfit function
-      rg[row1:row2,] <- hypfit(ws = w,
-                               bin = bin,
+      rg[row1:row2,] <- hypfit(ws =              w,
+                               bin =             bin,
                                diff.bin.cutoff = diff.bin.cutoff,
-                               minProdRec = minProdRec,
-                               api = apilist[h],
-                               b.start = b.start.gas,
-                               Di.start = Di.start.gas,
-                               lower = lower.gas,
-                               upper = upper.gas,
-                               plotFlag = DCAplot,
-                               type = "Gas",
-                               n.stopB.min = n.stopB.min,
-                               n.startT.search = n.startT.search)
+                               minProdRec =      minProdRec,
+                               api =             apilist[h],
+                               b.start =         b.start.gas,
+                               Di.start =        Di.start.gas,
+                               lower =           lower.gas,
+                               upper =           upper.gas,
+                               plotFlag =        DCAplot,
+                               type =            "Gas",
+                               n.stopB.min =     n.stopB.min,
+                               n.startT.search = n.startT.search,
+                               Cp.start =        Cp.start.gas,
+                               c1.start =        c1.start.gas,
+                               Qlower =          Qlower.gas,
+                               Qupper =          Qupper.gas)
     } else {
       
       # Skip and note failure
@@ -457,18 +495,18 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   ro.last  <- ro[seq(from = 2, to = nrow(ro), by = 2),]
   rg.last  <- rg[seq(from = 2, to = nrow(ro), by = 2),]
   
-  # Drop repeat columns (fitLast for *.first, and tdelay and fitFirst for
-  # *.last)
-  ro.first <- ro.first[,-7]
-  rg.first <- rg.first[,-7]
-  ro.last  <- ro.last[,c(-5, -6)]
-  rg.last  <- rg.last[,c(-5, -6)]
+  # Drop repeat columns (fitLast and QfitLast for *.first, and tdelay, fitFirst,
+  # and QfitFirst for *.last)
+  ro.first <- ro.first[,c(-7, -13)]
+  rg.first <- rg.first[,c(-7, -13)]
+  ro.last  <- ro.last[,c(-5, -6, -12)]
+  rg.last  <- rg.last[,c(-5, -6, -12)]
   
   # Change names
-  names(ro.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1")
-  names(rg.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1")
-  names(ro.last)  <- c("api", "qo.2", "b.2", "Di.2", "fit.2", "skip.2", "fail.2")
-  names(rg.last)  <- c("api", "qo.2", "b.2", "Di.2", "fit.2", "skip.2", "fail.2")
+  names(ro.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1", "Cp.1", "c1.1", "Qfit.1", "Qfailed.1")
+  names(rg.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1", "Cp.1", "c1.1", "Qfit.1", "Qfailed.1")
+  names(ro.last)  <- c("api", "qo.2", "b.2", "Di.2", "fit.2", "skip.2", "fail.2", "Cp.2", "c1.2", "Qfit.2", "Qfailed.2")
+  names(rg.last)  <- c("api", "qo.2", "b.2", "Di.2", "fit.2", "skip.2", "fail.2", "Cp.2", "c1.2", "Qfit.2", "Qfailed.2")
   
   # Merge with well data.frame
   mo <- merge(x = well, y = ro.first, by.x = "p_api", by.y = "api", all.x = TRUE)

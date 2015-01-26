@@ -229,6 +229,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
              Di.gas <- b.oil
              td.oil <- b.oil
              td.gas <- b.oil
+             Cp.oil <- b.oil
+             c1.oil <- b.oil
+             Cp.gas <- b.oil
+             c1.gas <- b.oil
            }
            
            # Define runID
@@ -244,6 +248,7 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
     
     # Load CDFs for DCA coefficients by field
     load(file.path(path$data, paste("DCA_CDF_coef_", ver, ".rda", sep = "")))
+    load(file.path(path$data, paste("Q_DCA_CDF_coef_", ver, ".rda", sep = "")))
     
     # Define DCA coefficient vectors and time delay
     qo.oil <- rep(0, times = length(type))
@@ -254,6 +259,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
     b.gas  <- qo.oil
     Di.gas <- qo.oil
     td.gas <- qo.oil
+    Cp.oil <- qo.oil
+    c1.oil <- qo.oil
+    Cp.gas <- qo.oil
+    c1.gas <- qo.oil
     
     # For each field
     for (i in 1:length(field)) {
@@ -270,6 +279,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
       cdf.b.gas  <- DCA.cdf.coef.gas[[(i-1)*4+2]]
       cdf.Di.gas <- DCA.cdf.coef.gas[[(i-1)*4+3]]
       cdf.td.gas <- DCA.cdf.coef.gas[[(i-1)*4+4]]
+      cdf.Cp.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+1]]
+      cdf.c1.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+2]]
+      cdf.Cp.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+1]]
+      cdf.c1.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+2]]
       
       # Pick values for each coefficient
       qo.oil[ind] <- cdf.qo.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.oil$CDF))]
@@ -280,6 +293,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
       b.gas[ind]  <- cdf.b.gas$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.gas$CDF ))]
       Di.gas[ind] <- cdf.Di.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.gas$CDF))]
       td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF))]
+      Cp.oil[ind] <- cdf.Cp.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.oil$CDF))]
+      c1.oil[ind] <- cdf.c1.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.oil$CDF))]
+      Cp.gas[ind] <- cdf.Cp.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.gas$CDF))]
+      c1.gas[ind] <- cdf.c1.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.gas$CDF))]
       
       # Round time delay values to nearest month
       td.oil <- round(td.oil)
@@ -378,6 +395,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                      b.gas,
                      Di.gas,
                      td.gas,
+                     Cp.oil,
+                     c1.oil,
+                     Cp.gas,
+                     c1.gas,
                      depth,
                      lease,
                      cirSO,
@@ -412,6 +433,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                    "b.gas",
                    "Di.gas",
                    "td.gas",
+                   "Cp.oil",
+                   "c1.oil",
+                   "Cp.gas",
+                   "c1.gas",
                    "depth",
                    "lease",
                    "cirSO",

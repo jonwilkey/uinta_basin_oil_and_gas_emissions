@@ -2,19 +2,15 @@
 
 # Inputs ------------------------------------------------------------------
 
-# wsim - well information data.table with information on drilling schedule
+# type - character string for use with switch() to calculate either oil or gas ST
 
-# psim - matrix of production volume timeseries (either oil or gas)
+# tDrill - vector giving timestep during which each well was drilled
 
-# rsim - matrix of royalty payments
+# psim - matrix of production volumes (bbl oil or MCF gas)
 
-# op - vector of inflation-adjusted oil prices
+# rsim - matrix of royalty payments (in $)
 
-# gp - vector of inflation-adjusted gas prices
-
-# ind.ow - index (row numbers) of oil wells
-
-# ind.gw - index (row numbers) of gas wells
+# ep - vector of inflation-adjusted energy prices ($/bbl or $/MCF)
 
 # API - API gravity of oil product (for discounting product at wellhead)
 
@@ -50,31 +46,31 @@
 
 
 # Function ----------------------------------------------------------------
-stax <- function (wsim, psim, rsim, op, gp, ind.ow, ind.gw, API) {
+stax <- function (type, tDrill, psim, rsim, ep, sto, API) {
   
-  # Actual ST calc function
-  calc <- function (volume, price, royalty_rate, API) {
+  # Oil severance tax calculation function
+  oilcalc <- function (sto, volume, price, royalty_rate, API) {
     # This function determines severance tax payments.
     # Severance tax rates
-    s_low  <- 0.030 # for values <= $13/bbl
-    s_high <- 0.050 # for values > $13/bbl
-    s_cf   <- 0.002 # Conservation fee
+    s_low  <- sto[1] # for values <= $13/bbl
+    s_high <- sto[2] # for values > $13/bbl
+    s_cf   <- sto[3] # Conservation fee
     
     # Determine wellhead value (WV). API gravity of WTI (39.6 degrees) is used as
     # the basis for this calculation. If producing an unconventional oil (from
     # shale or sand), replace the default API gravity argument in the function
     # call with the API gravity of the oil in question
-    WV <- (API / 39.6) * price
+    WV <- (API/sto[4]) * price
     
     # Deductions on WV to determine taxable value (TV). Currently just deducting
-    # royalty payments (given here on $/bbl basis from "R" function)
+    # royalty payments (given here on $/bbl basis)
     TV <- WV - royalty_rate
     
-    # Determine fraction of TV above split tax rate (f_st) of $13/bbl
+    # Determine fraction of TV above split tax rate (f_st) of cutoff threshold ($13/bbl)
     f_st <- rep(0, length(TV))
-    f_st <- ifelse(test = (TV - 13)/TV < 0,
+    f_st <- ifelse(test = (TV - sto[5])/TV < 0,
                    yes = 0,
-                   no = (TV - 13)/TV)
+                   no = (TV - sto[5])/TV)
     
     # ST per unit volume
     rST <- (s_low * (1 - f_st) + s_high * f_st) * TV + s_cf * TV
@@ -84,31 +80,51 @@ stax <- function (wsim, psim, rsim, op, gp, ind.ow, ind.gw, API) {
     return(ST)
   }
   
-  # This is slow, fix NaN problem so we can get past ifelse()-ing to handle
-  # division by 0
-  rrate <- ifelse(test = rsim/psim != "NaN",
-                  yes = rsim/psim,
-                  no = 0)
+  # Divide royalty payments by production rates to get $/bbl or $/MCF royalty
+  # rate
+  rrate <- rsim/psim
   
   # Define severance tax (stsim) matrix
-  stsim <- matrix(0, nrow = nrow(wsim), ncol = ncol(psim))
+  stsim <- matrix(0, nrow = nrow(psim), ncol = ncol(psim))
   
-  # Calculate severance taxes for oil/gas wells in each month of simulation
-  # using calc function
-  for (i in 1:ncol(psim)) {
-    stsim[ind.gw,i] <- calc(psim[ind.gw,i], gp[i], rrate[ind.gw,i], API)
-    stsim[ind.ow,i] <- calc(psim[ind.ow,i], op[i], rrate[ind.ow,i], API)
+  # Calculate oil or gas severance taxes
+  switch(type,
+         
+         # For oil, use oilcalc function
+         oil = {
+           
+           # For each timestep, run oilcalc function
+           for (i in 1:ncol(psim)) {
+             stsim[,i] <- oilcalc(sto =          sto,
+                                  volume =       psim[,i],
+                                  price =        ep[i],
+                                  royalty_rate = rrate[,i],
+                                  API =          API)
+           }
+         },
+         
+         # For gas, use gascalc function
+         gas = {
+           
+           # For each timestep, run gascalc function
+           for (i in 1:ncol(psim)) {
+             stsim[,i] <- oilcalc(sto =          sto,
+                                  volume =       psim[,i],
+                                  price =        ep[i],
+                                  royalty_rate = rrate[,i],
+                                  API =          API)
+         })
+  
+  
+  # Exempt first sto[6] months of production by writing 0 over ST calculations from proceeding loop
+  for (i in 1:(ncol(stsim)-(sto[6]-1))) {
+    ind <- which(tDrill == i)
+    stsim[ind,i:(i+(sto[6]-1))] <- 0
   }
   
-  # Exempt first six months of production by writing 0 over ST calculations from proceeding loop
-  for (i in 1:(ncol(psim)-5)) {
-    ind <- which(wsim$tDrill == i)
-    stsim[ind,i:(i+5)] <- 0
-  }
-  
-  # Handle special case where < 5 time steps remain in matrix row
-  for (i in (ncol(psim)-4):ncol(psim)) {
-    ind <- which(wsim$tDrill == i)
+  # Handle special case where < sto[6]-1 time steps remain in matrix row
+  for (i in (ncol(stsim)-(sto[6]-2)):ncol(stsim)) {
+    ind <- which(tDrill == i)
     stsim[ind,i:ncol(stsim)] <- 0
   }
     
