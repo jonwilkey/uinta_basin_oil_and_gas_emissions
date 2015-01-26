@@ -154,6 +154,13 @@ opt$sched.type <- "a"
 #
 opt$prod.type <- "a"
 
+# Decline curve type. Valid options are:
+#
+#  a - Hyperbolic decline curve q(t) = qo * (1 + b * Di * t) ^ (-1 / b)
+#  b - Cumulative production curve Q(t) = Cp * t ^ 0.5 + c1
+#
+opt$mc.decline.type <- "b"
+
 # Number of simulation time steps (in months)
 opt$MC.tsteps <- 168
 
@@ -259,11 +266,36 @@ NTI <- c(66341510, 209171843, 220215146)
 year <- c(2009, 2010, 2011)
 opt$NTI <- data.frame(year, NTI); remove(NTI, year)
 
+# Property taxes collected (Duchesne + Uintah) - by year
+year <- c(2004:2012)
+PTI <- c(2407040+5985003,   # 2004
+         3640044+8241224,   # 2005
+         5358662+12895362,  # 2006
+         5209014+13235218,  # 2007
+         5801276+19261688,  # 2008
+         6266650+20711119,  # 2009
+         6196678+21712696,  # 2010
+         8755478+24128270,  # 2011
+         11784048+27819523) # 2012
+opt$PTI <- data.frame(year, PTI); remove(year, PTI)
+
 # Min/max values for setting range of $/bbl or $/MCF oil/gas corporate income
 # tax conversion factors in corporate income tax probability distribution
 # function
 opt$CI.pdf.min <- 0
 opt$CI.pdf.max <- 3
+
+# Severance Tax Inputs
+
+# Severance tax rates
+opt$sto  <- c(0.030, # Low ST rate for oil for values <= cutoff value threshold
+              0.050, # High ST rate for oil for values > cutoff value threshold
+              0.002, # Conservation fee
+              39.6,  # Oil API basis for determining wellhead value
+              13,    # Oil cutoff value threshold for switching between high/low ST rates
+              6)     # Number of timesteps from date well is drilled to exempt from ST
+
+# Need to review rules to see what severance tax rates are for gas...
 
 
 # 1.7 Decline curve analysis options --------------------------------------
@@ -280,10 +312,18 @@ opt$b.start.oil     <- 1.78            # Initial guess value for b coefficient f
 opt$Di.start.oil    <- 1.16            # Initial guess value for Di coefficient for oil decline curve
 opt$lower.oil       <- c(0, 0, 0)      # Lower limits for NLS for oil decline curve for (qo, b, Di) coefficients
 opt$upper.oil       <- c(Inf, 10, Inf) # Upper limits for NLS for oil decline curve for (qo, b, Di) coefficients
+opt$Cp.start.oil    <- 1e3             # Initial guess value for Cp coefficient for oil cumulative production curve
+opt$c1.start.oil    <- 0               # Initial guess value for c1 constant for oil cumulative production curve
+opt$Qlower.oil      <- c(0, 0)         # Lower limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
+opt$Qupper.oil      <- c(Inf, Inf)     # Upper limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
 opt$b.start.gas     <- 1.32            # Same as above but for gas
 opt$Di.start.gas    <- 0.24            # Same as above but for gas
 opt$lower.gas       <- c(0, 0, 0)      # Same as above but for gas
 opt$upper.gas       <- c(Inf, 10, Inf) # Same as above but for gas
+opt$Cp.start.gas    <- 1e4             # Same as above but for gas
+opt$c1.start.gas    <- 0               # Same as above but for gas
+opt$Qlower.gas      <- c(0, 0)         # Same as above but for gas
+opt$Qupper.gas      <- c(Inf, Inf)     # Same as above but for gas
 
 # DCA CDF Generation
 opt$DCA.CDF.type    <- "Quantile"             # Character string for switch funtion, valid options are either "Density" or "Quantile"
@@ -293,11 +333,17 @@ opt$cdf.oil.np      <- c(3e5, 4e3, 15e4, 360) # Number of points at which to est
 opt$cdf.gas.from    <- c(0,0,0,0)             # Same as above but for gas
 opt$cdf.gas.to      <- c(4e4, Inf, Inf, Inf)  # Same as above but for gas - was 4e7, 4, 4e3, 360
 opt$cdf.gas.np      <- c(4e5, 4e3, 4e4, 360)  # Same as above but for gas
+opt$Q.cdf.oil.from  <- c(0,0)                 # Lower limit in cumulative fit for CDF function for (Cp, c1)
+opt$Q.cdf.oil.to    <- c(30e3, 100e3)         # Upper limit in cumulative fit for CDF function for (Cp, c1)
+opt$Q.cdf.oil.np    <- c(10e3, 10e3)          # Number of points in cumulative fit at which to estimate CDF for (Cp, c1)
+opt$Q.cdf.gas.from  <- c(0,0)                 # Same as above but for gas
+opt$Q.cdf.gas.to    <- c(200e3, 100e3)            # Same as above but for gas
+opt$Q.cdf.gas.np    <- c(10e3, 10e3)          # Same as above but for gas
 opt$DCA.CDF.xq      <- seq(0, 1, 0.001)       # Sequence of xq probabilities at which to estimate quantile values
 
 
 # Outputs -----------------------------------------------------------------
 
 # Export plot results as PDF? Valid options are TRUE/FALSE
-opt$exportFlag <- FALSE
-opt$pdfName <- "MC v2 results with quantile.pdf"
+opt$exportFlag <- TRUE
+opt$pdfName <- "MC v2 results -quantile -Qfit -simDrill -50nrun.pdf"
