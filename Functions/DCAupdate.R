@@ -148,7 +148,7 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                           "nrec"))
   
   # Get list of unique wells and order by cumulative oil and gas production
-  well <- sqldf("select distinct p_api, w_field_num, w_totcum_oil, w_totcum_gas, nrec
+  well <- sqldf("select distinct p_api, w_field_num, w_totcum_oil, w_totcum_gas, nrec, h_first_prod
                 from ps
                 order by w_totcum_oil DESC, w_totcum_gas DESC")
   
