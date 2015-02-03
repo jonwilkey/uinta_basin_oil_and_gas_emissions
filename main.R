@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-# pwd.drop <- "D:/"                                  # Windows
-# pwd.git  <- "C:/Users/Jon/Documents/R/"
-pwd.drop <- "/Users/john/"                         # Mac
-pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
+pwd.drop <- "D:/"                                  # Windows
+pwd.git  <- "C:/Users/Jon/Documents/R/"
+# pwd.drop <- "/Users/john/"                         # Mac
+# pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
 # pwd.drop <- "/home/slyleaf/"                       # Linux
 # pwd.git  <- "/home/slyleaf/Documents/"
   
@@ -56,9 +56,10 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "welldata.R",
                               "productionsim.R",
                               "royalty.R",
-                              #"stax.R",
-                              #"ctax.R",
-                              #"ptax.R",
+                              "stax.R",
+                              "ctax.R",
+                              "ptax.R",
+                              "Ecalc.R",
                               #"RIMS.R",
                               #"workload.R",
                               #"GHG.R",
@@ -161,10 +162,11 @@ if(opt$EIAprice.update == TRUE) {
   source(file.path(path$fun, "EIApriceUpdate.R"))
   
   # Function call
-  EIApriceUpdate(path =         path,
-                 EP.CPI.basis = opt$EP.CPI.basis,
-                 cpi =          opt$cpi,
-                 ver =          opt$file_ver)
+  EIApriceUpdate(path =            path,
+                 EP.CPI.basis =    opt$EP.CPI.basis,
+                 cpi =             opt$cpi,
+                 ver =             opt$file_ver,
+                 cf.MCF.to.MMBtu = opt$cf.MCF.to.MMBtu)
 }
 
 # Load EIAprices_v*.rda to load eia.hp (EIA historical energy prices) data.frame
@@ -173,9 +175,6 @@ load(file.path(path$data, paste("EIAprices_", opt$file_ver, ".rda", sep = "")))
 
 # 2.3 Corporate income tax conversion factor CDF generation ---------------
 
-# *** NOTE ***
-# Adjust this script to use eia.hp instead of OGprice data.frame
-
 # Run function if opt$corptax.update flag is set to "TRUE"
 if(opt$corptax.update == TRUE) {
   
@@ -183,15 +182,30 @@ if(opt$corptax.update == TRUE) {
   source(file.path(path$fun, "corpIncomeUpdate.R"))
   
   # Function call
-  corpIncomeUpdate(production =   production,
-                   path =         path,
-                   NTI =          opt$NTI,
-                   CIrate.state = opt$CIrate.state,
-                   CIrate.fed =   opt$CIrate.fed,
-                   basis =        opt$cpi,
-                   CI.pdf.min =   opt$CI.pdf.min,
-                   CI.pdf.max =   opt$CI.pdf.max,
-                   ver =          opt$file_ver)
+  corpIncomeUpdate(production =      production,
+                   path =            path,
+                   basis =           opt$cpi,
+                   ver =             opt$file_ver,
+                   NTI =             opt$NTI,
+                   eia.hp =          eia.hp)
+}
+
+
+# 2.x Property tax update -------------------------------------------------
+
+# Run function if opt$ptax.update flag is set to "TRUE"
+if(opt$ptax.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "propertyTaxUpdate.R"))
+  
+  # Function call
+  propertyTaxUpdate(p =               p,
+                    path =            path,
+                    basis =           opt$cpi,
+                    ver =             opt$file_ver,
+                    PTI =             opt$PTI,
+                    eia.hp =          eia.hp)
 }
 
 
@@ -291,7 +305,9 @@ if(opt$DCA.CDF.update == TRUE) {
                cdf.gas.to =   opt$cdf.gas.to,
                cdf.gas.np =   opt$cdf.gas.np,
                DCA.CDF.xq =   opt$DCA.CDF.xq,
-               path =         path)
+               path =         path,
+               tstart =       opt$tstart,
+               tstop =        opt$tstop)
   
   # Function call for cumulative DCA CDFs
   QfitDCAupdateCDF(field =          opt$field,
@@ -304,7 +320,9 @@ if(opt$DCA.CDF.update == TRUE) {
                    Q.cdf.gas.to =   opt$Q.cdf.gas.to,
                    Q.cdf.gas.np =   opt$Q.cdf.gas.np,
                    DCA.CDF.xq =     opt$DCA.CDF.xq,
-                   path =           path)
+                   path =           path,
+                   tstart =         opt$tstart,
+                   tstop =          opt$tstop)
 }
 
 
@@ -342,7 +360,7 @@ if(opt$DCA.CDF.update == TRUE) {
 # }
 
 
-# 3.x Energy price path simulation ----------------------------------------
+# 3.1 Energy price path simulation ----------------------------------------
 
 # Run Geometric Brownian Motion (GBM) price path simulation
 epsim <- GBMsim(path =         path,
@@ -360,7 +378,7 @@ gp <- epsim[[1]]
 remove(epsim)
 
 
-# 3.x Well drilling simulation --------------------------------------------
+# 3.2 Well drilling simulation --------------------------------------------
 
 # Run well drilling simulation given price paths opsim and gpsim
 Drilled <- drillsim(path =         path,
@@ -371,7 +389,7 @@ Drilled <- drillsim(path =         path,
                     ver =          opt$file_ver)
 
 
-# 3.1 Well data simulation ------------------------------------------------
+# 3.3 Well data simulation ------------------------------------------------
 
 # Run well data simulation function
 wsim <- welldata(path =            path,
@@ -382,115 +400,190 @@ wsim <- welldata(path =            path,
                  field =           opt$field,
                  ver =             opt$file_ver,
                  production.type = opt$prod.type,
-                 basis =           opt$cpi)
+                 basis =           opt$cpi,
+                 decline.type =    opt$mc.decline.type,
+                 EF =              opt$EF)
 
 
-# 3.2 Production simulation -----------------------------------------------
+# 3.4 Monte-Carlo Loop ----------------------------------------------------
 
-# Run production simulation function
-psim <- productionsim(wsim =            wsim,
-                      nrun =            opt$nrun,
-                      timesteps =       opt$MC.tsteps,
-                      production.type = opt$prod.type,
-                      decline.type =    opt$mc.decline.type,
-                      osim.actual =     osim.actual,
-                      gsim.actual =     gsim.actual)
+# The following for-loop calculates all terms for each well in a single 
+# Monte-Carlo (MC) iteration and returns the results as a total to cut down on
+# the memory usage for all the objects in the for-loop
 
-# Pullout list components osim (oil production records) and gsim (gas
-# production records)
-osim <- psim[[1]]
-gsim <- psim[[2]]
+# Preallocate results matrices
+osim <-    matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
+gsim <-    osim
+roy.oil <- osim
+roy.gas <- osim
+st.oil <-  osim
+st.gas <-  osim
+PT <-      osim
+CTstate <- osim
+CTfed <-   osim
+CO2 <-     osim
+CH4 <-     osim
+VOC <-     osim
 
-# Remove original
-remove(psim)
-
-# 3.3 Royalties -----------------------------------------------------------
-
-# Predefine royalty results matrices
-roy.oil <- NULL
-roy.gas <- NULL
+# Progress Bar (since this next for-loop takes a while)
+pb <- txtProgressBar(min = 0, max = opt$nrun, style = 3)
 
 # For each runID
-for (i in 1:max(wsim$runID)) {
+for (i in 1:opt$nrun) {
   
   # Get row index of wells that were a part of that run
   ind <- which(wsim$runID == i)
   
-  # Calculate royalty for oil and gas production and row bind to previous result
-  roy.oil <- rbind(roy.oil, royalty(royaltyRate = opt$royaltyRate,
-                                    ep =          op[i,],
-                                    lease =       wsim$lease[ind],
-                                    psim =        osim[ind,]))
+  # 3.4.1 Production simulation ------------------------------------------
   
-  roy.gas <- rbind(roy.gas, royalty(royaltyRate = opt$royaltyRate,
-                                    ep =          gp[i,],
-                                    lease =       wsim$lease[ind],
-                                    psim =        gsim[ind,]*opt$cf.MCF.to.MMBtu))
+  # Run production simulation function
+  psim <- productionsim(wsim =            wsim[ind,],
+                        timesteps =       opt$MC.tsteps,
+                        production.type = opt$prod.type,
+                        decline.type =    opt$mc.decline.type,
+                        osim.actual =     osim.actual,
+                        gsim.actual =     gsim.actual)
+  
+  # Pullout list components osim (oil production records) and gsim (gas
+  # production records)
+  t.osim <- psim[[1]]
+  t.gsim <- psim[[2]]
+  
+  # Remove original
+  remove(psim)
+  
+  
+  # 3.4.2 Royalties -----------------------------------------------------
+  
+  # Calculate royalty for oil production
+  t.roy.oil <- royalty(royaltyRate = opt$royaltyRate,
+                       ep =          op[i,],
+                       lease =       wsim$lease[ind],
+                       psim =        t.osim)
+  
+  # Calculate royalty for gas production
+  t.roy.gas <- royalty(royaltyRate = opt$royaltyRate,
+                       ep =          gp[i,],
+                       lease =       wsim$lease[ind],
+                       psim =        t.gsim)
+  
+  
+  # 3.4.3 Severance Taxes ----------------------------------------------
+    
+  # Calculate ST for oil production
+  t.st.oil <- stax(type =    "oil",
+                   tDrill =  wsim$tDrill[ind],
+                   psim =    t.osim,
+                   rsim =    t.roy.oil,
+                   ep =      op[i,],
+                   st.low =  opt$st.low,
+                   st.high = opt$st.high,
+                   st.con =  opt$st.con,
+                   st.cut =  opt$st.ocut,
+                   st.skip = opt$st.skip,
+                   strip =   opt$strip.oil)
+  
+  # Calculate ST for gas production
+  t.st.gas <- stax(type =    "gas",
+                   tDrill =  wsim$tDrill[ind],
+                   psim =    t.gsim,
+                   rsim =    t.roy.gas,
+                   ep =      gp[i,],
+                   st.low =  opt$st.low,
+                   st.high = opt$st.high,
+                   st.con =  opt$st.con,
+                   st.cut =  opt$st.gcut,
+                   st.skip = opt$st.skip,
+                   strip =   opt$strip.gas)
+  
+  
+  # 3.4.4 Property taxes -----------------------------------------------
+  
+  # Calculate property taxes
+  t.PT <- ptax(OP = op[i,],
+               GP = gp[i,],
+               osim = t.osim,
+               gsim = t.gsim,
+               pTaxfrac = wsim$pTaxfrac[ind])
+  
+  
+  # 3.4.5 Corporate income taxes ---------------------------------------
+  
+  # Run corporate income tax calculation
+  CT <- ctax(OP =           op[i,],
+             GP =           gp[i,],
+             osim =         t.osim,
+             gsim =         t.gsim,
+             NTIfrac =      wsim$NTIfrac[ind],
+             CIrate.state = opt$CIrate.state,
+             CIrate.fed =   opt$CIrate.fed)
+  
+  # Split out individual matrices from list
+  t.CTstate <- CT[[1]] # Corporate state income taxes
+  t.CTfed <-   CT[[2]] # Corporate federal income taxes
+  
+  # Remove list
+  remove(CT)
+  
+  
+  # 3.4.6 Emissions ----------------------------------------------------
+  
+  # Calculate emissions
+  ET <- Ecalc(osim = t.osim,
+              gsim = t.gsim,
+              wsim = wsim[ind,])
+  
+  # Extract component matrices from ET
+  t.CO2 <- ET[[1]]
+  t.CH4 <- ET[[2]]
+  t.VOC <- ET[[3]]
+  
+  # Remove list
+  remove(ET)
+  
+  
+  # 3.4.x Get totals for MC run i ---------------------------------------
+  
+  # Calculate column sums for each results matrix generated to get totals
+  osim[i,] <-    colSums(t.osim)
+  gsim[i,] <-    colSums(t.gsim)
+  roy.oil[i,] <- colSums(t.roy.oil)
+  roy.gas[i,] <- colSums(t.roy.gas)
+  st.oil[i,] <-  colSums(t.st.oil)
+  st.gas[i,] <-  colSums(t.st.gas)
+  PT[i,] <-      colSums(t.PT)
+  CTstate[i,] <- colSums(t.CTstate)
+  CTfed[i,] <-   colSums(t.CTfed)
+  CO2[i,] <-     colSums(t.CO2)
+  CH4[i,] <-     colSums(t.CH4)
+  VOC[i,] <-     colSums(t.VOC)
+  
+  
+  # 3.4.x Cleanup -------------------------------------------------------
+  
+  # Remove temporary matrices
+  remove(t.osim,
+         t.gsim,
+         t.roy.oil,
+         t.roy.gas,
+         t.st.oil,
+         t.st.gas,
+         t.PT,
+         t.CTstate,
+         t.CTfed,
+         t.CO2,
+         t.CH4,
+         t.VOC)
+  
+  # Update progress bar
+  Sys.sleep(0.01)
+  setTxtProgressBar(pb, i)
 }
 
-
-# 3.4 Severance Taxes -----------------------------------------------------
-
-# *** NOTE *** NOT FINISHED, NEED TO IMPLEMENT SEVERANCE TAX RULES FOR GAS
-
-# Predefine severance tax results matrices
-st.oil <- NULL
-st.gas <- NULL
-
-# For each runID
-for (i in 1:max(wsim$runID)) {
-  
-  # Get row index of wells that were a part of that run
-  ind <- which(wsim$runID == i)
-  
-  # Calculate ST for oil and gas production and row bind to previous result
-  st.oil <- rbind(st.oil, stax(type =   "oil",
-                               tDrill = wsim$tDrill[ind],
-                               psim =   osim[ind,],
-                               rsim =   roy.oil[ind,],
-                               ep =     op[i,],
-                               API =    opt$API))
-  
-  st.gas <- rbind(st.gas, stax(type =   "gas",
-                               tDrill = wsim$tDrill[ind],
-                               psim =   gsim[ind,],
-                               rsim =   roy.gas[ind,],
-                               ep =     gp[i,],
-                               API =    opt$API))
-}
+# Close progress bar
+close(pb)
 
 
-# # 3.5 Property taxes ------------------------------------------------------
-# 
-# # Run property tax calculation. Right now there are issues with the NPV < 0 in
-# # many cases, so only return from ptax function is lease operating costs (LOC).
-# LOC <- ptax(data_root = data_root,
-#             wsim = wsim,
-#             psim = psim,
-#             op = op,
-#             gp = gp,
-#             ind.ow = ind.ow,
-#             ind.gw = ind.gw,
-#             basis = basis,
-#             rsim = rsim,
-#             stsim = stsim)
-# 
-# 
-# # 3.6 Corporate income taxes ----------------------------------------------
-# 
-# # Run corporate income tax calculation
-# corp.tax <- ctax(ind.ow = ind.ow,
-#                  ind.gw = ind.gw)
-# 
-# # Split out individual matrices from list
-# ciSO <- corp.tax[[1]] # Corporate state income taxes for oil
-# ciSG <- corp.tax[[2]] # Corporate state income taxes for gas
-# ciFO <- corp.tax[[3]] # Corporate federal income taxes for oil
-# ciFG <- corp.tax[[4]] # Corporate federal income taxes for gas
-# 
-# # Remove list
-# remove(corp.tax)
-# 
 # # 3.7 Employment ----------------------------------------------------------
 # 
 # # RIMS II model employment estimate
