@@ -40,6 +40,7 @@ opt$drillmodel.update   <- FALSE  # Fits drilling schedule model to energy price
 opt$GBMfit.update       <- FALSE  # Fits GBM parameters "v" and "mu" to energy prices
 opt$EIAprice.update     <- FALSE  # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
 opt$drillCapCost.update <- FALSE  # *** WRITE ME *** Generates CDFs for EIA price forecasts
+opt$ptax.update         <- FALSE  # Updates property tax statistics
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
@@ -170,6 +171,7 @@ opt$MC.tsteps <- 168
 # Dec. 2012).
 opt$drilled.init <- 19
 
+
 # 1.4 Time related options ------------------------------------------------
 
 # Enter start and stop point for simulation in "YYYY-MM-DD" format by changing
@@ -212,11 +214,6 @@ opt$min.well.depth <- 1e3
 opt$max.well.depth <- 20e3
 opt$well.depth.step <- 20
 
-# API gravity of crude oil. Used in severance tax calculations. Inputting an API
-# gravity of 39.6 results in no discount for low-grade oil, while any API
-# gravity over 39.6 will result in higher severance tax rates.
-opt$API <- 39.6
-
 # Conversion factor for switching from MCF of gas to MMBtu of gas. Equation:
 #
 # (Factor in MMBtu/MCF) = (Median HV of gas in Btu/SCF) * (1e3 SCF / 1 MCF) * (1 MMBtu / 1e6 Btu)
@@ -257,14 +254,17 @@ opt$HH.to.Gasfpp  <- 0.7446302868
 # that gas FPP are calculated by converting US national average price (UT gas
 # prices are only recorded by EIA on annual basis, by nation gas FPPs are 
 # recorded on monthly basis). Both values are from 2012-12-15 in 2012 $ per bbl
-# (for oil) or MMBtu (for gas).
+# (for oil) or MCF (for gas).
 opt$oil.fpp.init <- 12.96 # Dec. 1998: $12.96 | Dec. 2012: $76.67
-opt$gas.fpp.init <- 2.93  # Dec. 1998:  $2.39 | Dec. 2012:  $2.93
+opt$gas.fpp.init <- 2.21  # Dec. 1998:  $2.21 | Dec. 2012:  $2.71
 
-# Net taxable income (NTI) from UT State Tax Comission.
-NTI <- c(66341510, 209171843, 220215146)
-year <- c(2009, 2010, 2011)
-opt$NTI <- data.frame(year, NTI); remove(NTI, year)
+# Input data for corpIncomeUpdate function
+NTI <- c(66341510, 209171843, 220215146) # Net taxable income (NTI) from UT State Tax Comission.
+year <- c(2009, 2010, 2011)              # Year associated with each element in NTI (2009-2011)
+cpi <- c(214.537, 218.056, 224.939)      # CPI annual average values from 2004 to 2012
+
+# Make NTI data.frame and remove component vectors
+opt$NTI <- data.frame(year, NTI, cpi); remove(NTI, year, cpi)
 
 # Property taxes collected (Duchesne + Uintah) - by year
 year <- c(2004:2012)
@@ -277,7 +277,13 @@ PTI <- c(2407040+5985003,   # 2004
          6196678+21712696,  # 2010
          8755478+24128270,  # 2011
          11784048+27819523) # 2012
-opt$PTI <- data.frame(year, PTI); remove(year, PTI)
+
+# CPI annual average values from 2004 to 2012
+cpi <- c(188.900, 195.300, 201.600, 207.342, 215.303, 214.537, 218.056, 224.939,
+         229.594)
+
+# Make PTI data.frame and remove component vectors
+opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
 
 # Min/max values for setting range of $/bbl or $/MCF oil/gas corporate income
 # tax conversion factors in corporate income tax probability distribution
@@ -286,21 +292,19 @@ opt$CI.pdf.min <- 0
 opt$CI.pdf.max <- 3
 
 # Severance Tax Inputs
-
-# Severance tax rates
-opt$sto  <- c(0.030, # Low ST rate for oil for values <= cutoff value threshold
-              0.050, # High ST rate for oil for values > cutoff value threshold
-              0.002, # Conservation fee
-              39.6,  # Oil API basis for determining wellhead value
-              13,    # Oil cutoff value threshold for switching between high/low ST rates
-              6)     # Number of timesteps from date well is drilled to exempt from ST
-
-# Need to review rules to see what severance tax rates are for gas...
+opt$st.con  <- 0.002   # Conservation fee rate
+opt$st.low  <- 0.030   # Low ST rate for oil/gas for values <= cutoff value threshold
+opt$st.high <- 0.050   # High ST rate for oil/gas for values > cutoff value threshold
+opt$st.ocut <- 13      # Oil cutoff value threshold ($/bbl) for switch from low to high ST rate
+opt$st.gcut <- 1.5     # Gas cutoff value threshold ($/MCF) for switch from low to high ST rate
+opt$st.skip <- 6       # Number of timesteps from date well is drilled to exempt from ST
+opt$strip.oil <- 20*30 # Oil production volume (bbl/month) below which a well is classified as a stripper well
+opt$strip.gas <- 60*30 # Gas production volume (MCF/month) below which a well is classified as a stripper well
 
 
 # 1.7 Decline curve analysis options --------------------------------------
 
-# DCA Fitting
+# General DCA Fitting Options
 opt$minProdRec      <- 12              # Minimum number of non-zero production records
 opt$minDayProd      <- 28              # Minimum number of days of a well produced in a given month required to include production data point
 opt$diff.bin.cutoff <- 0.15            # Minimum production differential on normalized scale required to consider a well as being restarted
@@ -308,21 +312,25 @@ opt$bin             <- 12              # Bin size
 opt$DCAplot         <- TRUE            # True/False flag indicating whether or not to print
 opt$n.stopB.min     <- 4               # Any stop points identified that are lower than this value will be ignored
 opt$n.startT.search <- 3               # Look at the top "n" number of production points and pick the one with the lowest time value
+
+# Hyperbolic DC Options
 opt$b.start.oil     <- 1.78            # Initial guess value for b coefficient for oil decline curve
 opt$Di.start.oil    <- 1.16            # Initial guess value for Di coefficient for oil decline curve
 opt$lower.oil       <- c(0, 0, 0)      # Lower limits for NLS for oil decline curve for (qo, b, Di) coefficients
 opt$upper.oil       <- c(Inf, 10, Inf) # Upper limits for NLS for oil decline curve for (qo, b, Di) coefficients
-opt$Cp.start.oil    <- 1e3             # Initial guess value for Cp coefficient for oil cumulative production curve
-opt$c1.start.oil    <- 0               # Initial guess value for c1 constant for oil cumulative production curve
-opt$Qlower.oil      <- c(0, 0)         # Lower limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
-opt$Qupper.oil      <- c(Inf, Inf)     # Upper limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
 opt$b.start.gas     <- 1.32            # Same as above but for gas
 opt$Di.start.gas    <- 0.24            # Same as above but for gas
 opt$lower.gas       <- c(0, 0, 0)      # Same as above but for gas
 opt$upper.gas       <- c(Inf, 10, Inf) # Same as above but for gas
+
+# Cumulative DC Options
+opt$Cp.start.oil    <- 1e3             # Initial guess value for Cp coefficient for oil cumulative production curve
+opt$c1.start.oil    <- 0               # Initial guess value for c1 constant for oil cumulative production curve
+opt$Qlower.oil      <- c(0, -Inf)      # Lower limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
+opt$Qupper.oil      <- c(Inf, Inf)     # Upper limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
 opt$Cp.start.gas    <- 1e4             # Same as above but for gas
 opt$c1.start.gas    <- 0               # Same as above but for gas
-opt$Qlower.gas      <- c(0, 0)         # Same as above but for gas
+opt$Qlower.gas      <- c(0, -Inf)      # Same as above but for gas
 opt$Qupper.gas      <- c(Inf, Inf)     # Same as above but for gas
 
 # DCA CDF Generation
@@ -333,17 +341,62 @@ opt$cdf.oil.np      <- c(3e5, 4e3, 15e4, 360) # Number of points at which to est
 opt$cdf.gas.from    <- c(0,0,0,0)             # Same as above but for gas
 opt$cdf.gas.to      <- c(4e4, Inf, Inf, Inf)  # Same as above but for gas - was 4e7, 4, 4e3, 360
 opt$cdf.gas.np      <- c(4e5, 4e3, 4e4, 360)  # Same as above but for gas
+
+# CHANGE ME AFTER REDOING DCA FITS AND PICK DIFFERENT LOWER LIMIT ON c1
 opt$Q.cdf.oil.from  <- c(0,0)                 # Lower limit in cumulative fit for CDF function for (Cp, c1)
 opt$Q.cdf.oil.to    <- c(30e3, 100e3)         # Upper limit in cumulative fit for CDF function for (Cp, c1)
 opt$Q.cdf.oil.np    <- c(10e3, 10e3)          # Number of points in cumulative fit at which to estimate CDF for (Cp, c1)
 opt$Q.cdf.gas.from  <- c(0,0)                 # Same as above but for gas
-opt$Q.cdf.gas.to    <- c(200e3, 100e3)            # Same as above but for gas
+opt$Q.cdf.gas.to    <- c(200e3, 100e3)        # Same as above but for gas
 opt$Q.cdf.gas.np    <- c(10e3, 10e3)          # Same as above but for gas
 opt$DCA.CDF.xq      <- seq(0, 1, 0.001)       # Sequence of xq probabilities at which to estimate quantile values
+
+
+# Emission Factors --------------------------------------------------------
+
+# Emission factor category names and units
+EF.names <- c("site",    # Site preparation                          (metric tons / well)
+              "Tdrill",  # Transporation of materials for drilling   (metric tons / well)
+              "Tcompl",  # Transporation of materials for completion (metric tons / well)
+              "Trework", # Transporation of materials for rework     (metric tons / well)
+              "Tprod",   # Transporation of materials for production (metric tons / well)
+              "drill",   # Drilling and fracturing                   (metric tons / well)
+              "compl",   # Completion                                (metric tons / well)
+              "prod",    # Production                                (metric tons / well year)
+              "proc",    # Processing                                (metric tons / 10^9 CF gas)
+              "transm")  # Transmission and distribution             (% of CH4 produced over lifecycle of well)
+
+# Input EF mean and standard deviation values here in order shown above in EF.names vector
+#..............................................................................................................................
+# Term      site     Tdrill   Tcompl   Trework  Tprod   drill compl    prod     proc     transm              Notes
+#..............................................................................................................................
+m.co2 <-  c(208,     0.4,     0.21,    3.05,    1.36,    569, 1940,    100,     901,     1.04)    # Mean CO2e EFs
+m.ch4 <-  c(9.9,     8.6e-6,  4.36e-6, 7.71e-5, 3.29e-5, 0,   92.4,    4.75,    5.58,    1.04)    # Mean CH4 EFs
+m.voc <-  c(1.75e-3, 0,       0,       0,       0,       0,   1.63e-2, 8.40e-4, 9.87e-4, 1.84e-4) # Mean VOC EFs
+sd.co2 <- c(79,      0.56,    0.29,    4.3,     1.93,    326, 46,      40,      46,      0.85)    # Standard deviation CO2e EFs
+sd.ch4 <- c(3.37,    1.22e-5, 6.16e-6, 1.01e-4, 4.65e-5, 0,   0,       1.9,     3.91,    0.85)    # Standard deviation CH4 EFs
+sd.voc <- c(0,       0,       0,       0,       0,       0,   0,       0,       0,       0)       # Standard deviation VOC EFs
+
+# If any EF has a standard deviation of zero, set it to the fraction of the mean
+# as specfied below
+sdFracMean <- 1
+sd.co2 <- ifelse(sd.co2 == 0, m.co2*sdFracMean, sd.co2)
+sd.ch4 <- ifelse(sd.ch4 == 0, m.ch4*sdFracMean, sd.ch4)
+sd.voc <- ifelse(sd.voc == 0, m.voc*sdFracMean, sd.voc)
+
+# Make EF statistics data.frame
+opt$EF <- data.frame(m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, row.names = EF.names)
+
+# Unit conversions
+opt$EF["prod",] <- opt$EF["prod",]/12 # from (well year) to (well month)
+opt$EF["proc",] <- opt$EF["proc",]/1e6 # from ( / 10^9 CF gas) to ( / MCF gas)
+
+# Remove component vectors
+remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc)
 
 
 # Outputs -----------------------------------------------------------------
 
 # Export plot results as PDF? Valid options are TRUE/FALSE
-opt$exportFlag <- TRUE
+opt$exportFlag <- FALSE
 opt$pdfName <- "MC v2 results -quantile -Qfit -simDrill -50nrun.pdf"
