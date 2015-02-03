@@ -30,6 +30,10 @@
 
 # path - path names for file directoires (data, plotting, etc.)
 
+# tstart - Lower-limit cutoff date for which wells to include in CDF analysis
+
+# tstop - Upper-limit cutoff date for which wells to include in CDF analysis
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -50,7 +54,8 @@
 # Function ----------------------------------------------------------------
 QfitDCAupdateCDF <- function(field, ver, DCA.CDF.type, Q.cdf.oil.from,
                              Q.cdf.oil.to, Q.cdf.oil.np, Q.cdf.gas.from,
-                             Q.cdf.gas.to, Q.cdf.gas.np, DCA.CDF.xq, path) {
+                             Q.cdf.gas.to, Q.cdf.gas.np, DCA.CDF.xq, path,
+                             tstart, tstop) {
   
 #   # Internal values - uncomment for debugging
 #   field =        opt$field
@@ -71,11 +76,16 @@ QfitDCAupdateCDF <- function(field, ver, DCA.CDF.type, Q.cdf.oil.from,
   load(file.path(path$data, paste("DCA_fits_", ver, ".rda", sep = "")))
   
   # Drop values higher than cdf.oil/gas.to cutoffs
-  mo <- subset(mo, subset = (Cp.1 <= Q.cdf.oil.to[1] &
-                             c1.1 <= Q.cdf.oil.to[2]))
+  mo <- subset(mo, subset = (Cp.1 <=         Q.cdf.oil.to[1] &
+                             c1.1 <=         Q.cdf.oil.to[2] &
+                             h_first_prod >= tstart &
+                             h_first_prod <= tstop))
   
-  mg <- subset(mg, subset = (Cp.1 <= Q.cdf.gas.to[1] &
-                             c1.1 <= Q.cdf.gas.to[2]))
+  mg <- subset(mg, subset = (Cp.1 <=         Q.cdf.gas.to[1] &
+                             c1.1 <=         Q.cdf.gas.to[2] &
+                             h_first_prod >= tstart &
+                             h_first_prod <= tstop))
+  
   
   # Analysis ----------------------------------------------------------------
   
