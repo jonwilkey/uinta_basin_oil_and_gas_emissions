@@ -30,6 +30,10 @@
 
 # path - path names for file directoires (data, plotting, etc.)
 
+# tstart - Lower-limit cutoff date for which wells to include in CDF analysis
+
+# tstop - Upper-limit cutoff date for which wells to include in CDF analysis
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -50,23 +54,29 @@
 # Function ----------------------------------------------------------------
 DCAupdateCDF <- function(field, ver, DCA.CDF.type, cdf.oil.from, cdf.oil.to,
                       cdf.oil.np, cdf.gas.from, cdf.gas.to, cdf.gas.np,
-                      DCA.CDF.xq, path) {
+                      DCA.CDF.xq, path, tstart, tstop) {
   
   # Load DCA fit data -------------------------------------------------------
   
   # From DCAupdate function export, load data.frames "mo" and "mg"
   load(file.path(path$data, paste("DCA_fits_", ver, ".rda", sep = "")))
   
-  # Drop values higher than cdf.oil/gas.to cutoffs
-  mo <- subset(mo, subset = (qo.1 <=   cdf.oil.to[1] &
-                             b.1 <=    cdf.oil.to[2] &
-                             Di.1 <=   cdf.oil.to[3] &
-                             tdelay <= cdf.oil.to[4]))
+  # Drop values higher than cdf.oil/gas.to cutoffs and within tstart/tstop time
+  # limits
+  mo <- subset(mo, subset = (qo.1 <=         cdf.oil.to[1] &
+                             b.1 <=          cdf.oil.to[2] &
+                             Di.1 <=         cdf.oil.to[3] &
+                             tdelay <=       cdf.oil.to[4] &
+                             h_first_prod >= tstart &
+                             h_first_prod <= tstop))
   
-  mg <- subset(mg, subset = (qo.1 <=   cdf.gas.to[1] &
-                             b.1 <=    cdf.gas.to[2] &
-                             Di.1 <=   cdf.gas.to[3] &
-                             tdelay <= cdf.gas.to[4]))
+  mg <- subset(mg, subset = (qo.1 <=         cdf.gas.to[1] &
+                             b.1 <=          cdf.gas.to[2] &
+                             Di.1 <=         cdf.gas.to[3] &
+                             tdelay <=       cdf.gas.to[4] &
+                             h_first_prod >= tstart &
+                             h_first_prod <= tstop))
+  
   
   # Analysis ----------------------------------------------------------------
   
