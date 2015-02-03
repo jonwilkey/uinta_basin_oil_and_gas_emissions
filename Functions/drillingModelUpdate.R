@@ -14,6 +14,8 @@
 
 # ver - Version number for file naming of exported data.frames
 
+# eia.hp - EIA historical energy prices
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -37,7 +39,7 @@
 
 # Function ----------------------------------------------------------------
 
-drillingModelUpdate <- function(path, p, min.depth, ver) {
+drillingModelUpdate <- function(path, p, min.depth, ver, eia.hp) {
   
   # Determine number of wells drilled each month ------------------------------
   
