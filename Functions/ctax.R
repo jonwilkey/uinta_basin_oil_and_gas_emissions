@@ -6,48 +6,61 @@
 
 # Inputs ------------------------------------------------------------------
 
-# wsim - Well information data.table with corporate income tax rates
+# OP - Vector inflation-adjusted oil prices on $/bbl basis
 
-# psim - monthly production records
+# GP - Vector of inflation-adjusted gas prices on $/MCF basis
 
-# ind.ow - row index for wells which are oil wells in wsim
+# osim - Matrix of oil production volumes for each well (rows) in each timestep
+# (columns) in units of bbl
 
-# ind.gw - row index for wells which are gas wells in wsim
+# gsim - Matrix of gas production volumes for each well (rows) in each timestep
+# (columns) in units of MCF
+
+# NTIfrac - Conversion factor for estimating net taxable income (NTI), assuming 
+# that NTI can be estimated as fraction of revenue from oil and gas sales
 
 
 # Outputs -----------------------------------------------------------------
 
-# ci** - matrix of corporate income taxes paid to state/federal government on 
-# oil/gas  production. Abbreviations are ciSO (state oil), ciSG (state gas),
-# ciFO(federal oil), and ciFG(federal gas).
+# result - List with state and federal corporate income tax results matrix in
+# basis $
 
 
 # Description -------------------------------------------------------------
 
-# This function calculates corporate income taxes by mutliplying production
-# records in psim by the corporate income tax rates for each well given by wsim.
+# This function calculates corporate income taxes for each well as a timeseries 
+# by [1] calculating the revenue from oil and gas sales, [2] multiplying that 
+# revenue by NTIfrac (a conversion factor generated randomly for each well), and
+# finally [3] applying the tax rates CIrate.state and CIrate.fed to the
+# estimated NTI to find corporate income taxes.
 
 
 # Function ---------------------------------------------------------------- 
-ctax <- function(wsim, psim, ind.ow, ind.gw) {
+ctax <- function(OP, GP, osim, gsim, NTIfrac, CIrate.state, CIrate.fed) {
   
-  # Predefine matrices for calculation results
-  ciSO <- matrix(0, nrow = nrow(psim), ncol = ncol(psim))
-  ciSG <- ciSO
-  ciFO <- ciSO
-  ciFG <- ciSO
+  # Preallocate space for results
+  revenue <- matrix(0, nrow = nrow(osim), ncol = ncol(osim))
+  NTI <-     revenue
+  state <-   revenue
+  federal <- revenue
   
-  # Calculate corporate income taxes for on-type (OOW & GGW) production
-  for (i in 1:ncol(psim)) {
-    ciSO[ind.ow,i] <- wsim$cirSO[ind.ow]*psim[ind.ow,i]
-    ciSG[ind.gw,i] <- wsim$cirSG[ind.gw]*psim[ind.gw,i]
-    ciFO[ind.ow,i] <- wsim$cirFO[ind.ow]*psim[ind.ow,i]
-    ciFG[ind.gw,i] <- wsim$cirFG[ind.gw]*psim[ind.gw,i]
+  # For each timestep (i.e. column)
+  for (i in 1:ncol(osim)) {
+    
+    # Calculate revenue from oil and gas
+    revenue[,i] <- OP[i]*osim[,i]+GP[i]*gsim[,i]
+    
+    # Calculate NTI
+    NTI[,i] <- NTIfrac*revenue[,i]
+    
+    # Calculate state corporate income taxes
+    state[,i] <-   NTI[,i]*CIrate.state
+    federal[,i] <- NTI[,i]*CIrate.fed-state[,i]
   }
   
-  # Create list
-  ci <- list(ciSO, ciSG, ciFO, ciFG)
+  # Combine into list
+  result <- list(state, federal)
   
-  # Return list
-  return(ci)
+  # Return result
+  return(result)
 }

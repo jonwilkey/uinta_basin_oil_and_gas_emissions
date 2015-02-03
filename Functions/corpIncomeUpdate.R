@@ -6,66 +6,56 @@
 
 # Inputs ------------------------------------------------------------------
 
-# production - full DOGM database (without subsetting out wells not located in
+# production - full DOGM database (without subsetting out wells not located in 
 # Uinta Basin)
 
 # path - list object containing directory paths for file I/O
 
-# NTI - net corporate income tax received by Utah State Tax Commission,
-#       structured as data.frame with columns for year and NTI
-
-# CIrate.state - State corporate income tax rate
-
-# CIrate.fed - Federal corporate income tax rate
-
 # basis - CPI index value for dollar basis used in rest of model
 
-# CI.pdf.min - Minimum value of CI conversion factor PDF
-
-# CI.pdf.max - Maximum value of CI conversion factor PDF
-
 # ver - version # for numbering *.rda output with unique filename
+
+# NTI - net corporate income tax received by Utah State Tax Commission, 
+# structured as data.frame with columns for year and NTI
+
+# eia.hp - data.frame of oil and gas FPP inflation adjusted to basis $/bbl or
+# $/MCF each month since 1977
 
 
 # Outputs -----------------------------------------------------------------
 
-# cdf.CI - data.frame with columns for (1) conversion factor of $/bbl or $/MCF
-#          corporate income tax in basis dollar paid to the state or federal
-#          government on oil or gas production along with the cumulative
-#          probability density for each conversion factor rate
+# corpNTIfrac - data.frame with mean and standard deviation of NTI expressed as
+# a fraction of revenue from oil and gas sales for use with rnorm() function to
+# randomly pick property tax rates in MC simulation
 
 
 # Description -------------------------------------------------------------
 
-# The function below updates the cumulative distribution function for corporate 
-# income tax conversion factors and is intended to be run when new corporate 
-# income tax data becomes available.
+# The function below gets the mean and standard deviation for NTI conversion
+# factors and is intended to be run when new corporate tax data becomes
+# available.
 
-# The function first determines to the total oil and gas production across the 
-# entire state for each year where tax data is available, as well as the mean
-# oil and gas prices in those years and the mean CPI index value.
+# The function first determines to the total oil and gas production in Uintah 
+# and Duchesne counties for each year where tax data is available, as well as
+# the mean oil and gas prices in those years.
 
-# Next, the determines the net revenue from oil and gas sales to attribute the 
-# portion of revenue attributable to oil and to gas sales. Assuming tax revenue 
-# is proportional to sales revenue, the script then splits revenue to oil and 
-# gas on a $/bbl and $/MCF basis based on actually tax payments to the state of 
-# UT. Further assuming corporate income tax rates are as state in the input file
-# (5% for state and 35% for federal), the federal corporate income tax 
-# conversion factor can be inferred. All of these coversion factors are bundled
-# into a single data.frame and adjusted for inflation to "basis" dollars.
-
-# Finally, the conversion factors data points are used to generate a probability
-# distribution function assuming a normal distribution (since there are only a
-# couple of years of tax data available).
-
-# Note that this approach is very rough, and tax data vary widely year-to-year.
-# Predictions from this method should be taken with a large grain of salt.
+# Next, the function determines the revenue from oil and gas sales. Assuming 
+# that NTI can be estimated as a fraction of revenue, the function determines 
+# the mean and standard deviation of the sample set of NTI corporate income tax 
+# data. These two values are then saved so that they can be used in the MC 
+# simulation for randomly picking NTI fractions using the rnorm() function.
 
 
 # Function ----------------------------------------------------------------
 
-corpIncomeUpdate <- function(production, path, NTI, CIrate.state, CIrate.fed,
-                             basis, CI.pdf.min, CI.pdf.max, ver) {
+corpIncomeUpdate <- function(production, path, basis, ver, NTI, eia.hp) {
+  
+#   # Internal variables - uncomment to debug ---------------------------------
+#   
+#   basis <- opt$cpi
+#   ver <- opt$file_ver
+#   NTI <- opt$NTI
+  
   
   # Oil and Gas Data Selection ----------------------------------------------
   
@@ -75,7 +65,6 @@ corpIncomeUpdate <- function(production, path, NTI, CIrate.state, CIrate.fed,
   prod.gas  <- prod.oil
   price.oil <- prod.oil
   price.gas <- prod.oil
-  cpi       <- prod.oil
   
   # Loop for getting data for each year in NTI
   for (i in 1:nrow(NTI)) {
@@ -84,78 +73,42 @@ corpIncomeUpdate <- function(production, path, NTI, CIrate.state, CIrate.fed,
     tstart <- as.Date(paste(NTI$year[i],"-01-01",sep=""))
     tstop  <- as.Date(paste(NTI$year[i],"-12-01",sep=""))
     temp <- subset(production, subset = (p_rpt_period >= tstart &
-                                           p_rpt_period <= tstop))
+                                         p_rpt_period <= tstop))
     prod.oil[i] <- sum(temp$p_oil_prod, na.rm = TRUE)
     prod.gas[i] <- sum(temp$p_gas_prod, na.rm = TRUE)
     
-    # OGprice row index selection for year "i"
-    ind <- which(OGprice$t >= tstart &
-                   OGprice$t <= tstop)
+    # Get row index selection from eia.hp for year "i"
+    ind <- which(eia.hp$month >= as.yearmon(tstart) &
+                 eia.hp$month <= as.yearmon(tstop))
     
-    # Mean ...
-    price.oil[i] <- mean(OGprice$bw[ind])   # Oil price
-    price.gas[i] <- mean(OGprice$uswp[ind]) # Gas price
-    cpi[i] <- mean(OGprice$cpi[ind])        # CPI
+    # Mean oil/gas prices by year
+    price.oil[i] <- mean(eia.hp$OP[ind])  # Oil price
+    price.gas[i] <- mean(eia.hp$GP[ind])  # Gas price
   }
   
   
   # Calculation -------------------------------------------------------------
   
-  # Total revenue
-  rev.oil <- price.oil*prod.oil
-  rev.gas <- price.gas*prod.gas
+  # Calculate revenue from oil and gas sales
+  revenue <- price.oil*prod.oil+price.gas*prod.gas
   
-  # Fraction revenue attributable to each resource
-  frac.oil <- rev.oil/(rev.oil+rev.gas)
-  frac.gas <- 1-frac.oil
+  # Inflation adjust NTI values to basis $
+  NTI$NTI <- inf_adj(price = NTI$NTI,
+                     index = NTI$cpi,
+                     basis = basis)
   
-  # State income tax
-  state <- CIrate.state*NTI$NTI
+  # Calculate fraction of revenue paid in property taxes each year
+  frac <- NTI$NTI/revenue
   
-  # Federal income tax
-  fed <- CIrate.fed*NTI$NTI-state
-  
-  # Put everything on $ per unit of production basis ($/bbl oil, $/MCF gas)
-  state.oil <- frac.oil*state/prod.oil
-  state.gas <- frac.gas*state/prod.gas
-  fed.oil   <- frac.oil*fed/prod.oil
-  fed.gas   <- frac.gas*fed/prod.gas
-  
-  # Make data.frame and rename
-  CI <- data.frame(NTI$year, cpi, state.oil, state.gas, fed.oil, fed.gas)
-  names(CI) <- c("year", "cpi", "state.oil", "state.gas", "fed.oil", "fed.gas")
-  
-  # Adjust to dollar basis used in rest of model using inf_adj.R function
-  for (i in 1:nrow(CI)) {
-    CI[i,3:6] <- inf_adj(price = CI[i,3:6], index = CI$cpi[i], basis = basis)
-  }
-  
-  # Find PDF
-  x <- seq(from = CI.pdf.min, to = CI.pdf.max, by = 0.001)
-  y.state.oil <- dnorm(x = x, mean = mean(CI$state.oil), sd = sd(CI$state.oil))
-  y.state.gas <- dnorm(x = x, mean = mean(CI$state.gas), sd = sd(CI$state.gas))
-  y.fed.oil   <- dnorm(x = x, mean = mean(CI$fed.oil), sd = sd(CI$fed.oil))
-  y.fed.gas   <- dnorm(x = x, mean = mean(CI$fed.gas), sd = sd(CI$fed.gas))
-  
-  # Convert to CDF
-  cdf.state.oil <- cumsum(y.state.oil*diff(x[1:2]))
-  cdf.state.gas <- cumsum(y.state.gas*diff(x[1:2]))
-  cdf.fed.oil   <- cumsum(y.fed.oil*diff(x[1:2]))
-  cdf.fed.gas   <- cumsum(y.fed.gas*diff(x[1:2]))
-  
-  # Normalize and rename
-  ySO <- cdf.state.oil/max(cdf.state.oil)
-  ySG <- cdf.state.gas/max(cdf.state.gas)
-  yFO <- cdf.fed.oil/max(cdf.fed.oil)
-  yFG <- cdf.fed.gas/max(cdf.fed.gas)
-  
-  # Place results for export into dataframe
-  cdf.CI <- data.frame(x, ySO, ySG, yFO, yFG)
-  
+  # Get mean and standard deviation so that rnorm() can be used to pick
+  # conversion factor for property tax payments
+  corpNTIfrac <- c(mean(frac), sd(frac))
+  names(corpNTIfrac) <- c("mean", "sd")
+    
   
   # Export results as *.rda file --------------------------------------------
   
   save(file=file.path(path$data,
-                      paste("cdf_corpIncomeTax_", ver, ".rda", sep = "")),
-       list=c("cdf.CI"))
+                      paste("corpNTIfrac_", ver, ".rda", sep = "")),
+       list=c("corpNTIfrac"))
 }
