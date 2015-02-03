@@ -116,7 +116,7 @@ p <- subset(p, subset = switch(opt$psub,
             select = opt$p.keep)
 
 
-# 2.2 Drilling schedule CDF generation ------------------------------------
+# 2.2 Schedule update and CDF generation ----------------------------------
 
 # Run function if opt$schedule.update flag is set to "TRUE"
 if(opt$schedule.update == TRUE) {
@@ -134,6 +134,12 @@ if(opt$schedule.update == TRUE) {
                  well.depth.step = opt$well.depth.step,
                  ver =             opt$file_ver)
 }
+
+# Load wsim.actual data.frame
+load(file.path(path$data, paste("wsim_actual_", opt$file_ver, ".rda", sep = "")))
+
+# Load osim/gsim.actual data.frames
+load(file.path(path$data, paste("psim_actual_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.4 Lease opearting cost lm() fit update --------------------------------
@@ -221,14 +227,9 @@ if(opt$drillmodel.update == TRUE) {
   drillingModelUpdate(path =      path,
                       p =         p,
                       min.depth = opt$min.well.depth,
-                      ver =       opt$file_ver)
+                      ver =       opt$file_ver,
+                      eia.hp =    eia.hp)
 }
-
-# Load wsim.actual data.frame
-load(file.path(path$data, paste("wsim_actual_", opt$file_ver, ".rda", sep = "")))
-
-# Load osim/gsim.actual data.frames
-load(file.path(path$data, paste("psim_actual_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.6 GBM parameter fit update --------------------------------------------
@@ -347,16 +348,6 @@ if(opt$DCA.CDF.update == TRUE) {
 # if(opt$water.update == TRUE) {
 #   source(file.path(path$fun, "waterUpdate.R"))
 #   waterUpdate(blah)
-# }
-
-# 2.10 Emission Factors Update --------------------------------------------
-
-# WRITE ME - AFTERWARDS UPDATE "welldata.R" RELATED CODE
-# 
-# # Run function if opt$emission.update flag is set to "TRUE"
-# if(opt$emission.update == TRUE) {
-#   source(file.path(path$fun, "EFupdate.R"))
-#   EFupdate(blah)
 # }
 
 
@@ -598,18 +589,6 @@ close(pb)
 #                           psim = psim,
 #                           nrun = nrun,
 #                           timesteps = timesteps)
-# 
-# 
-# # 3.8 Emissions -----------------------------------------------------------
-# 
-# # Determine GHG emissions as (1) 1e3 kg CO2e and (2) MCF of CH4
-# emissions <- GHG(wsim = wsim,
-#                  psim = psim,
-#                  nrun = nrun,
-#                  timesteps = timesteps,
-#                  ind.ow = ind.ow,
-#                  ind.gw = ind.gw,
-#                  truckload = 200)       # Capacity of oil trucks in bbl
 # 
 # 
 # # 3.9 Water Balance -------------------------------------------------------

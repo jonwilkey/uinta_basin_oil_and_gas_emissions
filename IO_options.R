@@ -30,21 +30,21 @@ opt <- NULL
 #...............................................................................
 opt$DOGM.update         <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
 opt$schedule.update     <- FALSE  # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
-opt$water.update        <- FALSE  # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
-opt$corptax.update      <- FALSE  # Generates corporate income tax coversion factor CDFs
-opt$DCA.update          <- FALSE  # Fits decline curves
-opt$DCA.CDF.update      <- FALSE  # Generates CDFs from decline curve fits
-opt$emission.update     <- FALSE  # *** WRITE ME *** Generates CDFs for emission factors
 opt$lease.update        <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
-opt$drillmodel.update   <- FALSE  # Fits drilling schedule model to energy prices
-opt$GBMfit.update       <- FALSE  # Fits GBM parameters "v" and "mu" to energy prices
-opt$EIAprice.update     <- FALSE  # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
+opt$EIAprice.update     <- TRUE  # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
+opt$corptax.update      <- TRUE  # Generates corporate income tax coversion factor CDFs
+opt$ptax.update         <- TRUE  # Updates property tax statistics
+opt$drillmodel.update   <- TRUE  # Fits drilling schedule model to energy prices
+opt$GBMfit.update       <- TRUE  # Fits GBM parameters "v" and "mu" to energy prices
+opt$DCA.update          <- TRUE  # Fits decline curves
+opt$DCA.CDF.update      <- TRUE  # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- FALSE  # *** WRITE ME *** Generates CDFs for EIA price forecasts
-opt$ptax.update         <- FALSE  # Updates property tax statistics
+opt$water.update        <- FALSE  # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
 opt$file_ver <- "v2"
+
 
 # 1.2 Subsetting options for production.rda file ------------------------------
 
@@ -138,7 +138,7 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
 # 1.3 Monte-Carlo simulation options --------------------------------------
 
 # Enter number of overall simulation iterations
-opt$nrun <- 10
+opt$nrun <- 50
 
 # Select drilling schedule type. Valid options are:
 #
@@ -259,24 +259,24 @@ opt$oil.fpp.init <- 12.96 # Dec. 1998: $12.96 | Dec. 2012: $76.67
 opt$gas.fpp.init <- 2.21  # Dec. 1998:  $2.21 | Dec. 2012:  $2.71
 
 # Input data for corpIncomeUpdate function
-NTI <- c(66341510, 209171843, 220215146) # Net taxable income (NTI) from UT State Tax Comission.
-year <- c(2009, 2010, 2011)              # Year associated with each element in NTI (2009-2011)
-cpi <- c(214.537, 218.056, 224.939)      # CPI annual average values from 2004 to 2012
+NTI  <- c(66341510, 209171843, 220215146) # Net taxable income (NTI) from UT State Tax Comission.
+year <- c(2009, 2010, 2011)               # Year associated with each element in NTI (2009-2011)
+cpi  <- c(214.537, 218.056, 224.939)      # CPI annual average values from 2004 to 2012
 
 # Make NTI data.frame and remove component vectors
 opt$NTI <- data.frame(year, NTI, cpi); remove(NTI, year, cpi)
 
 # Property taxes collected (Duchesne + Uintah) - by year
 year <- c(2004:2012)
-PTI <- c(2407040+5985003,   # 2004
-         3640044+8241224,   # 2005
-         5358662+12895362,  # 2006
-         5209014+13235218,  # 2007
-         5801276+19261688,  # 2008
-         6266650+20711119,  # 2009
-         6196678+21712696,  # 2010
-         8755478+24128270,  # 2011
-         11784048+27819523) # 2012
+PTI  <- c(2407040+5985003,   # 2004
+          3640044+8241224,   # 2005
+          5358662+12895362,  # 2006
+          5209014+13235218,  # 2007
+          5801276+19261688,  # 2008
+          6266650+20711119,  # 2009
+          6196678+21712696,  # 2010
+          8755478+24128270,  # 2011
+          11784048+27819523) # 2012
 
 # CPI annual average values from 2004 to 2012
 cpi <- c(188.900, 195.300, 201.600, 207.342, 215.303, 214.537, 218.056, 224.939,
@@ -284,12 +284,6 @@ cpi <- c(188.900, 195.300, 201.600, 207.342, 215.303, 214.537, 218.056, 224.939,
 
 # Make PTI data.frame and remove component vectors
 opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
-
-# Min/max values for setting range of $/bbl or $/MCF oil/gas corporate income
-# tax conversion factors in corporate income tax probability distribution
-# function
-opt$CI.pdf.min <- 0
-opt$CI.pdf.max <- 3
 
 # Severance Tax Inputs
 opt$st.con  <- 0.002   # Conservation fee rate
@@ -305,13 +299,13 @@ opt$strip.gas <- 60*30 # Gas production volume (MCF/month) below which a well is
 # 1.7 Decline curve analysis options --------------------------------------
 
 # General DCA Fitting Options
-opt$minProdRec      <- 12              # Minimum number of non-zero production records
-opt$minDayProd      <- 28              # Minimum number of days of a well produced in a given month required to include production data point
-opt$diff.bin.cutoff <- 0.15            # Minimum production differential on normalized scale required to consider a well as being restarted
-opt$bin             <- 12              # Bin size
-opt$DCAplot         <- TRUE            # True/False flag indicating whether or not to print
-opt$n.stopB.min     <- 4               # Any stop points identified that are lower than this value will be ignored
-opt$n.startT.search <- 3               # Look at the top "n" number of production points and pick the one with the lowest time value
+opt$minProdRec      <- 12   # Minimum number of non-zero production records
+opt$minDayProd      <- 28   # Minimum number of days of a well produced in a given month required to include production data point
+opt$diff.bin.cutoff <- 0.15 # Minimum production differential on normalized scale required to consider a well as being restarted
+opt$bin             <- 12   # Bin size
+opt$DCAplot         <- TRUE # True/False flag indicating whether or not to print
+opt$n.stopB.min     <- 4    # Any stop points identified that are lower than this value will be ignored
+opt$n.startT.search <- 3    # Look at the top "n" number of production points and pick the one with the lowest time value
 
 # Hyperbolic DC Options
 opt$b.start.oil     <- 1.78            # Initial guess value for b coefficient for oil decline curve
@@ -326,11 +320,11 @@ opt$upper.gas       <- c(Inf, 10, Inf) # Same as above but for gas
 # Cumulative DC Options
 opt$Cp.start.oil    <- 1e3             # Initial guess value for Cp coefficient for oil cumulative production curve
 opt$c1.start.oil    <- 0               # Initial guess value for c1 constant for oil cumulative production curve
-opt$Qlower.oil      <- c(0, -Inf)      # Lower limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
+opt$Qlower.oil      <- c(0,  -Inf)     # Lower limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
 opt$Qupper.oil      <- c(Inf, Inf)     # Upper limits for NLS for oil cumulative production curve for (Cp, c1) coefficients
 opt$Cp.start.gas    <- 1e4             # Same as above but for gas
 opt$c1.start.gas    <- 0               # Same as above but for gas
-opt$Qlower.gas      <- c(0, -Inf)      # Same as above but for gas
+opt$Qlower.gas      <- c(0,  -Inf)     # Same as above but for gas
 opt$Qupper.gas      <- c(Inf, Inf)     # Same as above but for gas
 
 # DCA CDF Generation
