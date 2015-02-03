@@ -67,8 +67,8 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, ver) {
   
   # For each timestep in simulation period, calculate wells drilled
   for (i in 1:(ncol(Drilled)-1)) {
-    Drilled[,(i+1)] <- round(drillsched(OP = GBMsim.OP[,(i+1)],
-                                        GP = GBMsim.GP[,(i+1)],
+    Drilled[,(i+1)] <- round(drillsched(OP = GBMsim.OP[,i],
+                                        GP = GBMsim.GP[,i],
                                         Wo = Drilled[,i],
                                         a = drillModel$coefficients["OP"],
                                         b = drillModel$coefficients["GP"],
