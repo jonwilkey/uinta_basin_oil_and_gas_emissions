@@ -8,11 +8,9 @@
 
 # path - path names for file directoires (data, plotting, etc.)
 
-# oil.fpp.init - National first purchase price (FPP) for oil in opt$cpi $ per
-# bbl
+# oil.fpp.init - National first purchase price (FPP) for oil in opt$cpi $/bbl
 
-# gas.fpp.init - National first purchase price (FPP) for gas in opt$cpi $ per
-# MMBtu
+# gas.fpp.init - National first purchase price (FPP) for gas in opt$cpi $/MCF
 
 # timesteps - Number of months to be simulated
 
@@ -94,6 +92,11 @@ GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, ver) {
                       v = GBMfitGP$v,
                       timesteps = timesteps,
                       N = nrun)
+  
+  # Drop first column (prices at timestep just prior to start of simulation time
+  # period)
+  GBMsim.OP[,-1]
+  GBMsim.GP[,-1]
   
   # Return result as list
   return(list(GBMsim.OP, GBMsim.GP))
