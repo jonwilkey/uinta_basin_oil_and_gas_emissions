@@ -8,8 +8,6 @@
 
 # wsim - data.table with information about each well
 
-# nrun - Number of overall iterations in simulation
-
 # timesteps - Number of months to be simulated
 
 # production.type - Character switch indicating method for determining prodution
@@ -53,12 +51,11 @@
 # wsim.
 
 # If the value of production.type == "b" then the function call is for a 
-# validation run and osim/gsim == osim/gsim.actual. If nrun > 1 then the actual
-# production matrices are concatonated "nrun" times.
+# validation run and osim/gsim == osim/gsim.actual.
 
 
 # Function ---------------------------------------------------------------- 
-productionsim <- function(wsim, nrun, timesteps, production.type, decline.type,
+productionsim <- function(wsim, timesteps, production.type, decline.type,
                           osim.actual, gsim.actual) {
   
   # Switch for production simulation type. Options are "a" for calculating 
@@ -176,20 +173,14 @@ productionsim <- function(wsim, nrun, timesteps, production.type, decline.type,
          # Actual production schedule from DOGM database
          b = {
            
-           # Concatonate actual production matrix "nrun" times
-           otemp <- osim.actual
-           gtemp <- gsim.actual
-           if (nrun > 1) {
-             for (i in 1:(nrun-1)) {
-               otemp <- rbind(otemp, osim.actual)
-               gtemp <- rbind(gtemp, gsim.actual)
-             }
-           }
-           
-           # Redefine as osim/gsim
-           osim <- otemp
-           gsim <- gtemp
+           # osim/gsim are just osim.actual and gsim.actual
+           osim <- osim.actual
+           gsim <- gsim.actual
          })
+  
+  # Check for and overwrite any negative production values
+  osim <- ifelse(test = osim < 0 , yes = 0, no = osim)
+  gsim <- ifelse(test = gsim < 0 , yes = 0, no = gsim)
   
   # Return results
   return(list(osim, gsim))
