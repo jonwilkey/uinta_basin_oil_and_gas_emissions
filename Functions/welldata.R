@@ -28,6 +28,11 @@
 # basis - Consumer price index at "basis" time index (i.e. CPI value to which
 # other costs will be inflation adjusted)
 
+# decline.type - character string switch for determining what decline/production
+# curve equation to use (hyperbolic DC or cumulative production)
+
+# EF - emission factors table, set in IO_options.R script
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -87,7 +92,7 @@
 
 # Function ----------------------------------------------------------------
 welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
-                     production.type, basis) {
+                     production.type, basis, decline.type, EF) {
   
   # Pick well information that varies by simulation type --------------------
   
@@ -217,26 +222,8 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            type     <- rep(wsim.actual$wellType, times = nrun)
            fieldnum <- rep(wsim.actual$fieldnum, times = nrun)
            depth    <- rep(wsim.actual$depth,    times = nrun)
-           lease  <- rep(wsim.actual$lease,    times = nrun)
-           
-           # If using actual production decline curve coefficients
-           if (production.type == "b") {
-             qo.oil <- rep(wsim.actual$acoefOil, times = nrun)
-             qo.gas <- rep(wsim.actual$acoefGas, times = nrun)
-             b.oil  <- rep(NA, times = length(type))
-             b.gas  <- b.oil
-             Di.oil <- b.oil
-             Di.gas <- b.oil
-             td.oil <- b.oil
-             td.gas <- b.oil
-             Cp.oil <- b.oil
-             c1.oil <- b.oil
-             Cp.gas <- b.oil
-             c1.gas <- b.oil
-           }
-           
-           # Define runID
-           runID <- rep(1:nrun, each = max(wellID))
+           lease    <- rep(wsim.actual$lease,    times = nrun)
+           runID    <- rep(1:nrun, each = max(wellID))
          }
   )
   
@@ -250,72 +237,117 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
     load(file.path(path$data, paste("DCA_CDF_coef_", ver, ".rda", sep = "")))
     load(file.path(path$data, paste("Q_DCA_CDF_coef_", ver, ".rda", sep = "")))
     
-    # Define DCA coefficient vectors and time delay
-    qo.oil <- rep(0, times = length(type))
-    b.oil  <- qo.oil
-    Di.oil <- qo.oil
-    td.oil <- qo.oil
-    qo.gas <- qo.oil
-    b.gas  <- qo.oil
-    Di.gas <- qo.oil
-    td.gas <- qo.oil
-    Cp.oil <- qo.oil
-    c1.oil <- qo.oil
-    Cp.gas <- qo.oil
-    c1.gas <- qo.oil
+    # Check - which decline curve method is being used?
+    switch(decline.type,
+           
+           # Hyperbolic DC
+           a = {
+             
+             # Define DCA coefficient vectors and time delay
+             qo.oil <- rep(0, times = length(type))
+             b.oil  <- qo.oil
+             Di.oil <- qo.oil
+             td.oil <- qo.oil
+             qo.gas <- qo.oil
+             b.gas  <- qo.oil
+             Di.gas <- qo.oil
+             td.gas <- qo.oil
+             
+             # For each field
+             for (i in 1:length(field)) {
+               
+               # Get indices of wells located in field i
+               ind <- which(fieldnum == field[i])
+               
+               # Pull coefficient CDFs for field i
+               cdf.qo.oil <- DCA.cdf.coef.oil[[(i-1)*4+1]]
+               cdf.b.oil  <- DCA.cdf.coef.oil[[(i-1)*4+2]]
+               cdf.Di.oil <- DCA.cdf.coef.oil[[(i-1)*4+3]]
+               cdf.td.oil <- DCA.cdf.coef.oil[[(i-1)*4+4]]
+               cdf.qo.gas <- DCA.cdf.coef.gas[[(i-1)*4+1]]
+               cdf.b.gas  <- DCA.cdf.coef.gas[[(i-1)*4+2]]
+               cdf.Di.gas <- DCA.cdf.coef.gas[[(i-1)*4+3]]
+               cdf.td.gas <- DCA.cdf.coef.gas[[(i-1)*4+4]]
+               
+               # Pick values for each coefficient
+               qo.oil[ind] <- cdf.qo.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.oil$CDF))]
+               b.oil[ind]  <- cdf.b.oil$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.oil$CDF ))]
+               Di.oil[ind] <- cdf.Di.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.oil$CDF))]
+               td.oil[ind] <- cdf.td.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.oil$CDF))]
+               qo.gas[ind] <- cdf.qo.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.gas$CDF))]
+               b.gas[ind]  <- cdf.b.gas$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.gas$CDF ))]
+               Di.gas[ind] <- cdf.Di.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.gas$CDF))]
+               td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF))]
+             }
+           },
+           
+           # Cumulative DC
+           b = {
+             
+             # Define DCA coefficient vectors and time delay
+             Cp.oil <- rep(0, times = length(type))
+             c1.oil <- Cp.oil
+             Cp.gas <- Cp.oil
+             c1.gas <- Cp.oil
+             td.oil <- Cp.oil
+             td.gas <- Cp.oil
+             
+             # For each field
+             for (i in 1:length(field)) {
+               
+               # Get indices of wells located in field i
+               ind <- which(fieldnum == field[i])
+               
+               # Pull coefficient CDFs for field i
+               cdf.td.oil <- DCA.cdf.coef.oil[[(i-1)*4+4]]
+               cdf.td.gas <- DCA.cdf.coef.gas[[(i-1)*4+4]]
+               cdf.Cp.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+1]]
+               cdf.c1.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+2]]
+               cdf.Cp.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+1]]
+               cdf.c1.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+2]]
+               
+               # Pick values for each coefficient
+               td.oil[ind] <- cdf.td.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.oil$CDF))]
+               td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF))]
+               Cp.oil[ind] <- cdf.Cp.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.oil$CDF))]
+               c1.oil[ind] <- cdf.c1.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.oil$CDF))]
+               Cp.gas[ind] <- cdf.Cp.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.gas$CDF))]
+               c1.gas[ind] <- cdf.c1.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.gas$CDF))]
+             }
+           })
     
-    # For each field
-    for (i in 1:length(field)) {
-      
-      # Get indices of wells located in field i
-      ind <- which(fieldnum == field[i])
-      
-      # Pull coefficient CDFs for field i
-      cdf.qo.oil <- DCA.cdf.coef.oil[[(i-1)*4+1]]
-      cdf.b.oil  <- DCA.cdf.coef.oil[[(i-1)*4+2]]
-      cdf.Di.oil <- DCA.cdf.coef.oil[[(i-1)*4+3]]
-      cdf.td.oil <- DCA.cdf.coef.oil[[(i-1)*4+4]]
-      cdf.qo.gas <- DCA.cdf.coef.gas[[(i-1)*4+1]]
-      cdf.b.gas  <- DCA.cdf.coef.gas[[(i-1)*4+2]]
-      cdf.Di.gas <- DCA.cdf.coef.gas[[(i-1)*4+3]]
-      cdf.td.gas <- DCA.cdf.coef.gas[[(i-1)*4+4]]
-      cdf.Cp.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+1]]
-      cdf.c1.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+2]]
-      cdf.Cp.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+1]]
-      cdf.c1.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+2]]
-      
-      # Pick values for each coefficient
-      qo.oil[ind] <- cdf.qo.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.oil$CDF))]
-      b.oil[ind]  <- cdf.b.oil$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.oil$CDF ))]
-      Di.oil[ind] <- cdf.Di.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.oil$CDF))]
-      td.oil[ind] <- cdf.td.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.oil$CDF))]
-      qo.gas[ind] <- cdf.qo.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.gas$CDF))]
-      b.gas[ind]  <- cdf.b.gas$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.gas$CDF ))]
-      Di.gas[ind] <- cdf.Di.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.gas$CDF))]
-      td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF))]
-      Cp.oil[ind] <- cdf.Cp.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.oil$CDF))]
-      c1.oil[ind] <- cdf.c1.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.oil$CDF))]
-      Cp.gas[ind] <- cdf.Cp.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.gas$CDF))]
-      c1.gas[ind] <- cdf.c1.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.gas$CDF))]
-      
       # Round time delay values to nearest month
       td.oil <- round(td.oil)
       td.gas <- round(td.gas)
     }
-  }
   
   
-  # Pick corporate tax rates for each well ----------------------------------
+  # Pick NTI conversion factors for each well -------------------------------
   
   # Load corporate income tax data
-  load(file.path(path$data, paste("cdf_corpIncomeTax_", ver, ".rda", sep = "")))
+  load(file.path(path$data, paste("corpNTIfrac_", ver, ".rda", sep = "")))
   
-  # Pick corporate income tax conversion factors (cirSO - corp income rate state
-  # oil, cirSG - state gas, cirFO - fed oil, cirFG - fed gas).
-  cirSO <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$ySO))]
-  cirSG <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$ySG))]
-  cirFO <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$yFO))]
-  cirFG <- cdf.CI$x[findInterval(runif(length(type)),c(0,cdf.CI$yFG))]
+  # Pick net taxable income (NTI) fraction (% of revenue which is NTI)
+  NTIfrac <- rnorm(n =    length(type),
+                   mean = corpNTIfrac["mean"],
+                   sd =   corpNTIfrac["sd"])
+  
+  # In case any % is picked that is < 0, set equal to zero
+  NTIfrac <- ifelse(NTIfrac < 0, yes = 0, no = NTIfrac)
+  
+  
+  # Pick PTI conversion factors for each well -------------------------------
+  
+  # Load property tax data
+  load(file.path(path$data, paste("pTaxRate_", ver, ".rda", sep = "")))
+  
+  # Pick property tax fraction (% of revenue paid as property tax)
+  pTaxfrac <- rnorm(n =    length(type),
+                    mean = pTaxRate["mean"],
+                    sd =   pTaxRate["sd"])
+  
+  # In case any % is picked that is < 0, set equal to zero
+  pTaxfrac <- ifelse(pTaxfrac < 0, yes = 0, no = pTaxfrac)
   
   
   # Calculate drilling and completion capital cost --------------------------
@@ -341,20 +373,61 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # Pick emission factors ---------------------------------------------------
   
-  # ***REPLACE ME***
+  # Hardcoded - sorry!
   
-  # Load GHG Emission Factor CDFs
-  load(file.path(path$data, paste("GHG_", ver, ".rda", sep = "")))
-  
-  # Use findInterval to pick index and assign value to each emission factor (EF)
-  EF.dcw        <- cdf.ghg$dcw.x[       findInterval(runif(length(type)), c(0, cdf.ghg$dcw.y       ))] # Drilling and completion
-  EF.prc        <- cdf.ghg$prc.x[       findInterval(runif(length(type)), c(0, cdf.ghg$prc.y       ))] # Processing
-  EF.tot        <- cdf.ghg$tot.x[       findInterval(runif(length(type)), c(0, cdf.ghg$tot.y       ))] # CH4 as % total production
-  EF.prd.gas    <- cdf.ghg$prd.x[       findInterval(runif(length(type)), c(0, cdf.ghg$prd.y       ))] # Production of gas
-  EF.prd.oil    <- cdf.ghg$prd.oil.x[   findInterval(runif(length(type)), c(0, cdf.ghg$prd.oil.y   ))] # Production of oil
-  EF.trs.gas    <- cdf.ghg$trs.x[       findInterval(runif(length(type)), c(0, cdf.ghg$trs.y       ))] # Transporting gas
-  EF.trs.oil    <- cdf.ghg$trs.oil.x[   findInterval(runif(length(type)), c(0, cdf.ghg$trs.oil.y   ))] # Transporting oil
-  EF.trs.unconv <- cdf.ghg$trs.unconv.x[findInterval(runif(length(type)), c(0, cdf.ghg$trs.unconv.y))] # CH4 as % total production lost to transportation
+  # For each species that has an emission factor
+  for (i in 1:3) {
+    
+    # Predefine temporary EF matrix
+    temp.EF <- matrix(0, nrow = length(type), ncol = nrow(EF))
+    
+    # For each EF category
+    for (j in 1:nrow(EF)) {
+      
+      # If mean of EF for species i in category j is nonzero
+      if(EF[j,i] != 0) {
+        
+        # Pick EFs using rnorm()
+        temp.EF[,j] <- rnorm(n = length(type), mean = EF[j,i], sd = EF[j,(i+3)])
+        
+        # Rewrite negative EF values as zero
+        temp.EF[,j] <- ifelse(temp.EF[,j] < 0, 0, temp.EF[,j])
+      }
+    }
+    
+    # If i = 1, working on CO2e
+    if(i == 1) {
+      
+      # Save out EFs for CO2e
+      EFdrill.co2  <- rowSums(temp.EF[,1:3])+rowSums(temp.EF[,5:7])
+      EFrework.co2 <- temp.EF[,4]
+      EFprod.co2   <- temp.EF[,8]
+      EFproc.co2   <- temp.EF[,9]
+      EFtrans.co2  <- temp.EF[,10]
+    }
+    
+    # If i = 2, working on CH4
+    if(i == 2) {
+      
+      # Save out EFs for CH4
+      EFdrill.ch4  <- rowSums(temp.EF[,1:3])+rowSums(temp.EF[,5:7])
+      EFrework.ch4 <- temp.EF[,4]
+      EFprod.ch4   <- temp.EF[,8]
+      EFproc.ch4   <- temp.EF[,9]
+      EFtrans.ch4  <- temp.EF[,10]
+    }
+    
+    # If i = 3, working on VOCs
+    if(i == 3) {
+      
+      # Save out EFs for VOCs
+      EFdrill.voc  <- rowSums(temp.EF[,1:3])+rowSums(temp.EF[,5:7])
+      EFrework.voc <- temp.EF[,4]
+      EFprod.voc   <- temp.EF[,8]
+      EFproc.voc   <- temp.EF[,9]
+      EFtrans.voc  <- temp.EF[,10]
+    }
+  }
   
   
   # Pick water balance terms based on CDFs ----------------------------------
@@ -381,79 +454,52 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   lease[which(lease == 3)] <- "state"
   lease[which(lease == 4)] <- "fee"
   
-  # Make data table
+  # Build wsim data.table out of possible component columns. The following
+  # columns always exist
   wsim <- data.table(wellID,
                      tDrill,
                      runID,
                      type,
                      fieldnum,
-                     qo.oil,
-                     b.oil,
-                     Di.oil,
-                     td.oil,
-                     qo.gas,
-                     b.gas,
-                     Di.gas,
-                     td.gas,
-                     Cp.oil,
-                     c1.oil,
-                     Cp.gas,
-                     c1.gas,
                      depth,
                      lease,
-                     cirSO,
-                     cirSG,
-                     cirFO,
-                     cirFG,
+                     NTIfrac,
+                     pTaxfrac,
                      cost,
-                     EF.dcw,
-                     EF.prc,
-                     EF.tot,
-                     EF.prd.gas,
-                     EF.prd.oil,
-                     EF.trs.gas,
-                     EF.trs.oil,
-                     EF.trs.unconv,
                      frack,
-                     flood)
+                     flood,
+                     EFdrill.co2,
+                     EFrework.co2,
+                     EFprod.co2,
+                     EFproc.co2,
+                     EFtrans.co2,
+                     EFdrill.ch4,
+                     EFrework.ch4,
+                     EFprod.ch4,
+                     EFproc.ch4,
+                     EFtrans.ch4,
+                     EFdrill.voc,
+                     EFrework.voc,
+                     EFprod.voc,
+                     EFproc.voc,
+                     EFtrans.voc)
   
-  # Set/change column names
-  setnames(x = wsim,
-           old = 1:ncol(wsim),
-           new = c("wellID",
-                   "tDrill",
-                   "runID",
-                   "wellType",
-                   "fieldnum",
-                   "qo.oil",
-                   "b.oil",
-                   "Di.oil",
-                   "td.oil",
-                   "qo.gas",
-                   "b.gas",
-                   "Di.gas",
-                   "td.gas",
-                   "Cp.oil",
-                   "c1.oil",
-                   "Cp.gas",
-                   "c1.gas",
-                   "depth",
-                   "lease",
-                   "cirSO",
-                   "cirSG",
-                   "cirFO",
-                   "cirFG",
-                   "cost",
-                   "EF.dcw",
-                   "EF.prc",
-                   "EF.tot",
-                   "EF.prd.gas",
-                   "EF.prd.oil",
-                   "EF.trs.gas",
-                   "EF.trs.oil",
-                   "EF.trs.unconv",
-                   "frack",
-                   "flood"))
+  # The following columns may or may not exist
+  if(exists("qo.oil") == TRUE) {wsim$qo.oil <- qo.oil}
+  if(exists("b.oil")  == TRUE) {wsim$b.oil  <- b.oil}
+  if(exists("Di.oil") == TRUE) {wsim$Di.oil <- Di.oil}
+  if(exists("td.oil") == TRUE) {wsim$td.oil <- td.oil}
+  if(exists("qo.gas") == TRUE) {wsim$qo.gas <- qo.gas}
+  if(exists("b.gas")  == TRUE) {wsim$b.gas  <- b.gas}
+  if(exists("Di.gas") == TRUE) {wsim$Di.gas <- Di.gas}
+  if(exists("td.gas") == TRUE) {wsim$td.gas <- td.gas}
+  if(exists("Cp.oil") == TRUE) {wsim$Cp.oil <- Cp.oil}
+  if(exists("c1.oil") == TRUE) {wsim$c1.oil <- c1.oil}
+  if(exists("Cp.gas") == TRUE) {wsim$Cp.gas <- Cp.gas}
+  if(exists("c1.gas") == TRUE) {wsim$c1.gas <- c1.gas}
+  
+  # Change some column names
+  setnames(wsim, "type", "wellType")
   
   # Return wsim
   return(wsim)
