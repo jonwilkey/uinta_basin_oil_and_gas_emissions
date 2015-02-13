@@ -16,7 +16,9 @@
 
 # nrun - number of iterations in overall simulation
 
-# ver - File version
+# GBMfitOP fitted parameters "v" and "mu" for oil price
+
+# GBMfitGP fitted parameters "v" and "mu" for gas price
 
 
 # Outputs -----------------------------------------------------------------
@@ -35,7 +37,8 @@
 
 
 # Function ----------------------------------------------------------------
-GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, ver) {
+GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, GBMfitOP,
+                   GBMfitGP) {
   
   # Internal Function -----------------------------------------------------
   
@@ -67,11 +70,6 @@ GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, ver) {
     return(sim.data)
   }
   
-  # Load required files ---------------------------------------------------
-  
-  # GBM fitted parameters "v" and "mu" for oil price (OP) and gas price
-  # (GP) (GBMfitGP and GBMfitOP)
-  load(file.path(path$data, paste("GBMfit_", ver, ".rda", sep = "")))
   
   # Generate price paths --------------------------------------------------
   

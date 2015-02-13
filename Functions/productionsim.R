@@ -144,7 +144,7 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
                tvec <- c(1:(timesteps-TDzeros))
                
                # Calculate cumulative production in each month by Eq.[2]
-               Q <- x[3]*tvec^0.5+x[4]
+               Q <- x[3]*sqrt(tvec)+x[4]
                
                # Production in first timestep is simply Q[1], after
                # first timestep production is differnce between the

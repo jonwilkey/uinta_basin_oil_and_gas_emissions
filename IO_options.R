@@ -1,6 +1,7 @@
 # Script Info -------------------------------------------------------------
-# IO_options.R (Conventional Oil and Gas Simulation Options Script)
-
+# Name:      IO_options.R (Conventional Oil and Gas Simulation Options Script)
+# Author(s): Jon Wilkey
+# Contact:   jon.wilkey@gmail.com
 
 # Description -------------------------------------------------------------
 
@@ -8,10 +9,7 @@
 # all the inputs/outputs that control the execution of the main.R script. Review
 # each input/output below and change as desired from their base values.
 
-
-
-# Define "opt" list object ------------------------------------------------
-
+# Define "opt" list object
 opt <- NULL
 
 
@@ -31,13 +29,13 @@ opt <- NULL
 opt$DOGM.update         <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
 opt$schedule.update     <- FALSE  # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
 opt$lease.update        <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
-opt$EIAprice.update     <- TRUE  # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
-opt$corptax.update      <- TRUE  # Generates corporate income tax coversion factor CDFs
-opt$ptax.update         <- TRUE  # Updates property tax statistics
-opt$drillmodel.update   <- TRUE  # Fits drilling schedule model to energy prices
-opt$GBMfit.update       <- TRUE  # Fits GBM parameters "v" and "mu" to energy prices
-opt$DCA.update          <- TRUE  # Fits decline curves
-opt$DCA.CDF.update      <- TRUE  # Generates CDFs from decline curve fits
+opt$EIAprice.update     <- FALSE  # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
+opt$corptax.update      <- FALSE  # Generates corporate income tax coversion factor CDFs
+opt$ptax.update         <- FALSE  # Updates property tax statistics
+opt$drillmodel.update   <- FALSE  # Fits drilling schedule model to energy prices
+opt$GBMfit.update       <- FALSE  # Fits GBM parameters "v" and "mu" to energy prices
+opt$DCA.update          <- FALSE  # Fits decline curves
+opt$DCA.CDF.update      <- FALSE  # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- FALSE  # *** WRITE ME *** Generates CDFs for EIA price forecasts
 opt$water.update        <- FALSE  # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
 
@@ -138,14 +136,14 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
 # 1.3 Monte-Carlo simulation options --------------------------------------
 
 # Enter number of overall simulation iterations
-opt$nrun <- 50
+opt$nrun <- 100
 
 # Select drilling schedule type. Valid options are:
 #
 #  a - Simulated drilling schedule
 #  b - Actual drilling schedule
 #
-opt$sched.type <- "a"
+opt$sched.type <- "b"
 
 # Select production type. Valid options are:
 #
@@ -210,8 +208,8 @@ opt$psub <- "a"
 # feet. Note that one important use of these values is to generate well depth 
 # probability distributions. In that context, the # of bins generate is 
 # (max.depth-min.depth)/depth.step. This result **MUST** be a whole number.
-opt$min.well.depth <- 1e3
-opt$max.well.depth <- 20e3
+opt$min.well.depth <-  1e3
+opt$max.well.depth <-  20e3
 opt$well.depth.step <- 20
 
 # Conversion factor for switching from MCF of gas to MMBtu of gas. Equation:
@@ -238,8 +236,10 @@ names(opt$royaltyRate) <- c("federal", "indian", "state", "fee")
 # to for use in drillingModel.R function).
 opt$EP.CPI.basis <- 229.594 # Annual CPI index for 2012
 
-# Enter CPI value for inflation adjustment
-opt$cpi <- 233.049
+# CPI value for inflation adjustment and it's associated date (as character
+# string)
+opt$cpi <-     233.049
+opt$cpiDate <- "Dec. 2013"
 
 # Price differentials between UT first purchase price (FPP) and spot prices for
 # (1) WTI crude price, and (2) Henry Hub natural gas, such that
@@ -248,15 +248,15 @@ opt$WTI.to.Oilfpp <- 0.9086103492
 opt$HH.to.Gasfpp  <- 0.7446302868
 
 # Initial prices for GBM price path simulation (from last recorded EIA FPP). 
-# Sources: Gas [1] http://tonto.eia.gov/dnav/ng/hist/na1140_sut_3a.htm [2]
-# http://www.eia.gov/dnav/ng/hist/n9190us3A.htm Oil [3]
-# http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=f004049__3&f=a Note
-# that gas FPP are calculated by converting US national average price (UT gas
+# Sources: Gas [1] http://tonto.eia.gov/dnav/ng/hist/na1140_sut_3a.htm [2] 
+# http://www.eia.gov/dnav/ng/hist/n9190us3A.htm Oil [3] 
+# http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=f004049__3&f=a Note 
+# that gas FPP are calculated by converting US national average price (UT gas 
 # prices are only recorded by EIA on annual basis, by nation gas FPPs are 
-# recorded on monthly basis). Both values are from 2012-12-15 in 2012 $ per bbl
-# (for oil) or MCF (for gas).
-opt$oil.fpp.init <- 12.96 # Dec. 1998: $12.96 | Dec. 2012: $76.67
-opt$gas.fpp.init <- 2.21  # Dec. 1998:  $2.21 | Dec. 2012:  $2.71
+# recorded on monthly basis). Are in 'basis' inflation adjusted $ per bbl (for
+# oil) or MCF (for gas).
+opt$oil.fpp.init <- 13.15 # Dec. 1998: $13.15 | Dec. 1999: $34.19 | Dec. 2012: $76.67
+opt$gas.fpp.init <- 2.21  # Dec. 1998:  $2.21 | Dec. 1999:  $2.51 | Dec. 2012:  $2.71
 
 # Input data for corpIncomeUpdate function
 NTI  <- c(66341510, 209171843, 220215146) # Net taxable income (NTI) from UT State Tax Comission.
@@ -327,8 +327,13 @@ opt$c1.start.gas    <- 0               # Same as above but for gas
 opt$Qlower.gas      <- c(0,  -Inf)     # Same as above but for gas
 opt$Qupper.gas      <- c(Inf, Inf)     # Same as above but for gas
 
-# DCA CDF Generation
-opt$DCA.CDF.type    <- "Quantile"             # Character string for switch funtion, valid options are either "Density" or "Quantile"
+# DCA CDF Generation - General options
+opt$DCA.CDF.type    <- "Quantile"            # Character string for switch funtion, valid options are either "Density" or "Quantile"
+opt$DCA.CDF.xq      <- seq(0, 1, 0.001)      # Sequence of xq probabilities at which to estimate quantile values
+opt$DCA.CDF.tstart  <- as.Date("1999-01-01") # Date well must be drilled by to be included in DCA CDF analysis
+opt$DCA.CDF.tstop   <- as.Date("2012-12-01") # Date well must be drilled before to be included in DCA CDF analysis
+
+# DCA CDF Generation - Hyperbolic DC
 opt$cdf.oil.from    <- c(0,0,0,0)             # Lower limit for CDF function for (qo, b, Di, tdelay)
 opt$cdf.oil.to      <- c(2e3, Inf, Inf, Inf)  # Upper limit for CDF function for (qo, b, Di, tdelay) - was 3e7, 4, 15e3, Inf
 opt$cdf.oil.np      <- c(3e5, 4e3, 15e4, 360) # Number of points at which to estimate CDF for (qo, b, Di, tdelay)
@@ -336,14 +341,13 @@ opt$cdf.gas.from    <- c(0,0,0,0)             # Same as above but for gas
 opt$cdf.gas.to      <- c(4e4, Inf, Inf, Inf)  # Same as above but for gas - was 4e7, 4, 4e3, 360
 opt$cdf.gas.np      <- c(4e5, 4e3, 4e4, 360)  # Same as above but for gas
 
-# CHANGE ME AFTER REDOING DCA FITS AND PICK DIFFERENT LOWER LIMIT ON c1
-opt$Q.cdf.oil.from  <- c(0,0)                 # Lower limit in cumulative fit for CDF function for (Cp, c1)
-opt$Q.cdf.oil.to    <- c(30e3, 100e3)         # Upper limit in cumulative fit for CDF function for (Cp, c1)
-opt$Q.cdf.oil.np    <- c(10e3, 10e3)          # Number of points in cumulative fit at which to estimate CDF for (Cp, c1)
-opt$Q.cdf.gas.from  <- c(0,0)                 # Same as above but for gas
-opt$Q.cdf.gas.to    <- c(200e3, 100e3)        # Same as above but for gas
-opt$Q.cdf.gas.np    <- c(10e3, 10e3)          # Same as above but for gas
-opt$DCA.CDF.xq      <- seq(0, 1, 0.001)       # Sequence of xq probabilities at which to estimate quantile values
+# DCA CDF Generation - Cumulative DC
+opt$Q.cdf.oil.from  <- c(0,    -30e3)   # Lower limit in cumulative fit for CDF function for (Cp, c1)
+opt$Q.cdf.oil.to    <- c(30e3,  30e3)   # Upper limit in cumulative fit for CDF function for (Cp, c1)
+opt$Q.cdf.oil.np    <- c(10e3,  10e3)   # Number of points in cumulative fit at which to estimate CDF for (Cp, c1)
+opt$Q.cdf.gas.from  <- c(0,    -400e3)  # Same as above but for gas
+opt$Q.cdf.gas.to    <- c(200e3, 100e3)  # Same as above but for gas
+opt$Q.cdf.gas.np    <- c(10e3,  10e3)   # Same as above but for gas
 
 
 # Emission Factors --------------------------------------------------------
@@ -386,11 +390,41 @@ opt$EF["prod",] <- opt$EF["prod",]/12 # from (well year) to (well month)
 opt$EF["proc",] <- opt$EF["proc",]/1e6 # from ( / 10^9 CF gas) to ( / MCF gas)
 
 # Remove component vectors
-remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc)
+remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, sdFracMean)
 
 
 # Outputs -----------------------------------------------------------------
 
-# Export plot results as PDF? Valid options are TRUE/FALSE
-opt$exportFlag <- FALSE
-opt$pdfName <- "MC v2 results -quantile -Qfit -simDrill -50nrun.pdf"
+# Export options
+opt$exportFlag <- FALSE               # If true, will plot to PDF located in path$plot directory
+opt$prefix <-     "pp "              # Any text here will be added in front of the name given in the table below
+opt$affix  <-     " -100run -v2.pdf" # Any text here will be added to the end " " " "...
+
+#...............................................................................
+#                      File Name              Plot? T/F          Description
+#...............................................................................
+
+opt$plist <- rbind(c("Oil Price",                  T),  # Oil prices simulated vs actual
+                   c("Gas Price",                  T),  # Gas prices simulated vs actual
+                   c("Drilling Schedule",          T),  # Drilling schedule simulated vs actual
+                   c("Drilling Model Fit",         T),  # Drilling fit vs actual
+                   c("DCA Coefficients - Boxplot", T),  # Boxplot of DCA coefficients
+                   c("DCA Coefficients - CDF",     T),  # CDF DCA coefficients
+                   c("Total Oil Production",       T),  # Total oil production simulated vs actual
+                   c("Total Gas Production",       T),  # Total gas production simulated vs actual
+                   c("CO2e Emissions",             T),  # CO2 emissions
+                   c("CH4 Emissions",              T),  # CH4 emissions
+                   c("VOC Emissions",              T),  # VOC emissions
+                   c("Field Fractions",            T),  # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
+                   c("Field Fractions -OW",        T),  # Same but just oil wells
+                   c("Field Fractions -GW",        T),  # Same but just gas wells
+                   c("Well Capital Cost",          T)  # Drilling and completion capital cost data and fit
+)
+                   #c("?", 1),    # stack area plot or something v taxes and royalties
+
+# Convert to data.frame and adjust column names
+opt$plist <- data.frame(opt$plist[,1], as.logical(opt$plist[,2]))
+names(opt$plist) <- c("name", "plot")
+
+# Quantiles to use to show uncertainty in simulated results
+opt$quant <- c(0.9, 0.7, 0.5, 0.3, 0.1)

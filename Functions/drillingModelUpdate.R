@@ -88,6 +88,9 @@ drillingModelUpdate <- function(path, p, min.depth, ver, eia.hp) {
   # Drop NA values
   analysis <- na.omit(analysis)
   
+  # Make copy for export
+  drillModelData <- analysis
+  
   # Run lm()
   drillModel <- lm(formula = (wells ~ OP + GP + prior),
                    data = analysis)
@@ -115,5 +118,6 @@ drillingModelUpdate <- function(path, p, min.depth, ver, eia.hp) {
   
   save(file = file.path(path$data,
                         paste("drillModel_", ver, ".rda", sep = "")),
-       list = c("drillModel"))
+       list = c("drillModel",
+                "drillModelData"))
 }

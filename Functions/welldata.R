@@ -33,6 +33,37 @@
 
 # EF - emission factors table, set in IO_options.R script
 
+# cdf.ff - CDFs for probability of a well being located in a given field
+
+# cdf.flt - CDFs for surface lease types (federal, state, etc.) by field
+
+# prob - Probability that a well located in a given field is dry well, or (if
+# not dry), a gas well
+
+# cdf.depth.ow - CDFs for well depth for oil wells
+
+# cdf.depth.gw - CDFs for well depth for gas wells
+
+# wsim.actual - actual well data (formatted for simulation)
+
+# DCA.cdf.coef.oil - CDFs for each coefficient in hyperbolic decline curve eq.
+# for each field for oil production
+
+# DCA.cdf.coef.gas - CDFs for each coefficient in hyperbolic decline curve eq.
+# for each field for gas production
+
+# Q.DCA.cdf.coef.oil - CDFs for each coefficient in cumulative production eq.
+# for each field for oil production
+
+# Q.DCA.cdf.coef.gas - CDFs for each coefficient in cumulative production eq.
+# for each field for gas production
+
+# corpNTIfrac - vector with mean and standard deviation of NTI expressed as 
+# a fraction of revenue from oil and gas sales
+
+# pTaxRate - vector with mean and standard deviation of property tax rates 
+# expressed as a fraction of revenue from oil and gas sales
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -92,7 +123,10 @@
 
 # Function ----------------------------------------------------------------
 welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
-                     production.type, basis, decline.type, EF) {
+                     production.type, basis, decline.type, EF, cdf.ff, cdf.flt,
+                     prob, cdf.depth.ow, cdf.depth.gw, wsim.actual,
+                     DCA.cdf.coef.oil, DCA.cdf.coef.gas, Q.DCA.cdf.coef.oil,
+                     Q.DCA.cdf.coef.gas, corpNTIfrac, pTaxRate) {
   
   # Pick well information that varies by simulation type --------------------
   
@@ -102,16 +136,6 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   switch(sched.type,
          a = {
            
-           # Load required files -----------------------------------------------
-           
-           # CDFs ind "cdf_schedule_v*.rda" for:
-           # (1) cdf.ff - field assignments
-           # (2) cdf.flt - lease type
-           # (3) prob - well type (dry, gas, or oil)
-           # (4) cdf.depth.xx - well depth based on well type
-           load(file.path(path$data, paste("cdf_schedule_", ver, ".rda", sep = "")))
-           
-           
            # Preprocess CDF data -----------------------------------------------
            
            # Drop field listing from cdf.flt dataframe and change type to
@@ -120,23 +144,14 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            cdf.flt <- as.matrix(cdf.flt)
            
            
-           # Preprocess drilling schedule --------------------------------------
-           
-           # Concatonate drilling schedule matrix into single vector
-           temp <- NULL
-           for (i in 1:nrow(Drilled)) {
-             temp <- c(temp, Drilled[i,])
-           }
-           
-           # Reassign temp vector as "Drilled"
-           Drilled <- temp
-           
-           # To prevent possibility of drilling negative wells, search for any
-           # values < 0 and set them to zero
-           if (min(Drilled) < 0) {
-             temp <- which(Drilled < 0)
-             Drilled[temp] <- 0
-           }
+#            # Preprocess drilling schedule --------------------------------------
+#            
+#            # To prevent possibility of drilling negative wells, search for any
+#            # values < 0 and set them to zero
+#            if (min(Drilled) < 0) {
+#              temp <- which(Drilled < 0)
+#              Drilled[temp] <- 0
+#            }
            
            
            # Define wsim matrix and assign wellID #'s --------------------------
@@ -209,12 +224,9 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            }
          },
          b = {
-           # Function call is for validation against actual DOGM data. Load
-           # actual results from analysis in scheduleUpdate.R and define
-           # components to match results of simulation loop above.
-           
-           # Load actual DOGM well data from scheduleUpdate.R
-           load(file.path(path$data, paste("wsim_actual_", ver, ".rda", sep = "")))
+           # Function call is for validation against actual DOGM data. Define
+           # actual results from analysis in scheduleUpdate.R  to match results
+           # of simulation loop above.
            
            # Define components
            wellID   <- rep(wsim.actual$wellID,   times = nrun)
@@ -232,10 +244,6 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # If production type flag is set to "a", then simulate DCA coefficients here
   if (production.type == "a") {
-    
-    # Load CDFs for DCA coefficients by field
-    load(file.path(path$data, paste("DCA_CDF_coef_", ver, ".rda", sep = "")))
-    load(file.path(path$data, paste("Q_DCA_CDF_coef_", ver, ".rda", sep = "")))
     
     # Check - which decline curve method is being used?
     switch(decline.type,
@@ -324,9 +332,6 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # Pick NTI conversion factors for each well -------------------------------
   
-  # Load corporate income tax data
-  load(file.path(path$data, paste("corpNTIfrac_", ver, ".rda", sep = "")))
-  
   # Pick net taxable income (NTI) fraction (% of revenue which is NTI)
   NTIfrac <- rnorm(n =    length(type),
                    mean = corpNTIfrac["mean"],
@@ -337,9 +342,6 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   
   # Pick PTI conversion factors for each well -------------------------------
-  
-  # Load property tax data
-  load(file.path(path$data, paste("pTaxRate_", ver, ".rda", sep = "")))
   
   # Pick property tax fraction (% of revenue paid as property tax)
   pTaxfrac <- rnorm(n =    length(type),
@@ -352,23 +354,10 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # Calculate drilling and completion capital cost --------------------------
   
-  # ***REPLACE ME***
-  
-  # Drilling capital cost coefficients in eq. y = exp(a+b*(depth in ft))
-  coef.drill <- c(11.46, 0.00024)
-  
-  # Completion capital cost coefficients in eq. y = exp(a+b*(depth in ft))
-  coef.compl <- c(11.217, 0.00022)
-  
-  # Annual average CPI value for 2011 dollars (base year used for capital costs)
-  base.index <- 224.939
-  
-  # Total capital cost is sum of drilling and capital costs, adjusted for
-  # inflation from 2011 dollars to model-year dollars
-  cost <- inf_adj(price = (exp(coef.drill[1]+coef.drill[2]*depth)+
-                             exp(coef.compl[1]+coef.compl[2]*depth)),
-                  index = base.index,
-                  basis = basis)
+  # Calculate directly as cost = exp(a+b*(depth in ft)) where 'a' and 'b' are
+  # fitted coefficients from drillCost.fit
+  cost <- exp(coef(drillCost.fit)["(Intercept)"]+
+              coef(drillCost.fit)["depth"]*depth)
   
   
   # Pick emission factors ---------------------------------------------------
@@ -432,6 +421,7 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # Pick water balance terms based on CDFs ----------------------------------
   
+  # REPLACE THIS STEP ASAP
   # Load Water Balance CDFs
   load(file.path(path$data, "water_models.rda"))
   

@@ -34,6 +34,12 @@
 
 # tstop - Upper-limit cutoff date for which wells to include in CDF analysis
 
+# mo - data.frame with fit results from DCA analysis of all wells in Uinta Basin
+# for oil production
+
+# mg - data.frame with fit results from DCA analysis of all wells in Uinta Basin
+# for gas production
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -55,36 +61,41 @@
 QfitDCAupdateCDF <- function(field, ver, DCA.CDF.type, Q.cdf.oil.from,
                              Q.cdf.oil.to, Q.cdf.oil.np, Q.cdf.gas.from,
                              Q.cdf.gas.to, Q.cdf.gas.np, DCA.CDF.xq, path,
-                             tstart, tstop) {
+                             tstart, tstop, mo, mg) {
   
-#   # Internal values - uncomment for debugging
-#   field =        opt$field
-#   ver =          opt$file_ver
-#   DCA.CDF.type = opt$DCA.CDF.type
+  # Internal values - uncomment for debugging -------------------------------
+  
+#   field =          opt$field
+#   ver =            opt$file_ver
+#   DCA.CDF.type =   opt$DCA.CDF.type
 #   Q.cdf.oil.from = opt$Q.cdf.oil.from
 #   Q.cdf.oil.to =   opt$Q.cdf.oil.to
 #   Q.cdf.oil.np =   opt$Q.cdf.oil.np
 #   Q.cdf.gas.from = opt$Q.cdf.gas.from
 #   Q.cdf.gas.to =   opt$Q.cdf.gas.to
 #   Q.cdf.gas.np =   opt$Q.cdf.gas.np
-#   DCA.CDF.xq =   opt$DCA.CDF.xq
+#   DCA.CDF.xq =     opt$DCA.CDF.xq
   
   
-  # Load DCA fit data -------------------------------------------------------
+  # Filter DCA fit data -----------------------------------------------------
   
-  # From DCAupdate function export, load data.frames "mo" and "mg"
-  load(file.path(path$data, paste("DCA_fits_", ver, ".rda", sep = "")))
-  
-  # Drop values higher than cdf.oil/gas.to cutoffs
+  # Drop values higher than cdf.oil/gas.to cutoffs, within modeling time limits,
+  # and where the production history was successfully fitted
   mo <- subset(mo, subset = (Cp.1 <=         Q.cdf.oil.to[1] &
+                             Cp.1 >=         Q.cdf.oil.from[1] &
                              c1.1 <=         Q.cdf.oil.to[2] &
+                             c1.1 >=         Q.cdf.oil.from[2] &
                              h_first_prod >= tstart &
-                             h_first_prod <= tstop))
+                             h_first_prod <= tstop &
+                             Qfit.1 ==       1))
   
   mg <- subset(mg, subset = (Cp.1 <=         Q.cdf.gas.to[1] &
+                             Cp.1 >=         Q.cdf.gas.from[1] &
                              c1.1 <=         Q.cdf.gas.to[2] &
+                             c1.1 >=         Q.cdf.gas.from[2] &
                              h_first_prod >= tstart &
-                             h_first_prod <= tstop))
+                             h_first_prod <= tstop &
+                             Qfit.1 ==       1))
   
   
   # Analysis ----------------------------------------------------------------
@@ -109,15 +120,11 @@ QfitDCAupdateCDF <- function(field, ver, DCA.CDF.type, Q.cdf.oil.from,
     
     # Get subset of fits for this field
     otemp <- subset(mo,
-                    subset = (Qfit.1 == 1 &
-                                w_field_num == field[i]),
-                    select = c("Cp.1",
-                               "c1.1"))
+                    subset = (w_field_num == field[i]),
+                    select = c("Cp.1", "c1.1"))
     gtemp <- subset(mg,
-                    subset = (Qfit.1 == 1 &
-                                w_field_num == field[i]),
-                    select = c("Cp.1",
-                               "c1.1"))
+                    subset = (w_field_num == field[i]),
+                    select = c("Cp.1", "c1.1"))
     
     # Get CDF for each coefficient for all fields except catch-all Field 999
     for (j in 1:ncol(otemp)) {
@@ -166,13 +173,10 @@ QfitDCAupdateCDF <- function(field, ver, DCA.CDF.type, Q.cdf.oil.from,
     ind999 <- c(ind999, ind)
   }
   
-  # For Field 999, start by dropping all rows in exclusion index
-  otemp <- mo[-ind999,]
-  gtemp <- mg[-ind999,]
-  
-  # Next, drop anything which doesn't have fit and only select desired columns
-  otemp <- otemp[which(otemp$Qfit.1 == 1),][,15:16]
-  gtemp <- gtemp[which(gtemp$Qfit.1 == 1),][,15:16]
+  # For Field 999, start by dropping all rows in exclusion index and only select
+  # desired columns
+  otemp <- mo[-ind999,][c("Cp.1", "c1.1")]
+  gtemp <- mg[-ind999,][c("Cp.1", "c1.1")]
   
   # Finally, increment i and get CDFs for coefficients
   i <- 11

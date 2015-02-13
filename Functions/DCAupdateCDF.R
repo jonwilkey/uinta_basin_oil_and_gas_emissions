@@ -34,6 +34,12 @@
 
 # tstop - Upper-limit cutoff date for which wells to include in CDF analysis
 
+# mo - data.frame with fit results from DCA analysis of all wells in Uinta Basin
+# for oil production
+
+# mg - data.frame with fit results from DCA analysis of all wells in Uinta Basin
+# for gas production
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -54,28 +60,43 @@
 # Function ----------------------------------------------------------------
 DCAupdateCDF <- function(field, ver, DCA.CDF.type, cdf.oil.from, cdf.oil.to,
                       cdf.oil.np, cdf.gas.from, cdf.gas.to, cdf.gas.np,
-                      DCA.CDF.xq, path, tstart, tstop) {
+                      DCA.CDF.xq, path, tstart, tstop, mo, mg) {
   
-  # Load DCA fit data -------------------------------------------------------
+  # Internal values - uncomment to debug ------------------------------------
   
-  # From DCAupdate function export, load data.frames "mo" and "mg"
-  load(file.path(path$data, paste("DCA_fits_", ver, ".rda", sep = "")))
+#   field <-        opt$field
+#   ver <-          opt$file_ver
+#   DCA.CDF.type <- opt$DCA.CDF.type
+#   cdf.oil.from <- opt$cdf.oil.from
+#   cdf.oil.to <-   opt$cdf.oil.to
+#   cdf.oil.np <-   opt$cdf.oil.np
+#   cdf.gas.from <- opt$cdf.gas.from
+#   cdf.gas.to <-   opt$cdf.gas.to
+#   cdf.gas.np <-   opt$cdf.gas.np
+#   DCA.CDF.xq <-   opt$DCA.CDF.xq
+#   tstart <-       opt$tstart
+#   tstop <-        opt$tstop
   
-  # Drop values higher than cdf.oil/gas.to cutoffs and within tstart/tstop time
-  # limits
+  
+  # Subset DCA fit data -----------------------------------------------------
+  
+  # Drop values higher than cdf.oil/gas.to cutoffs, within modeling time limits, 
+  # and where the production history was successfully fitted
   mo <- subset(mo, subset = (qo.1 <=         cdf.oil.to[1] &
                              b.1 <=          cdf.oil.to[2] &
                              Di.1 <=         cdf.oil.to[3] &
                              tdelay <=       cdf.oil.to[4] &
                              h_first_prod >= tstart &
-                             h_first_prod <= tstop))
+                             h_first_prod <= tstop &
+                             fit.1 ==        1))
   
   mg <- subset(mg, subset = (qo.1 <=         cdf.gas.to[1] &
                              b.1 <=          cdf.gas.to[2] &
                              Di.1 <=         cdf.gas.to[3] &
                              tdelay <=       cdf.gas.to[4] &
                              h_first_prod >= tstart &
-                             h_first_prod <= tstop))
+                             h_first_prod <= tstop &
+                             fit.1 ==        1))
   
   
   # Analysis ----------------------------------------------------------------
@@ -100,19 +121,11 @@ DCAupdateCDF <- function(field, ver, DCA.CDF.type, cdf.oil.from, cdf.oil.to,
     
     # Get subset of fits for this field
     otemp <- subset(mo,
-                    subset = (fit.1 == 1 &
-                                w_field_num == field[i]),
-                    select = c("qo.1",
-                               "b.1",
-                               "Di.1",
-                               "tdelay"))
+                    subset = (w_field_num == field[i]),
+                    select = c("qo.1", "b.1", "Di.1", "tdelay"))
     gtemp <- subset(mg,
-                    subset = (fit.1 == 1 &
-                                w_field_num == field[i]),
-                    select = c("qo.1",
-                               "b.1",
-                               "Di.1",
-                               "tdelay"))
+                    subset = (w_field_num == field[i]),
+                    select = c("qo.1", "b.1", "Di.1", "tdelay"))
     
     # Get CDF for each coefficient for all fields except catch-all Field 999
     for (j in 1:ncol(otemp)) {
@@ -161,13 +174,10 @@ DCAupdateCDF <- function(field, ver, DCA.CDF.type, cdf.oil.from, cdf.oil.to,
     ind999 <- c(ind999, ind)
   }
   
-  # For Field 999, start by dropping all rows in exclusion index
-  otemp <- mo[-ind999,]
-  gtemp <- mg[-ind999,]
-  
-  # Next, drop anything which doesn't have fit and only select desired columns
-  otemp <- otemp[which(otemp$fit.1 == 1),][,8:11]
-  gtemp <- gtemp[which(gtemp$fit.1 == 1),][,8:11]
+  # For Field 999, start by dropping all rows in exclusion index and only select
+  # desired columns
+  otemp <- mo[-ind999,][c("qo.1", "b.1", "Di.1", "tdelay")]
+  gtemp <- mg[-ind999,][c("qo.1", "b.1", "Di.1", "tdelay")]
   
   # Finally, increment i and get CDFs for coefficients
   i <- 11

@@ -15,7 +15,8 @@
 # drilled.init - Number of dry/gas/oil wells drilled in timestep prior to start
 # of simulation period
 
-# ver - File version
+# drillModel - lm() fit object giving drilling rate as f(energy prices, previous
+# # of wells drilled)
 
 
 # Outputs -----------------------------------------------------------------
@@ -31,7 +32,7 @@
 
 
 # Function ---------------------------------------------------------------- 
-drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, ver) {
+drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel) {
   
   # Internal function for drilling schedule model ---------------------------
   
@@ -44,15 +45,13 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, ver) {
   #step, and a, b, c, and d are fitted coefficients.
   
   drillsched <- function(OP,GP,Wo, a, b, c, d) {
-    W = a*OP+b*GP+c*Wo+d
+    
+    # Function - take absolute value to prevent getting negative #s of wells
+    # drilled
+    W <- abs(a*OP+b*GP+c*Wo+d)
+    
     return(W)
   }
-  
-  
-  # Load drilling fit data --------------------------------------------------
-  
-  # Drilling lm() model
-  load(file.path(path$data, paste("drillModel_", ver, ".rda", sep = "")))
   
   
   # Calculate drilling schedule ---------------------------------------------

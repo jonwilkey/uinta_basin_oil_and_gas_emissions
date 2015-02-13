@@ -42,6 +42,9 @@
 
 # gsim.actual - Gas production from each well as a time series
 
+# well.actual - Listing of all actual wells with data that was used to generate
+# CDFs below
+
 
 # Description -------------------------------------------------------------
 
@@ -111,6 +114,10 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
   # Finally, redefine clean.well as well
   well <- clean.well
   
+  # Make copy for export
+  well.actual <- well
+  
+  
   # Actual oil and gas production histories ---------------------------------
   
   # This segment shuffles the actual DOGM data into the same format used in
@@ -160,9 +167,6 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
   
   # === wsim ===
   
-  # Relabel p_api as wellID number
-  well$p_api <- seq(1:nrow(well))
-  
   # Define new column "runID" as runID == 1 for all wells
   runID <- rep(1, times = nrow(well))
   
@@ -208,7 +212,7 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
   acoef.gas <- apply(gsim.actual, MARGIN = 1, FUN = max)
   
   # Generate dataframe for export
-  wsim.actual <- data.frame(well$p_api,
+  wsim.actual <- data.frame(seq(1:nrow(well)), # Unique well ID #
                             tDrill,
                             runID,
                             well$h_well_type,
@@ -368,4 +372,9 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
                       paste("psim_actual_", ver, ".rda", sep = "")),
        list=c("osim.actual",
               "gsim.actual"))
+  
+  # Save well.actual data.frame
+  save(file=file.path(path$data,
+                      paste("well_actual_", ver, ".rda", sep = "")),
+       list=c("well.actual"))
 }

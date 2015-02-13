@@ -34,12 +34,13 @@ pwd.git  <- "C:/Users/Jon/Documents/R/"
 # "plot" is the directory for saving plot *.pdf files.
 # "work" is the working directory where main.R and IO_options.R are located.
 # "fun"  is the directory for all *.R functions.
-path$raw  <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Raw Data", sep = "")
-path$data <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Prepared Data", sep = "")
-path$look <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Lookup Tables", sep = "")
-path$plot <- paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Plots", sep = "")
-path$work <- paste(pwd.git,  "ub_oilandgas/", sep = "")
-path$fun  <- paste(pwd.git,  "ub_oilandgas/Functions", sep = "")
+path$raw  <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Raw Data", sep = "")
+path$data <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Prepared Data", sep = "")
+path$look <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Lookup Tables", sep = "")
+path$plot <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Plots", sep = "")
+path$work <-    paste(pwd.git,  "ub_oilandgas/", sep = "")
+path$fun  <-    paste(pwd.git,  "ub_oilandgas/Functions", sep = "")
+path$plotfun <- paste(pwd.git,  "ub_oilandgas/Functions/Plotting", sep = "")
 
 # Remove temporary path objects
 remove(pwd.drop, pwd.git)
@@ -62,8 +63,8 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "Ecalc.R",
                               #"RIMS.R",
                               #"workload.R",
-                              #"GHG.R",
                               #"water.R",
+                              "postProcess.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
@@ -102,7 +103,7 @@ if(opt$DOGM.update == TRUE) {
   
   # Function call
   dogmDataUpdate(path = path,
-                 ver = opt$file_ver)
+                 ver =  opt$file_ver)
 }
 
 # Load production.rda and rename as "p" for brevity
@@ -135,11 +136,18 @@ if(opt$schedule.update == TRUE) {
                  ver =             opt$file_ver)
 }
 
-# Load wsim.actual data.frame
+# Load data.frames from sheduleUpdate function:
+# - osim/gsim.actual: actual oil/gas production
+# - wsim.actual:      actual well data (formatted for simulation)
+# - well.actual:      actual well data information
+# - cdf.depth.ow/gw:  CDFs for well depth based on well type
+# - cdf.ff:           CDFs for probability of a well being located in a given field
+# - cdf.flt:          CDFs for surface lease types (federal, state, etc.) by field
+# - prob:             Probability that a well located in a given field is dry well or gas well
 load(file.path(path$data, paste("wsim_actual_", opt$file_ver, ".rda", sep = "")))
-
-# Load osim/gsim.actual data.frames
 load(file.path(path$data, paste("psim_actual_", opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("well_actual_", opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("cdf_schedule_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.4 Lease opearting cost lm() fit update --------------------------------
@@ -151,11 +159,11 @@ if(opt$lease.update == TRUE) {
   source(file.path(path$fun, "leaseOpCostUpdate.R"))
   
   # Function call
-  leaseOpCostUpdate(path =    path,
-                    ver =     opt$file_ver,
-                    tstart =  opt$tstart,
-                    tstop =   opt$tstop,
-                    full =    opt$fullDataFit)
+  leaseOpCostUpdate(path =   path,
+                    ver =    opt$file_ver,
+                    tstart = opt$tstart,
+                    tstop =  opt$tstop,
+                    full =   opt$fullDataFit)
 }
 
 
@@ -188,13 +196,16 @@ if(opt$corptax.update == TRUE) {
   source(file.path(path$fun, "corpIncomeUpdate.R"))
   
   # Function call
-  corpIncomeUpdate(production =      production,
-                   path =            path,
-                   basis =           opt$cpi,
-                   ver =             opt$file_ver,
-                   NTI =             opt$NTI,
-                   eia.hp =          eia.hp)
+  corpIncomeUpdate(production = production,
+                   path =       path,
+                   basis =      opt$cpi,
+                   ver =        opt$file_ver,
+                   NTI =        opt$NTI,
+                   eia.hp =     eia.hp)
 }
+
+# Load net taxable income statistics (corpNTIfrac)
+load(file.path(path$data, paste("corpNTIfrac_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.x Property tax update -------------------------------------------------
@@ -206,13 +217,16 @@ if(opt$ptax.update == TRUE) {
   source(file.path(path$fun, "propertyTaxUpdate.R"))
   
   # Function call
-  propertyTaxUpdate(p =               p,
-                    path =            path,
-                    basis =           opt$cpi,
-                    ver =             opt$file_ver,
-                    PTI =             opt$PTI,
-                    eia.hp =          eia.hp)
+  propertyTaxUpdate(p =      p,
+                    path =   path,
+                    basis =  opt$cpi,
+                    ver =    opt$file_ver,
+                    PTI =    opt$PTI,
+                    eia.hp = eia.hp)
 }
+
+# Load property tax statistics (pTaxRate)
+load(file.path(path$data, paste("pTaxRate_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.5 Drilling Schedule Model lm() fit update -----------------------------
@@ -231,6 +245,9 @@ if(opt$drillmodel.update == TRUE) {
                       eia.hp =    eia.hp)
 }
 
+# Load economic drilling model fit (drillModel) and data (drillModelData)
+load(file.path(path$data, paste("drillModel_", opt$file_ver, ".rda", sep = "")))
+
 
 # 2.6 GBM parameter fit update --------------------------------------------
 
@@ -245,6 +262,9 @@ if(opt$GBMfit.update == TRUE) {
                eia.hp = eia.hp,
                ver =    opt$file_ver)
 }
+
+# Load GBM parameter fits (GBMfitOP and GBMfitGP)
+load(file.path(path$data, paste("GBMfit_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.7 Decline curve analysis update ---------------------------------------
@@ -285,6 +305,9 @@ if(opt$DCA.update == TRUE) {
             Qupper.gas =      opt$Qupper.gas)
 }
 
+# Load DCA fits mo (oil) and mg (gas)
+load(file.path(path$data, paste("DCA_fits_", opt$file_ver, ".rda", sep = "")))
+
 
 # 2.8 DCA CDF Update ------------------------------------------------------
 
@@ -307,8 +330,10 @@ if(opt$DCA.CDF.update == TRUE) {
                cdf.gas.np =   opt$cdf.gas.np,
                DCA.CDF.xq =   opt$DCA.CDF.xq,
                path =         path,
-               tstart =       opt$tstart,
-               tstop =        opt$tstop)
+               tstart =       opt$DCA.CDF.tstart,
+               tstop =        opt$DCA.CDF.tstop,
+               mo =           mo,
+               mg =           mg)
   
   # Function call for cumulative DCA CDFs
   QfitDCAupdateCDF(field =          opt$field,
@@ -322,20 +347,32 @@ if(opt$DCA.CDF.update == TRUE) {
                    Q.cdf.gas.np =   opt$Q.cdf.gas.np,
                    DCA.CDF.xq =     opt$DCA.CDF.xq,
                    path =           path,
-                   tstart =         opt$tstart,
-                   tstop =          opt$tstop)
+                   tstart =         opt$DCA.CDF.tstart,
+                   tstop =          opt$DCA.CDF.tstop,
+                   mo =             mo,
+                   mg =             mg)
 }
+
+# Load CDFs for DCA fits
+load(file.path(path$data, paste("DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("Q_DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.8 Drilling and Completion Capital Cost Model Update -------------------
 
-# WRITE ME - AFTERWARDS UPDATE "welldata.R" RELATED CODE 
-# 
-# # Run function if opt$drillCapCost.update flag is set to "TRUE"
-# if(opt$drillCapCost.update == TRUE) {
-#   source(file.path(path$fun, "drillCapCostUpdate.R"))
-#   drillCapCostUpdate(blah)
-# }
+# Run function if opt$drillCapCost.update flag is set to "TRUE"
+if(opt$drillCapCost.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "drillCapCostUpdate.R"))
+  
+  drillCapCostUpdate(path =  path,
+                     basis = opt$cpi,
+                     ver =   opt$file_ver)
+}
+
+# Load drilling cost data (drillCost.data) and fit (drillCost.fit)
+load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.9 Water balance data analysis and update ------------------------------
@@ -359,11 +396,12 @@ epsim <- GBMsim(path =         path,
                 gas.fpp.init = opt$gas.fpp.init,
                 timesteps =    opt$MC.tsteps,
                 nrun =         opt$nrun,
-                ver =          opt$file_ver)
+                GBMfitOP =     GBMfitOP,
+                GBMfitGP =     GBMfitGP)
 
 # Extract individual data.frames from list object
 op <- epsim[[1]]
-gp <- epsim[[1]]
+gp <- epsim[[2]]
 
 # Remove list
 remove(epsim)
@@ -377,26 +415,10 @@ Drilled <- drillsim(path =         path,
                     GBMsim.GP =    gp,
                     nrun =         opt$nrun,
                     drilled.init = opt$drilled.init,
-                    ver =          opt$file_ver)
+                    drillModel =   drillModel)
 
 
-# 3.3 Well data simulation ------------------------------------------------
-
-# Run well data simulation function
-wsim <- welldata(path =            path,
-                 sched.type =      opt$sched.type,
-                 Drilled =         Drilled,
-                 timesteps =       opt$MC.tsteps,
-                 nrun =            opt$nrun,
-                 field =           opt$field,
-                 ver =             opt$file_ver,
-                 production.type = opt$prod.type,
-                 basis =           opt$cpi,
-                 decline.type =    opt$mc.decline.type,
-                 EF =              opt$EF)
-
-
-# 3.4 Monte-Carlo Loop ----------------------------------------------------
+# 3.3 Monte-Carlo Loop ----------------------------------------------------
 
 # The following for-loop calculates all terms for each well in a single 
 # Monte-Carlo (MC) iteration and returns the results as a total to cut down on
@@ -417,18 +439,43 @@ CH4 <-     osim
 VOC <-     osim
 
 # Progress Bar (since this next for-loop takes a while)
-pb <- txtProgressBar(min = 0, max = opt$nrun, style = 3)
+pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
 
 # For each runID
 for (i in 1:opt$nrun) {
   
-  # Get row index of wells that were a part of that run
-  ind <- which(wsim$runID == i)
+  # 3.3.1 Well data simulation -------------------------------------------
   
-  # 3.4.1 Production simulation ------------------------------------------
+  # Run well data simulation function
+  wsim <- welldata(path =               path,
+                   sched.type =         opt$sched.type,
+                   Drilled =            Drilled[i,],
+                   timesteps =          opt$MC.tsteps,
+                   nrun =               1,
+                   field =              opt$field,
+                   ver =                opt$file_ver,
+                   production.type =    opt$prod.type,
+                   basis =              opt$cpi,
+                   decline.type =       opt$mc.decline.type,
+                   EF =                 opt$EF,
+                   cdf.ff =             cdf.ff,
+                   cdf.flt =            cdf.flt,
+                   prob =               prob,
+                   cdf.depth.ow =       cdf.depth.ow,
+                   cdf.depth.gw =       cdf.depth.gw,
+                   wsim.actual =        wsim.actual,
+                   DCA.cdf.coef.oil =   DCA.cdf.coef.oil,
+                   DCA.cdf.coef.gas =   DCA.cdf.coef.gas,
+                   Q.DCA.cdf.coef.oil = Q.DCA.cdf.coef.oil,
+                   Q.DCA.cdf.coef.gas = Q.DCA.cdf.coef.gas,
+                   corpNTIfrac =        corpNTIfrac,
+                   pTaxRate =           pTaxRate)
+  
+  
+  # 3.3.2 Production simulation ------------------------------------------
   
   # Run production simulation function
-  psim <- productionsim(wsim =            wsim[ind,],
+  psim <- productionsim(wsim =            wsim,
                         timesteps =       opt$MC.tsteps,
                         production.type = opt$prod.type,
                         decline.type =    opt$mc.decline.type,
@@ -444,26 +491,26 @@ for (i in 1:opt$nrun) {
   remove(psim)
   
   
-  # 3.4.2 Royalties -----------------------------------------------------
+  # 3.3.3 Royalties -----------------------------------------------------
   
   # Calculate royalty for oil production
   t.roy.oil <- royalty(royaltyRate = opt$royaltyRate,
                        ep =          op[i,],
-                       lease =       wsim$lease[ind],
+                       lease =       wsim$lease,
                        psim =        t.osim)
   
   # Calculate royalty for gas production
   t.roy.gas <- royalty(royaltyRate = opt$royaltyRate,
                        ep =          gp[i,],
-                       lease =       wsim$lease[ind],
+                       lease =       wsim$lease,
                        psim =        t.gsim)
   
   
-  # 3.4.3 Severance Taxes ----------------------------------------------
+  # 3.3.4 Severance Taxes ----------------------------------------------
     
   # Calculate ST for oil production
   t.st.oil <- stax(type =    "oil",
-                   tDrill =  wsim$tDrill[ind],
+                   tDrill =  wsim$tDrill,
                    psim =    t.osim,
                    rsim =    t.roy.oil,
                    ep =      op[i,],
@@ -476,7 +523,7 @@ for (i in 1:opt$nrun) {
   
   # Calculate ST for gas production
   t.st.gas <- stax(type =    "gas",
-                   tDrill =  wsim$tDrill[ind],
+                   tDrill =  wsim$tDrill,
                    psim =    t.gsim,
                    rsim =    t.roy.gas,
                    ep =      gp[i,],
@@ -488,24 +535,24 @@ for (i in 1:opt$nrun) {
                    strip =   opt$strip.gas)
   
   
-  # 3.4.4 Property taxes -----------------------------------------------
+  # 3.3.5 Property taxes -----------------------------------------------
   
   # Calculate property taxes
   t.PT <- ptax(OP = op[i,],
                GP = gp[i,],
                osim = t.osim,
                gsim = t.gsim,
-               pTaxfrac = wsim$pTaxfrac[ind])
+               pTaxfrac = wsim$pTaxfrac)
   
   
-  # 3.4.5 Corporate income taxes ---------------------------------------
+  # 3.3.6 Corporate income taxes ---------------------------------------
   
   # Run corporate income tax calculation
   CT <- ctax(OP =           op[i,],
              GP =           gp[i,],
              osim =         t.osim,
              gsim =         t.gsim,
-             NTIfrac =      wsim$NTIfrac[ind],
+             NTIfrac =      wsim$NTIfrac,
              CIrate.state = opt$CIrate.state,
              CIrate.fed =   opt$CIrate.fed)
   
@@ -517,12 +564,12 @@ for (i in 1:opt$nrun) {
   remove(CT)
   
   
-  # 3.4.6 Emissions ----------------------------------------------------
+  # 3.3.7 Emissions ----------------------------------------------------
   
   # Calculate emissions
   ET <- Ecalc(osim = t.osim,
               gsim = t.gsim,
-              wsim = wsim[ind,])
+              wsim = wsim)
   
   # Extract component matrices from ET
   t.CO2 <- ET[[1]]
@@ -533,7 +580,7 @@ for (i in 1:opt$nrun) {
   remove(ET)
   
   
-  # 3.4.x Get totals for MC run i ---------------------------------------
+  # 3.3.x Get totals for MC run i ---------------------------------------
   
   # Calculate column sums for each results matrix generated to get totals
   osim[i,] <-    colSums(t.osim)
@@ -567,7 +614,7 @@ for (i in 1:opt$nrun) {
          t.VOC)
   
   # Update progress bar
-  Sys.sleep(0.01)
+  Sys.sleep(1e-3)
   setTxtProgressBar(pb, i)
 }
 
@@ -606,5 +653,39 @@ close(pb)
 
 # 4.1 Post processing -----------------------------------------------------
 
-# blah
+# Call post processing function to generate plots of results
+postProcess(quant <-              opt$quant,
+            tstart <-             opt$tstart,
+            tstop <-              opt$tstop,
+            tsteps <-             opt$tsteps,
+            eia.hp <-             eia.hp,
+            wsim.actual <-        wsim.actual,
+            osim.actual <-        osim.actual,
+            gsim.actual <-        gsim.actual,
+            path <-               path,
+            export <-             opt$exportFlag,
+            plist <-              opt$plist,
+            prefix <-             opt$prefix,
+            affix <-              opt$affix,
+            osim <-               osim,
+            gsim <-               gsim,
+            field <-              opt$field,
+            CO2 <-                CO2,
+            CH4 <-                CH4,
+            VOC <-                VOC,
+            op <-                 op,
+            gp <-                 gp,
+            drillModel <-         drillModel,
+            drillModelData <-     drillModelData,
+            mo <-                 mo,
+            mg <-                 mg,
+            DCA.cdf.coef.gas <-   DCA.cdf.coef.gas,
+            DCA.cdf.coef.oil <-   DCA.cdf.coef.oil,
+            Q.DCA.cdf.coef.gas <- Q.DCA.cdf.coef.gas,
+            Q.DCA.cdf.coef.oil <- Q.DCA.cdf.coef.oil,
+            cdf.ff <-             cdf.ff,
+            well.actual <-        well.actual,
+            cpiDate <-            opt$cpiDate,
+            drillCost.data <-     drillCost.data,
+            drillCost.fit <-      drillCost.fit)
 
