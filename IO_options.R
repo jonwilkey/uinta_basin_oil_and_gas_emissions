@@ -26,22 +26,22 @@ opt <- NULL
 #...............................................................................
 #  Flag Name           Value                          Notes
 #...............................................................................
-opt$DOGM.update         <- FALSE  # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
-opt$schedule.update     <- FALSE  # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
-opt$lease.update        <- FALSE  # Fits lease operating cost model to EIA lease operating cost data.
-opt$EIAprice.update     <- FALSE  # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
-opt$corptax.update      <- FALSE  # Generates corporate income tax coversion factor CDFs
-opt$ptax.update         <- FALSE  # Updates property tax statistics
-opt$drillmodel.update   <- FALSE  # Fits drilling schedule model to energy prices
-opt$GBMfit.update       <- FALSE  # Fits GBM parameters "v" and "mu" to energy prices
-opt$DCA.update          <- FALSE  # Fits decline curves
-opt$DCA.CDF.update      <- FALSE  # Generates CDFs from decline curve fits
-opt$drillCapCost.update <- FALSE  # *** WRITE ME *** Generates CDFs for EIA price forecasts
-opt$water.update        <- FALSE  # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
+opt$DOGM.update         <- F # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
+opt$schedule.update     <- F # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
+opt$lease.update        <- F # Fits lease operating cost model to EIA lease operating cost data.
+opt$EIAprice.update     <- F # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
+opt$corptax.update      <- F # Generates corporate income tax coversion factor CDFs
+opt$ptax.update         <- F # Updates property tax statistics
+opt$drillmodel.update   <- F # Fits drilling schedule model to energy prices
+opt$GBMfit.update       <- T # Fits GBM parameters "v" and "mu" to energy prices
+opt$DCA.update          <- T # Fits decline curves
+opt$DCA.CDF.update      <- T # Generates CDFs from decline curve fits
+opt$drillCapCost.update <- T # Runs regression fit on drilling and completion capital cost data
+opt$water.update        <- T # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
-opt$file_ver <- "v2"
+opt$file_ver <- "v3"
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
@@ -143,7 +143,7 @@ opt$nrun <- 100
 #  a - Simulated drilling schedule
 #  b - Actual drilling schedule
 #
-opt$sched.type <- "b"
+opt$sched.type <- "a"
 
 # Select production type. Valid options are:
 #
@@ -161,32 +161,24 @@ opt$prod.type <- "a"
 opt$mc.decline.type <- "b"
 
 # Number of simulation time steps (in months)
-opt$MC.tsteps <- 168
+opt$MC.tsteps <- 119
 
 # Initial number of wells drilled during prior time step at start of simulated 
-# time. Some specific values: 63 in Dec. 2012, 19 in Dec. 1998 (value here is
-# for wells in Uintah and Duchesne counties with dates of first production in
-# Dec. 2012).
-opt$drilled.init <- 19
+# time. Some specific values (all in Dec.):
+# Year: 1998 | 1999 | 2004 | 2012 |
+# Num:    18 |   11 |   50 |   63 |
+opt$drilled.init <- 50
 
 
 # 1.4 Time related options ------------------------------------------------
 
 # Enter start and stop point for simulation in "YYYY-MM-DD" format by changing
 # values inside quotations of opt$tstart and opt$tstop.
-opt$tstart <- as.Date("1999-01-01")
-opt$tstop  <- as.Date("2012-12-01")
+opt$tstart <- as.Date("2005-01-01")
+opt$tstop  <- as.Date("2014-11-01")
 opt$tsteps <- seq(from = opt$tstart,
                      to = opt$tstop,
                      by = "months")
-
-# Flag for whether or not to fit all data or just data that lies within 
-# tstart/tstop time period. If set to "TRUE" then model uses all data, otherwise
-# the data is subsetted to just the modeled time period. Effected datasets:
-#
-# (1) leaseOpCostUpdate.R
-#
-opt$fullDataFit <- TRUE
 
 
 # 1.5 Geography related options -------------------------------------------
@@ -194,7 +186,7 @@ opt$fullDataFit <- TRUE
 # Field Selection (i.e. fields that will be analyzed individually). Note that 
 # "Field 999" is placeholder for all other fields (i.e. every field other than
 # the fields listed).
-opt$field <- c(630, 105, 72, 55, 65, 710, 665, 590, 60, 718, 999)
+opt$field <- c(630, 105, 72, 590, 55, 718, 117, 655, 60, 101, 999)
 
 # "production.rda" subsetting options for "p". Each string represents a possible
 # argument for subsetting the DOGM database. Options are:
@@ -231,15 +223,24 @@ opt$CIrate.fed   <- 0.35 # Federal
 opt$royaltyRate <- c(0.1250, 0.1667, 0.1250, 0.1250)
 names(opt$royaltyRate) <- c("federal", "indian", "state", "fee")
 
+# --- Lease Operating Cost Inputs ---
+# Flag for whether or not to fit all data or just data that lies within 
+# tstart/tstop time period. If set to "TRUE" then model uses all data, otherwise
+# the data is subsetted to just the modeled time period.
+opt$fullDataFit <- TRUE
+
+# CPI basis for LOC cost values (2009 USD)
+opt$LOCbasis <- 214.537
+
 # EIA Historical Energy Prices CPI Basis (i.e. the CPI index value for the year
 # to which all oil/gas prices in the EIA_HistPrice.csv file have been adjusted
 # to for use in drillingModel.R function).
 opt$EP.CPI.basis <- 229.594 # Annual CPI index for 2012
 
 # CPI value for inflation adjustment and it's associated date (as character
-# string)
-opt$cpi <-     233.049
-opt$cpiDate <- "Dec. 2013"
+# string). Current value is for average 2014 USD.
+opt$cpi <-     236.736
+opt$cpiDate <- "2014"
 
 # Price differentials between UT first purchase price (FPP) and spot prices for
 # (1) WTI crude price, and (2) Henry Hub natural gas, such that
@@ -254,9 +255,9 @@ opt$HH.to.Gasfpp  <- 0.7446302868
 # that gas FPP are calculated by converting US national average price (UT gas 
 # prices are only recorded by EIA on annual basis, by nation gas FPPs are 
 # recorded on monthly basis). Are in 'basis' inflation adjusted $ per bbl (for
-# oil) or MCF (for gas).
-opt$oil.fpp.init <- 13.15 # Dec. 1998: $13.15 | Dec. 1999: $34.19 | Dec. 2012: $76.67
-opt$gas.fpp.init <- 2.21  # Dec. 1998:  $2.21 | Dec. 1999:  $2.51 | Dec. 2012:  $2.71
+# oil) or MCF (for gas).   # Dec: 1998 |  1999  |  2004  |  2012  |
+opt$oil.fpp.init <- 51.07  #    $13.15 | $34.19 | $51.07 | $76.67 |
+opt$gas.fpp.init <- 6.12   #     $2.21 |  $2.51 |  $6.12 |  $2.71 |
 
 # Input data for corpIncomeUpdate function
 NTI  <- c(66341510, 209171843, 220215146) # Net taxable income (NTI) from UT State Tax Comission.
@@ -404,21 +405,27 @@ opt$affix  <-     " -100run -v2.pdf" # Any text here will be added to the end " 
 #                      File Name              Plot? T/F          Description
 #...............................................................................
 
-opt$plist <- rbind(c("Oil Price",                  T),  # Oil prices simulated vs actual
-                   c("Gas Price",                  T),  # Gas prices simulated vs actual
-                   c("Drilling Schedule",          T),  # Drilling schedule simulated vs actual
-                   c("Drilling Model Fit",         T),  # Drilling fit vs actual
-                   c("DCA Coefficients - Boxplot", T),  # Boxplot of DCA coefficients
-                   c("DCA Coefficients - CDF",     T),  # CDF DCA coefficients
-                   c("Total Oil Production",       T),  # Total oil production simulated vs actual
-                   c("Total Gas Production",       T),  # Total gas production simulated vs actual
-                   c("CO2e Emissions",             T),  # CO2 emissions
-                   c("CH4 Emissions",              T),  # CH4 emissions
-                   c("VOC Emissions",              T),  # VOC emissions
-                   c("Field Fractions",            T),  # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
-                   c("Field Fractions -OW",        T),  # Same but just oil wells
-                   c("Field Fractions -GW",        T),  # Same but just gas wells
-                   c("Well Capital Cost",          T)  # Drilling and completion capital cost data and fit
+opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs actual
+                   c("Gas Price",                  T), # Gas prices simulated vs actual
+                   c("Drilling Schedule",          T), # Drilling schedule simulated vs actual
+                   c("Drilling Model Fit",         T), # Drilling fit vs actual
+                   c("DCA Coefficients - Boxplot", T), # Boxplot of DCA coefficients
+                   c("DCA Coefficients - CDF",     T), # CDF DCA coefficients
+                   c("Total Oil Production",       T), # Total oil production simulated vs actual
+                   c("Total Gas Production",       T), # Total gas production simulated vs actual
+                   c("CO2e Emissions",             T), # CO2 emissions
+                   c("CH4 Emissions",              T), # CH4 emissions
+                   c("VOC Emissions",              T), # VOC emissions
+                   c("Field Fractions",            T), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
+                   c("Field Fractions -OW",        T), # Same but just oil wells
+                   c("Field Fractions -GW",        T), # Same but just gas wells
+                   c("Well Capital Cost",          T), # Drilling and completion capital cost data and fit
+                   c("Surface Lease Ownership",    T), # Surface lease ownership by field
+                   c("CDFs for Well Depth",        T), # CDFs for well depth by well type
+                   c("LOC Model Fit",              T), # Lease operating costs model fit for oil wells and gas wells
+                   c("Enery Price History",        T), # FPP history for oil and gas from EIA data
+                   c("NTI CDF",                    T), # CDF for net taxable income as fraction of revenue
+                   c("Property Taxes CDF",         T) # CDF for property taxes as fraction of revenue
 )
                    #c("?", 1),    # stack area plot or something v taxes and royalties
 

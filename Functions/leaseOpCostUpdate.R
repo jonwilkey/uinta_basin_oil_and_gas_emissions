@@ -26,6 +26,11 @@
 # fit.LOC.gas <- lm() fit object relating lease operating costs to gas price,
 #                well depth, and gas production rate
 
+# basis - CPI index value to use to adjust prices to 'basis' USD
+
+# LOCbasis - CPI index value at which LOC costs are adjusted to (last EIA report
+# had them adjusted to 2009 values)
+
 
 # Description -------------------------------------------------------------
 
@@ -33,8 +38,9 @@
 # reported at: 
 # (http://www.eia.gov/pub/oil_gas/natural_gas/data_publications/cost_indices_equipment_production/current/coststudy.html).
 # The source data is contained in multiple tabs of an excel sheet, which must be
-# reformatted into a csv with the following columns: Year,  CPI	Price (nominal
-# $/bbl),	Price (real 2009),	Depth (ft),	Cost (2009 USD)
+# reformatted into a csv with the following columns: Year,  CPI	Price (nominal 
+# $/bbl),	Price (real 2009),	Depth (ft),	Cost (2009 USD), and production rate
+# (for gas only, units of MCF/day)
 
 # It is unlikely that this function will require updating as the lease operating
 # cost data reporting has been discontinued by EIA. By default this function 
@@ -44,7 +50,7 @@
 
 # Function ----------------------------------------------------------------
 
-leaseOpCostUpdate <- function(path, ver, tstart, tstop, full) {
+leaseOpCostUpdate <- function(path, ver, tstart, tstop, full, basis, LOCbasis) {
   
   # Load EIA *.csv files ----------------------------------------------------
   LOC.oil <- read.csv(file.path(path$raw, "LOC oil.csv"))
@@ -69,6 +75,15 @@ leaseOpCostUpdate <- function(path, ver, tstart, tstop, full) {
   }
   
   
+  # Inflation adjustment ----------------------------------------------------
+  
+  # Adjust to CPI basis dollars (1) oil and gas prices, and (2) lease costs
+  LOC.oil$real.price <- LOC.oil$nominal.price*(basis/LOC.oil$CPI)
+  LOC.gas$real.price <- LOC.gas$nominal.price*(basis/LOC.gas$CPI)
+  LOC.oil$cost <- LOC.oil$cost*(basis/LOCbasis)
+  LOC.gas$cost <- LOC.gas$cost*(basis/LOCbasis)
+  
+  
   # Run lm() ----------------------------------------------------------------
   
   fit.LOC.oil <- lm(formula = cost ~ real.price + depth,
@@ -80,5 +95,5 @@ leaseOpCostUpdate <- function(path, ver, tstart, tstop, full) {
   
   save(file=file.path(path$data, 
                       paste("leaseOpCost_", ver, ".rda", sep = "")),
-                      list=c("fit.LOC.oil", "fit.LOC.gas"))
+                      list=c("fit.LOC.oil", "fit.LOC.gas", "LOC.oil", "LOC.gas"))
 }

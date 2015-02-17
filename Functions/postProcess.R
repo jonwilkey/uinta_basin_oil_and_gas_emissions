@@ -429,16 +429,16 @@ postProcess <- function(quant, tstart, tstop, tsteps, eia.hp, wsim.actual,
     fcount <- round(c(cdf.ff$CDF[1], diff(cdf.ff$CDF))*nrow(well.actual))
     
     # Main Bar Chart
-    barplot(height = fcount,
+    bp <- barplot(height = fcount,
             names.arg = as.character(cdf.ff$Field),
-            log = "y",
-            ylim = c(1, 5e3),
-            ylab = "Well Count (log-scale)",
+            #log = "y",
+            ylim = c(0, 3.5e3),
+            ylab = "Well Count",
             xlab = "Field Number",
             main = "Well Counts by Field")
     
     # Add grid lines
-    abline(h = c(5, 10, 50, 100, 500, 1e3, 5e3), lty = 3, col = "grey")
+   # abline(h = c(5, 10, 50, 100, 500, 1e3, 5e3), lty = 3, col = "grey")
     
     # If exporting to PDF, close PDF
     if(export == TRUE) {dev.off()}
@@ -530,6 +530,190 @@ postProcess <- function(quant, tstart, tstop, tsteps, eia.hp, wsim.actual,
     
     # Legend
     legend("topleft", c("Actual", "Fit"), lty = c(NA,1), pch = c(1,NA), col = c("black","red"))
+    
+    # If exporting to PDF, close PDF
+    if(export == TRUE) {dev.off()}
+  }
+  
+  # Increment counter
+  j <- j+1
+  
+  
+  # Surface Lease Ownership -------------------------------------------------
+  if(plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF
+    if(export == TRUE) {pdf(file.path(path$plot, file = paste(prefix, plist$name[j], affix, sep = "")))}
+    
+    # Build temporary data.frame with individual (not cumulative) probabilities
+    # of each surface lease type by field and then transpose
+    temp <- data.frame(cdf.flt[,2],
+                       cdf.flt[,3]-cdf.flt[,2],
+                       cdf.flt[,4]-cdf.flt[,3],
+                       cdf.flt[,5]-cdf.flt[,4], row.names = cdf.flt[,1])
+    names(temp) <- c("Federal", "Indian", "State", "Fee")
+    temp <- t(as.matrix(temp))
+    
+    # Plot with barplot()
+    barplot(
+      temp,
+      beside = TRUE,
+      xlab = "Field Number",
+      ylab = "Probability",
+      main = "Surface Lease Ownership Type by Field",
+      legend = c("Federal", "Indian", "State", "Fee"),
+      args.legend = list(x = "topright", cex = 0.75)
+    )
+    
+    # If exporting to PDF, close PDF
+    if(export == TRUE) {dev.off()}
+  }
+  
+  # Increment counter
+  j <- j+1
+  
+  
+  # Well Depth -------------------------------------------------
+  if(plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF
+    if(export == TRUE) {pdf(file.path(path$plot, file = paste(prefix, plist$name[j], affix, sep = "")))}
+    
+    # Main Plot
+    plot(cdf.depth.ow,
+         type = "l",
+         col = "blue",
+         xlab = "Well Depth (ft)",
+         ylab = "Cumulative Probability",
+         main = "CDFs for Well Depth by Well Type")
+    
+    # Line plot for GW
+    lines(cdf.depth.gw, col = "red")
+    
+    # Legend
+    legend = legend("topleft", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue","red"))
+    
+    # If exporting to PDF, close PDF
+    if(export == TRUE) {dev.off()}
+  }
+  
+  # Increment counter
+  j <- j+1
+  
+  
+  # Lease Operating Costs Fit -------------------------------------------------
+  if(plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF
+    if(export == TRUE) {pdf(file.path(path$plot, file = paste(prefix, plist$name[j], affix, sep = "")))}
+    
+    # Oil LOC plot
+    temp <-scatterplot3d(x = LOC.oil$real.price,
+                         y = LOC.oil$depth/1e3,
+                         z = LOC.oil$cost/1e3,
+                         highlight.3d=TRUE,
+                         xlab = paste("Oil price in", opt$cpiDate, "$/bbl"),
+                         ylab = "Well Depth (1e3 ft)",
+                         zlab = paste("Operating Cost in", opt$cpiDate, "$1e3/year"),
+                         main="Lease Opearting Cost Fit for Oil Wells")
+    
+    # Plane fit for oil LOC
+    fitdata <- LOC.oil
+    fitdata$cost <- fitdata$cost/1e3
+    fitdata$depth <- fitdata$depth/1e3
+    temp$plane3d(lm(cost ~ real.price + depth, data = fitdata))
+    
+    # Select only the data points which have a production rate == 250 MCF/day
+    # (production rate with the largest number of data points)
+    tdata <- LOC.gas[which(LOC.gas$prodrate == 250),]
+    
+    # Gas LOC plot
+    temp <-scatterplot3d(x = tdata$real.price,
+                         y = tdata$depth/1e3,
+                         z = tdata$cost/1e3,
+                         highlight.3d=TRUE,
+                         xlab = paste("Gas price in", opt$cpiDate, "$/MCF"),
+                         ylab = "Well Depth (1e3 ft)",
+                         zlab = paste("Operating Cost in", opt$cpiDate, "$1e3/year"),
+                         main="Lease Opearting Cost Fit for Gas Wells - Prod. Rate 250 MCFD")
+    
+    # Plane fit for gas LOC
+    fitdata <- tdata
+    fitdata$cost <- fitdata$cost/1e3
+    fitdata$depth <- fitdata$depth/1e3
+    temp$plane3d(lm(cost ~ real.price + depth, data = fitdata))
+    
+    # If exporting to PDF, close PDF
+    if(export == TRUE) {dev.off()}
+  }
+  
+  # Increment counter
+  j <- j+1
+  
+  
+  # Energy FPP History -------------------------------------------------
+  if(plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF
+    if(export == TRUE) {pdf(file.path(path$plot, file = paste(prefix, plist$name[j], affix, sep = "")))}
+    
+    # Oil FPP
+    plot(eia.hp$month, eia.hp$OP,
+         type = "l",
+         xlab = "Date - July 1978 to Nov. 2014 (by month)",
+         ylab = paste("Price in", opt$cpiDate, "$/bbl"),
+         main = "Utah Oil First Purchase Price History")
+    
+    # Gas FPP
+    plot(eia.hp$month, eia.hp$GP,
+         type = "l",
+         xlab = "Date - July 1978 to Nov. 2014 (by month)",
+         ylab = paste("Price in", opt$cpiDate, "$/MCF"),
+         main = "Utah Gas First Purchase Price History")
+    
+    # If exporting to PDF, close PDF
+    if(export == TRUE) {dev.off()}
+  }
+  
+  # Increment counter
+  j <- j+1
+  
+  
+  # NTI CDF ---------------------------------------------------------------
+  if(plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF
+    if(export == TRUE) {pdf(file.path(path$plot, file = paste(prefix, plist$name[j], affix, sep = "")))}
+    
+    # Plot
+    plot(x = qnorm(p = opt$DCA.CDF.xq, mean = corpNTIfrac["mean"], sd = corpNTIfrac["sd"]),
+         y = opt$DCA.CDF.xq,
+         type = "l",
+         xlab = "NTI Revenue Fraction (dimensionless)",
+         ylab = "Cumulative Probability",
+         main = "CDF for NTI as Fraction of Revenue")
+    
+    # If exporting to PDF, close PDF
+    if(export == TRUE) {dev.off()}
+  }
+  
+  # Increment counter
+  j <- j+1
+  
+  
+  # Property Tax CDF ---------------------------------------------------------
+  if(plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF
+    if(export == TRUE) {pdf(file.path(path$plot, file = paste(prefix, plist$name[j], affix, sep = "")))}
+    
+    # Plot
+    plot(x = qnorm(p = opt$DCA.CDF.xq, mean = pTaxRate["mean"], sd = pTaxRate["sd"]),
+         y = opt$DCA.CDF.xq,
+         type = "l",
+         xlab = "Property Tax Revenue Fraction (dimensionless)",
+         ylab = "Cumulative Probability",
+         main = "CDF for Property Taxes as Fraction of Revenue")
     
     # If exporting to PDF, close PDF
     if(export == TRUE) {dev.off()}

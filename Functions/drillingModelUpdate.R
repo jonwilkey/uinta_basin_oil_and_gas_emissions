@@ -33,7 +33,7 @@
 # where W is the wells drilled (oil, gas, or dry), n is the timestep (in 
 # months), OP is first purchase price (FFP) of oil in Utah ($/bbl, inflation 
 # adjusted to the date associated with "cpi" option input), GP is FFP of gas in
-# Utah ($/MMBtu, also inflation adjusted), and all other terms are fitted 
+# Utah ($/MCF, also inflation adjusted), and all other terms are fitted 
 # coefficients.
 
 

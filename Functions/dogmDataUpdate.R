@@ -311,8 +311,8 @@ dogmDataUpdate <- function(path, ver) {
   # Redefine data.frame using row indices found in loop above
   a <- a[c,]
   
-  d <- merge(x = w, y = a, by.x = "w_api", by.y = "h_api")
-  e <- merge(x = p, y = d, by.x = "p_api", by.y = "w_api")
+  d <- merge(x = welldata, y = a, by.x = "w_api", by.y = "h_api")
+  e <- merge(x = proddata, y = d, by.x = "p_api", by.y = "w_api")
   
   # Convert to data.table
   pwh_dt <- data.table(e)

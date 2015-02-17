@@ -35,9 +35,9 @@
 # factors and is intended to be run when new corporate tax data becomes
 # available.
 
-# The function first determines to the total oil and gas production in Uintah 
-# and Duchesne counties for each year where tax data is available, as well as
-# the mean oil and gas prices in those years.
+# The function first determines to the total oil and gas production in the 
+# entire state for each year where tax data is available, as well as the mean
+# oil and gas prices in those years.
 
 # Next, the function determines the revenue from oil and gas sales. Assuming 
 # that NTI can be estimated as a fraction of revenue, the function determines 
@@ -97,7 +97,7 @@ corpIncomeUpdate <- function(production, path, basis, ver, NTI, eia.hp) {
                      index = NTI$cpi,
                      basis = basis)
   
-  # Calculate fraction of revenue paid in property taxes each year
+  # Calculate fraction of revenue which becomes NTI
   frac <- NTI$NTI/revenue
   
   # Get mean and standard deviation so that rnorm() can be used to pick

@@ -24,10 +24,9 @@
 
 # Description -------------------------------------------------------------
 
-# This function loads a *.csv file containing oil and gas prices and uses 
-# Maximum Likelihood Estimation to fit the parameters "v" and "mu" to those 
-# price paths, which can then subsequently be used to generate random price
-# paths according to GBM.
+# This function uses Maximum Likelihood Estimation to fit the parameters "v" and
+# "mu" to the price paths in eia.hp. These parameters can then subsequently be
+# used to generate random price paths according to GBM.
 
 
 # Function ----------------------------------------------------------------

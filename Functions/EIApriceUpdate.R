@@ -16,9 +16,6 @@
 
 # ver - Version number for file naming of exported data.frames
 
-# cf.MCF.to.MMBtu - conversion factor for switching from MCF of gas to MMBtu of
-# gas
-
 # Outputs -----------------------------------------------------------------
 
 # eia.hp - data.frame of EIA historical energy prices with observations "month"
@@ -35,13 +32,13 @@
 
 
 # Function ---------------------------------------------------------------- 
-EIApriceUpdate <- function(path, EP.CPI.basis, cpi, ver, cf.MCF.to.MMBtu) {
+EIApriceUpdate <- function(path, EP.CPI.basis, cpi, ver) {
     
   # Make a *.csv file with the following format: [month, oilprice, gasprice].
   # The first column is the month associated with each row of the price data,
   # the second column is the oil price at the wellhead from the following source
   # [1] listed below in EP.CPI.basis real dollars per bbl, and the last column
-  # is the natural gas wellhead price in the same real dollars per MMBtu from
+  # is the natural gas wellhead price in the same real dollars per MCF from
   # source [2]. Save the file as "EIA_HistPrices.csv" and place it in your raw
   # data file path.
   
@@ -63,9 +60,6 @@ EIApriceUpdate <- function(path, EP.CPI.basis, cpi, ver, cf.MCF.to.MMBtu) {
   # Adjust to models CPI-year real dollars
   eia.hp$OP <- inf_adj(price = eia.hp$OP, index = EP.CPI.basis, basis = cpi)
   eia.hp$GP <- inf_adj(price = eia.hp$GP, index = EP.CPI.basis, basis = cpi)
-  
-  # Adjust gas prices from $/MMBtu basis to $/MCF basis using conversion factor
-  eia.hp$GP <- eia.hp$GP/cf.MCF.to.MMBtu
   
   # Truncate dates in eia.hp to months
   eia.hp$month <- as.yearmon(eia.hp$month)

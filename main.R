@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-pwd.drop <- "D:/"                                  # Windows
-pwd.git  <- "C:/Users/Jon/Documents/R/"
-# pwd.drop <- "/Users/john/"                         # Mac
-# pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
+# pwd.drop <- "D:/"                                  # Windows
+# pwd.git  <- "C:/Users/Jon/Documents/R/"
+pwd.drop <- "/Users/john/"                         # Mac
+pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
 # pwd.drop <- "/home/slyleaf/"                       # Linux
 # pwd.git  <- "/home/slyleaf/Documents/"
   
@@ -82,6 +82,7 @@ library(zoo)
 library(data.table)
 library(sqldf)
 library(minpack.lm)
+library(scatterplot3d)
 
 
 # 1.4 Options -------------------------------------------------------------
@@ -136,7 +137,7 @@ if(opt$schedule.update == TRUE) {
                  ver =             opt$file_ver)
 }
 
-# Load data.frames from sheduleUpdate function:
+# Load data.frames from scheduleUpdate function:
 # - osim/gsim.actual: actual oil/gas production
 # - wsim.actual:      actual well data (formatted for simulation)
 # - well.actual:      actual well data information
@@ -159,12 +160,19 @@ if(opt$lease.update == TRUE) {
   source(file.path(path$fun, "leaseOpCostUpdate.R"))
   
   # Function call
-  leaseOpCostUpdate(path =   path,
-                    ver =    opt$file_ver,
-                    tstart = opt$tstart,
-                    tstop =  opt$tstop,
-                    full =   opt$fullDataFit)
+  leaseOpCostUpdate(path =     path,
+                    ver =      opt$file_ver,
+                    tstart =   opt$tstart,
+                    tstop =    opt$tstop,
+                    full =     opt$fullDataFit,
+                    basis =    opt$cpi,
+                    LOCbasis = opt$LOCbasis)
 }
+
+# Load data.frames from leaseOpCost function:
+# - fit.LOC.oil/gas: lm() object with fit for oil/gas lease operating costs
+# - LOC.oil/gas:     lease operating cost data for oil/gas wells
+load(file.path(path$data, paste("leaseOpCost_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.x EIA energy price history --------------------------------------------
@@ -179,8 +187,7 @@ if(opt$EIAprice.update == TRUE) {
   EIApriceUpdate(path =            path,
                  EP.CPI.basis =    opt$EP.CPI.basis,
                  cpi =             opt$cpi,
-                 ver =             opt$file_ver,
-                 cf.MCF.to.MMBtu = opt$cf.MCF.to.MMBtu)
+                 ver =             opt$file_ver)
 }
 
 # Load EIAprices_v*.rda to load eia.hp (EIA historical energy prices) data.frame

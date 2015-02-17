@@ -29,7 +29,7 @@ CDFq <- function(vector, xq) {
   
   # Get quantiles of vector at probability points given by xq, then merge
   # numerical values in quantile result with xq to make data.frame qdf
-  qdf <- data.frame(quantile(vector, probs = xq, names = FALSE), xq)
+  qdf <- data.frame(quantile(vector, probs = xq, names = FALSE, na.rm = TRUE), xq)
   
   # Rename qdf columns as "PDF.x" (for numerical value) and "CDF" for cumulative
   # distr. fun.
