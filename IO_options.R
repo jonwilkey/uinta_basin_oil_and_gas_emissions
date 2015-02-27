@@ -33,11 +33,13 @@ opt$EIAprice.update     <- F # Converts *.csv file with historical EIA prices in
 opt$corptax.update      <- F # Generates corporate income tax coversion factor CDFs
 opt$ptax.update         <- F # Updates property tax statistics
 opt$drillmodel.update   <- F # Fits drilling schedule model to energy prices
-opt$GBMfit.update       <- T # Fits GBM parameters "v" and "mu" to energy prices
-opt$DCA.update          <- T # Fits decline curves
-opt$DCA.CDF.update      <- T # Generates CDFs from decline curve fits
-opt$drillCapCost.update <- T # Runs regression fit on drilling and completion capital cost data
-opt$water.update        <- T # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
+opt$GBMfit.update       <- F # Fits GBM parameters "v" and "mu" to energy prices
+opt$EIAforecast.update  <- F # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
+opt$EIAerror.update     <- F # Generates CDFs for error in EIA AEO forecasts
+opt$DCA.update          <- F # Fits decline curves
+opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
+opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
+opt$water.update        <- F # *** WRITE ME *** Generates all CDFs and linear regression models for water balance terms
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
@@ -136,7 +138,7 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
 # 1.3 Monte-Carlo simulation options --------------------------------------
 
 # Enter number of overall simulation iterations
-opt$nrun <- 100
+opt$nrun <- 1e2
 
 # Select drilling schedule type. Valid options are:
 #
@@ -159,6 +161,13 @@ opt$prod.type <- "a"
 #  b - Cumulative production curve Q(t) = Cp * t ^ 0.5 + c1
 #
 opt$mc.decline.type <- "b"
+
+# Energy price path simulation method. Valid options are:
+#
+#  a - GBM price paths
+#  b - EIA forecast with error propagation
+#
+opt$ep.type <- "b"
 
 # Number of simulation time steps (in months)
 opt$MC.tsteps <- 119
@@ -183,10 +192,11 @@ opt$tsteps <- seq(from = opt$tstart,
 
 # 1.5 Geography related options -------------------------------------------
 
-# Field Selection (i.e. fields that will be analyzed individually). Note that 
-# "Field 999" is placeholder for all other fields (i.e. every field other than
-# the fields listed).
-opt$field <- c(630, 105, 72, 590, 55, 718, 117, 655, 60, 101, 999)
+# Fraction of wells located in a given field compared to total number of wells 
+# in the Uinta Basin that is required for a field to be analyzed individually.
+# If a field's well count fraction is lower than this threshold, all of its
+# wells will be accounted for in the catch-all "Field 999."
+opt$field.cutoff <- 0.01
 
 # "production.rda" subsetting options for "p". Each string represents a possible
 # argument for subsetting the DOGM database. Options are:
@@ -259,6 +269,9 @@ opt$HH.to.Gasfpp  <- 0.7446302868
 opt$oil.fpp.init <- 51.07  #    $13.15 | $34.19 | $51.07 | $76.67 |
 opt$gas.fpp.init <- 6.12   #     $2.21 |  $2.51 |  $6.12 |  $2.71 |
 
+# FPP date - enter month here associated with FPPs above
+opt$FPPdate <- as.Date("2004-12-01")
+
 # Input data for corpIncomeUpdate function
 NTI  <- c(66341510, 209171843, 220215146) # Net taxable income (NTI) from UT State Tax Comission.
 year <- c(2009, 2010, 2011)               # Year associated with each element in NTI (2009-2011)
@@ -295,6 +308,26 @@ opt$st.gcut <- 1.5     # Gas cutoff value threshold ($/MCF) for switch from low 
 opt$st.skip <- 6       # Number of timesteps from date well is drilled to exempt from ST
 opt$strip.oil <- 20*30 # Oil production volume (bbl/month) below which a well is classified as a stripper well
 opt$strip.gas <- 60*30 # Gas production volume (MCF/month) below which a well is classified as a stripper well
+
+# --- EIA Error Analysis and AEO Forecast Options
+opt$EIAExq    <- seq(from = 0.0001, to = 0.9999, by = 0.0001) # Define quantiles at which to determine relative error values from sample
+opt$EIAtsteps <- 10                                           # Number of years into the future for which you want EIA error % CDFs
+opt$EIAbasis  <- 179.8                                        # Annual average CPI for 2003
+opt$Estart    <- 1                                            # Starting column of EIA error CDF matrix that corresponds to start of simulation period tstart
+opt$Estop     <- 119                                          # Ending column of EIA ... corresponds to end of simulation period tstop
+
+# EIA Forecast data.frame creation. Enter EIA forecast here - the AEO forecast 
+# used should be the same as the year used for the starting point of the modeled
+# time period. The number of rows in the data.frame should also be equal to the 
+# value used above in opt$EIAtsteps. Finally, the "year" column assumes that the
+# EIA price given is for the middle of each year of the EIA forecast (i.e. 
+# June). The final date of the modeled time period should be equal to or greater
+# than the last date in the year column.
+year <- seq(as.Date("2005-06-01"), as.Date("2014-06-01"), by = "year")           # Year (time step for EIA price forecasts)
+oil  <- c(33.36, 27.70, 26.36,	25.12, 24.32,	24.02, 24.26,	24.67, 24.98,	25.33) # Rocky Mountain wellhead oil price forecast in 2003 $/bbl from Table 101
+gas  <- c(5.04,  4.73,  4.41, 	3.96,  3.62, 	3.41,  3.36, 	3.48,  3.61, 	3.74)  # Rocky Mountain wellhead gas price forecat in 2003 $/MCF from Table 102
+opt$forecast <- data.frame(year, oil, gas)
+remove(year, oil, gas)
 
 
 # 1.7 Decline curve analysis options --------------------------------------
@@ -397,9 +430,9 @@ remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, sdFracMean)
 # Outputs -----------------------------------------------------------------
 
 # Export options
-opt$exportFlag <- FALSE               # If true, will plot to PDF located in path$plot directory
+opt$exportFlag <- F                  # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "pp "              # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -100run -v2.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e3run -EIAcalcError -v3.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
@@ -409,23 +442,24 @@ opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs
                    c("Gas Price",                  T), # Gas prices simulated vs actual
                    c("Drilling Schedule",          T), # Drilling schedule simulated vs actual
                    c("Drilling Model Fit",         T), # Drilling fit vs actual
-                   c("DCA Coefficients - Boxplot", T), # Boxplot of DCA coefficients
-                   c("DCA Coefficients - CDF",     T), # CDF DCA coefficients
+                   c("DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
+                   c("DCA Coefficients - CDF",     F), # CDF DCA coefficients
                    c("Total Oil Production",       T), # Total oil production simulated vs actual
                    c("Total Gas Production",       T), # Total gas production simulated vs actual
-                   c("CO2e Emissions",             T), # CO2 emissions
-                   c("CH4 Emissions",              T), # CH4 emissions
-                   c("VOC Emissions",              T), # VOC emissions
-                   c("Field Fractions",            T), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
-                   c("Field Fractions -OW",        T), # Same but just oil wells
-                   c("Field Fractions -GW",        T), # Same but just gas wells
-                   c("Well Capital Cost",          T), # Drilling and completion capital cost data and fit
-                   c("Surface Lease Ownership",    T), # Surface lease ownership by field
-                   c("CDFs for Well Depth",        T), # CDFs for well depth by well type
-                   c("LOC Model Fit",              T), # Lease operating costs model fit for oil wells and gas wells
-                   c("Enery Price History",        T), # FPP history for oil and gas from EIA data
-                   c("NTI CDF",                    T), # CDF for net taxable income as fraction of revenue
-                   c("Property Taxes CDF",         T) # CDF for property taxes as fraction of revenue
+                   c("CO2e Emissions",             F), # CO2 emissions
+                   c("CH4 Emissions",              F), # CH4 emissions
+                   c("VOC Emissions",              F), # VOC emissions
+                   c("Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
+                   c("Field Fractions -OW",        F), # Same but just oil wells
+                   c("Field Fractions -GW",        F), # Same but just gas wells
+                   c("Well Capital Cost",          F), # Drilling and completion capital cost data and fit
+                   c("Surface Lease Ownership",    F), # Surface lease ownership by field
+                   c("CDFs for Well Depth",        F), # CDFs for well depth by well type
+                   c("LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
+                   c("Enery Price History",        F), # FPP history for oil and gas from EIA data
+                   c("NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
+                   c("Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
+                   c("EIA AEO Error CDFs",         T) # CDFs for error % in EIA AEO forecasts for oil and gas
 )
                    #c("?", 1),    # stack area plot or something v taxes and royalties
 

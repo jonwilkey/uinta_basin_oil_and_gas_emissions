@@ -58,14 +58,14 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel)
   
   # Predefine matrix for drilling schedule results. Rows = simulation runs,
   # columns = timesteps.
-  Drilled <- matrix(0, nrow = nrun, ncol = ncol(GBMsim.OP))
+  Drilled <- matrix(0, nrow = nrun, ncol = (ncol(GBMsim.OP)+1))
   
   # Set initial "prior" drilling value (number of wells drilled in
   # timestep immediately proceeding start of simulation period)
   Drilled[,1] <- drilled.init
   
   # For each timestep in simulation period, calculate wells drilled
-  for (i in 1:(ncol(Drilled)-1)) {
+  for (i in 1:ncol(GBMsim.OP)) {
     Drilled[,(i+1)] <- round(drillsched(OP = GBMsim.OP[,i],
                                         GP = GBMsim.GP[,i],
                                         Wo = Drilled[,i],

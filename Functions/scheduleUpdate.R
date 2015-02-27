@@ -12,11 +12,12 @@
 
 # tsteps - Range of time steps in modeling period
 
-# field - Vector of field numbers to be considered individually
-
 # min.depth - Minimum well depth, used as subsetting criteria
 
 # ver - Version number for file naming of exported data.frames
+
+# field.cutoff - minimum fraction of total wells in Uinta Basin which a field
+# must have in order to be analyzed individually
 
 
 # Outputs -----------------------------------------------------------------
@@ -45,6 +46,8 @@
 # well.actual - Listing of all actual wells with data that was used to generate
 # CDFs below
 
+# field - Vector of field numbers to be considered individually
+
 
 # Description -------------------------------------------------------------
 
@@ -56,8 +59,8 @@
 
 
 # Function ----------------------------------------------------------------
-scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
-                           well.depth.step, ver) {
+scheduleUpdate <- function(path, p, tsteps, min.depth, max.depth,
+                           well.depth.step, ver, field.cutoff) {
   
   # Extract well data from p ------------------------------------------------
   
@@ -116,6 +119,25 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
   
   # Make copy for export
   well.actual <- well
+  
+  
+  # Determine which fields to analyze individually --------------------------
+  
+  # Count number of wells located in each field using well.actual
+  wcount <- sqldf("select distinct(w_field_num), count(p_api)
+                  from 'well.actual'
+                  group by w_field_num")
+  
+  # Rename columns
+  names(wcount) <- c("field", "count")
+  
+  # Drop any field that has less than field.cutoff fraction of the wells in the
+  # Basin.
+  wcount <- wcount[which(wcount$count/sum(wcount$count) >= field.cutoff),]
+  
+  # Finally, extract field numbers from wcount and add in Field 999 as catch-all
+  # category.
+  field <- c(wcount$field, 999)
   
   
   # Actual oil and gas production histories ---------------------------------
@@ -360,7 +382,8 @@ scheduleUpdate <- function(path, p, tsteps, field, min.depth, max.depth,
               "cdf.flt",
               "cdf.depth.ow",
               "cdf.depth.gw",
-              "prob"))
+              "prob",
+              "field"))
   
   # Save wsim.actual data.frame
   save(file=file.path(path$data,

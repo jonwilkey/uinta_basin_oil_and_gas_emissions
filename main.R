@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-# pwd.drop <- "D:/"                                  # Windows
-# pwd.git  <- "C:/Users/Jon/Documents/R/"
-pwd.drop <- "/Users/john/"                         # Mac
-pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
+pwd.drop <- "D:/"                                  # Windows
+pwd.git  <- "C:/Users/Jon/Documents/R/"
+# pwd.drop <- "/Users/john/"                         # Mac
+# pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
 # pwd.drop <- "/home/slyleaf/"                       # Linux
 # pwd.git  <- "/home/slyleaf/Documents/"
   
@@ -53,6 +53,7 @@ setwd(path$work)
 
 # List of functions used in this script to be loaded here
 flst <- file.path(path$fun, c("GBMsim.R",
+                              "EIAsim.R",
                               "drillsim.R",
                               "welldata.R",
                               "productionsim.R",
@@ -64,7 +65,6 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               #"RIMS.R",
                               #"workload.R",
                               #"water.R",
-                              "postProcess.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
@@ -129,12 +129,12 @@ if(opt$schedule.update == TRUE) {
   # Function call
   scheduleUpdate(path =            path,
                  p =               p,
-                 field =           opt$field,
                  tsteps =          opt$tsteps,
                  min.depth =       opt$min.well.depth,
                  max.depth =       opt$max.well.depth,
                  well.depth.step = opt$well.depth.step,
-                 ver =             opt$file_ver)
+                 ver =             opt$file_ver,
+                 field.cutoff =    opt$field.cutoff)
 }
 
 # Load data.frames from scheduleUpdate function:
@@ -145,6 +145,7 @@ if(opt$schedule.update == TRUE) {
 # - cdf.ff:           CDFs for probability of a well being located in a given field
 # - cdf.flt:          CDFs for surface lease types (federal, state, etc.) by field
 # - prob:             Probability that a well located in a given field is dry well or gas well
+# - field:            Vector of field numbers to be considered individually
 load(file.path(path$data, paste("wsim_actual_", opt$file_ver, ".rda", sep = "")))
 load(file.path(path$data, paste("psim_actual_", opt$file_ver, ".rda", sep = "")))
 load(file.path(path$data, paste("well_actual_", opt$file_ver, ".rda", sep = "")))
@@ -274,7 +275,50 @@ if(opt$GBMfit.update == TRUE) {
 load(file.path(path$data, paste("GBMfit_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.7 Decline curve analysis update ---------------------------------------
+# 2.x EIA Forecast Update -------------------------------------------------
+
+# Run function if opt$EIAforecast.update flag is set to "TRUE"
+if(opt$EIAforecast.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "EIAforecastUpdate.R"))
+  
+  # Function call
+  EIAforecastUpdate(forecast <-     opt$forecast,
+                    basis <-        opt$cpi,
+                    EIAbasis <-     opt$EIAbasis,
+                    tsteps <-       opt$tsteps,
+                    oil.fpp.init <- opt$oil.fpp.init,
+                    gas.fpp.init <- opt$gas.fpp.init,
+                    FPPdate <-      opt$FPPdate,
+                    ver =           opt$file_ver,
+                    path =          path)
+}
+
+# Load EIA error CDF matrices (Eoil and Egas)
+load(file.path(path$data, paste("EIAforecast_", opt$file_ver, ".rda", sep = "")))
+
+
+# 2.7 EIA Error Analysis Update -------------------------------------------
+
+# Run function if opt$EIAerror.update flag is set to "TRUE"
+if(opt$EIAerror.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "EIAerrorUpdate.R"))
+  
+  # Function call
+  EIAerrorUpdate(path =   path,
+                 xq =     opt$EIAExq,
+                 tsteps = opt$EIAtsteps,
+                 ver =    opt$file_ver)
+}
+
+# Load EIA error CDF matrices (Eoil and Egas)
+load(file.path(path$data, paste("EIAerror_", opt$file_ver, ".rda", sep = "")))
+
+
+# 2.8 Decline curve analysis update ---------------------------------------
 
 # Run function if opt$DCA.update flag is set to "TRUE"
 if(opt$DCA.update == TRUE) {
@@ -298,7 +342,7 @@ if(opt$DCA.update == TRUE) {
             Di.start.gas =    opt$Di.start.gas,
             lower.gas =       opt$lower.gas,
             upper.gas =       opt$upper.gas,
-            field =           opt$field,
+            field =           field,
             ver =             opt$file_ver,
             path =            path,
             p =               p,
@@ -316,7 +360,7 @@ if(opt$DCA.update == TRUE) {
 load(file.path(path$data, paste("DCA_fits_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.8 DCA CDF Update ------------------------------------------------------
+# 2.9 DCA CDF Update ------------------------------------------------------
 
 # Run function if opt$DCA.CDF.update flag is set to "TRUE"
 if(opt$DCA.CDF.update == TRUE) {
@@ -326,7 +370,7 @@ if(opt$DCA.CDF.update == TRUE) {
   source(file.path(path$fun, "QfitDCAupdateCDF.R"))
   
   # Function call for hyperbolic DCA CDFs
-  DCAupdateCDF(field =        opt$field,
+  DCAupdateCDF(field =        field,
                ver =          opt$file_ver,
                DCA.CDF.type = opt$DCA.CDF.type,
                cdf.oil.from = opt$cdf.oil.from,
@@ -343,7 +387,7 @@ if(opt$DCA.CDF.update == TRUE) {
                mg =           mg)
   
   # Function call for cumulative DCA CDFs
-  QfitDCAupdateCDF(field =          opt$field,
+  QfitDCAupdateCDF(field =          field,
                    ver =            opt$file_ver,
                    DCA.CDF.type   = opt$DCA.CDF.type,
                    Q.cdf.oil.from = opt$Q.cdf.oil.from,
@@ -365,7 +409,7 @@ load(file.path(path$data, paste("DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")
 load(file.path(path$data, paste("Q_DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.8 Drilling and Completion Capital Cost Model Update -------------------
+# 2.10 Drilling and Completion Capital Cost Model Update -------------------
 
 # Run function if opt$drillCapCost.update flag is set to "TRUE"
 if(opt$drillCapCost.update == TRUE) {
@@ -382,7 +426,7 @@ if(opt$drillCapCost.update == TRUE) {
 load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.9 Water balance data analysis and update ------------------------------
+# 2.x Water balance data analysis and update ------------------------------
 
 # WRITE ME - AFTERWARDS UPDATE "welldata.R" RELATED CODE 
 #
@@ -397,21 +441,46 @@ load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
 
 # 3.1 Energy price path simulation ----------------------------------------
 
-# Run Geometric Brownian Motion (GBM) price path simulation
-epsim <- GBMsim(path =         path,
-                oil.fpp.init = opt$oil.fpp.init,
-                gas.fpp.init = opt$gas.fpp.init,
-                timesteps =    opt$MC.tsteps,
-                nrun =         opt$nrun,
-                GBMfitOP =     GBMfitOP,
-                GBMfitGP =     GBMfitGP)
-
-# Extract individual data.frames from list object
-op <- epsim[[1]]
-gp <- epsim[[2]]
-
-# Remove list
-remove(epsim)
+# Switch for price path simulation method.
+switch(opt$ep.type,
+       
+       # If GBM simulation, ep.type == "a"
+       a = {
+         
+         # Run Geometric Brownian Motion (GBM) price path simulation
+         epsim <- GBMsim(path =         path,
+                         oil.fpp.init = opt$oil.fpp.init,
+                         gas.fpp.init = opt$gas.fpp.init,
+                         timesteps =    opt$MC.tsteps,
+                         nrun =         opt$nrun,
+                         GBMfitOP =     GBMfitOP,
+                         GBMfitGP =     GBMfitGP)
+         
+         # Extract individual data.frames from list object
+         op <- epsim[[1]]
+         gp <- epsim[[2]]
+         
+         # Remove list
+         remove(epsim)
+       },
+       
+       # If EIA forecast with error propagation, ep.type == "b"
+       b = {
+         
+         # Run EIAsim
+         epsim <- EIAsim(nrun <-  opt$nrun,
+                         Eoil <-  Eoil,
+                         Egas <-  Egas,
+                         op.FC <- op.FC,
+                         gp.FC <- gp.FC)
+         
+         # Extract objects from list
+         op <-    epsim[[1]]
+         gp <-    epsim[[2]]
+         
+         # Remove list
+         remove(epsim)
+       })
 
 
 # 3.2 Well drilling simulation --------------------------------------------
@@ -459,7 +528,7 @@ for (i in 1:opt$nrun) {
                    Drilled =            Drilled[i,],
                    timesteps =          opt$MC.tsteps,
                    nrun =               1,
-                   field =              opt$field,
+                   field =              field,
                    ver =                opt$file_ver,
                    production.type =    opt$prod.type,
                    basis =              opt$cpi,
@@ -660,39 +729,5 @@ close(pb)
 
 # 4.1 Post processing -----------------------------------------------------
 
-# Call post processing function to generate plots of results
-postProcess(quant <-              opt$quant,
-            tstart <-             opt$tstart,
-            tstop <-              opt$tstop,
-            tsteps <-             opt$tsteps,
-            eia.hp <-             eia.hp,
-            wsim.actual <-        wsim.actual,
-            osim.actual <-        osim.actual,
-            gsim.actual <-        gsim.actual,
-            path <-               path,
-            export <-             opt$exportFlag,
-            plist <-              opt$plist,
-            prefix <-             opt$prefix,
-            affix <-              opt$affix,
-            osim <-               osim,
-            gsim <-               gsim,
-            field <-              opt$field,
-            CO2 <-                CO2,
-            CH4 <-                CH4,
-            VOC <-                VOC,
-            op <-                 op,
-            gp <-                 gp,
-            drillModel <-         drillModel,
-            drillModelData <-     drillModelData,
-            mo <-                 mo,
-            mg <-                 mg,
-            DCA.cdf.coef.gas <-   DCA.cdf.coef.gas,
-            DCA.cdf.coef.oil <-   DCA.cdf.coef.oil,
-            Q.DCA.cdf.coef.gas <- Q.DCA.cdf.coef.gas,
-            Q.DCA.cdf.coef.oil <- Q.DCA.cdf.coef.oil,
-            cdf.ff <-             cdf.ff,
-            well.actual <-        well.actual,
-            cpiDate <-            opt$cpiDate,
-            drillCost.data <-     drillCost.data,
-            drillCost.fit <-      drillCost.fit)
-
+# Run processing script to generate plots of results
+source(file.path(path$fun, "postProcess.R"))
