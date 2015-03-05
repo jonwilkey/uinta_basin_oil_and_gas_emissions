@@ -152,7 +152,7 @@ load(file.path(path$data, paste("well_actual_", opt$file_ver, ".rda", sep = ""))
 load(file.path(path$data, paste("cdf_schedule_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.4 Lease opearting cost lm() fit update --------------------------------
+# 2.4 Lease operating cost lm() fit update --------------------------------
 
 # Run function if opt$lease.update flag is set to "TRUE"
 if(opt$lease.update == TRUE) {
@@ -309,7 +309,7 @@ if(opt$EIAerror.update == TRUE) {
   
   # Function call
   EIAerrorUpdate(path =   path,
-                 xq =     opt$EIAExq,
+                 xq =     opt$xq,
                  tsteps = opt$EIAtsteps,
                  ver =    opt$file_ver)
 }
@@ -379,7 +379,7 @@ if(opt$DCA.CDF.update == TRUE) {
                cdf.gas.from = opt$cdf.gas.from,
                cdf.gas.to =   opt$cdf.gas.to,
                cdf.gas.np =   opt$cdf.gas.np,
-               DCA.CDF.xq =   opt$DCA.CDF.xq,
+               DCA.CDF.xq =   opt$xq,
                path =         path,
                tstart =       opt$DCA.CDF.tstart,
                tstop =        opt$DCA.CDF.tstop,
@@ -396,7 +396,7 @@ if(opt$DCA.CDF.update == TRUE) {
                    Q.cdf.gas.from = opt$Q.cdf.gas.from,
                    Q.cdf.gas.to =   opt$Q.cdf.gas.to,
                    Q.cdf.gas.np =   opt$Q.cdf.gas.np,
-                   DCA.CDF.xq =     opt$DCA.CDF.xq,
+                   DCA.CDF.xq =     opt$xq,
                    path =           path,
                    tstart =         opt$DCA.CDF.tstart,
                    tstop =          opt$DCA.CDF.tstop,
@@ -428,15 +428,25 @@ load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
 
 # 2.x Water balance data analysis and update ------------------------------
 
-# WRITE ME - AFTERWARDS UPDATE "welldata.R" RELATED CODE 
-#
-# Use "convWater.R as basis for function
-#
-# # Run function if opt$water.update flag is set to "TRUE"
-# if(opt$water.update == TRUE) {
-#   source(file.path(path$fun, "waterUpdate.R"))
-#   waterUpdate(blah)
-# }
+# Run function if opt$water.update flag is set to "TRUE"
+if(opt$water.update == TRUE) {
+  
+  # Load function
+  source(file.path(path$fun, "waterUpdate.R"))
+  
+  # Function call
+  waterUpdate(path =   path,
+              p =      p,
+              tstart = opt$tstart,
+              tstop =  opt$tstop,
+              xq =     opt$xq,
+              f_mud =  opt$f_mud,
+              f_cem =  opt$f_cem,
+              ver =    opt$file_ver)
+}
+
+# Load water balance term CDFs (cdf.water) and regression models (water.lm)
+load(file.path(path$data, paste("water_models_", opt$file_ver, ".rda", sep = "")))
 
 
 # 3.1 Energy price path simulation ----------------------------------------
@@ -545,7 +555,8 @@ for (i in 1:opt$nrun) {
                    Q.DCA.cdf.coef.oil = Q.DCA.cdf.coef.oil,
                    Q.DCA.cdf.coef.gas = Q.DCA.cdf.coef.gas,
                    corpNTIfrac =        corpNTIfrac,
-                   pTaxRate =           pTaxRate)
+                   pTaxRate =           pTaxRate,
+                   cdf.water =          cdf.water)
   
   
   # 3.3.2 Production simulation ------------------------------------------
