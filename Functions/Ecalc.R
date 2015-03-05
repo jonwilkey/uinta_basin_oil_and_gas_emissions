@@ -27,15 +27,18 @@
 Ecalc <- function (osim, gsim, wsim) {
   
   # Preallocate space for each emissions matrix
-  Edrill.co2 <- matrix(0, nrow = nrow(osim), ncol = ncol(osim))
-  Edrill.ch4 <- Edrill.co2
-  Edrill.voc <- Edrill.co2
-  Eprod.co2 <-  Edrill.co2
-  Eprod.ch4 <-  Edrill.co2
-  Eprod.voc <-  Edrill.co2
-  Eproc.co2 <-  Edrill.co2
-  Eproc.ch4 <-  Edrill.co2
-  Eproc.voc <-  Edrill.co2
+  Edrill.co2 <-  matrix(0, nrow = nrow(osim), ncol = ncol(osim))
+  Edrill.ch4 <-  Edrill.co2
+  Edrill.voc <-  Edrill.co2
+  Eprod.co2 <-   Edrill.co2
+  Eprod.ch4 <-   Edrill.co2
+  Eprod.voc <-   Edrill.co2
+  Eproc.co2 <-   Edrill.co2
+  Eproc.ch4 <-   Edrill.co2
+  Eproc.voc <-   Edrill.co2
+  Etransm.co2 <- Edrill.co2
+  Etransm.ch4 <- Edrill.co2
+  Etransm.voc <- Edrill.co2
   
   # Calculate emissions in each category by timestep
   for (i in 1:ncol(Edrill.co2)) {
@@ -57,13 +60,15 @@ Ecalc <- function (osim, gsim, wsim) {
     Eproc.voc[,i] <- wsim$EFproc.voc*gsim[,i]
     
     # Transmission and distribution events for gas
-    # nothing for now!
+    Etransm.co2[,i] <- wsim$EFtrans.co2*gsim[,i]
+    Etransm.ch4[,i] <- wsim$EFtrans.ch4*gsim[,i]
+    Etransm.voc[,i] <- wsim$EFtrans.voc*gsim[,i]
   }
   
   # Summ everything together by species
-  Eco2 <- Edrill.co2+Eprod.co2+Eproc.co2
-  Ech4 <- Edrill.ch4+Eprod.ch4+Eproc.ch4
-  Evoc <- Edrill.voc+Eprod.voc+Eproc.voc
+  Eco2 <- Edrill.co2+Eprod.co2+Eproc.co2+Etransm.co2
+  Ech4 <- Edrill.ch4+Eprod.ch4+Eproc.ch4+Etransm.ch4
+  Evoc <- Edrill.voc+Eprod.voc+Eproc.voc+Etransm.voc
   
   # Return result
   return(list(Eco2, Ech4, Evoc))
