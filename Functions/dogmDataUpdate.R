@@ -285,11 +285,17 @@ dogmDataUpdate <- function(path, ver) {
   } else stop("Check column names")
   
   
+  # Field Names -------------------------------------------------------------
+  
+  fieldnames <- read.dbf(file.path(path$raw, "fieldata.dbf"))
+  
+  
   # Save to *.rda files -----------------------------------------------------
   
   save(file=file.path(path$data, "proddata.rda"), list=c("proddata"))
   save(file=file.path(path$data, "welldata.rda"), list=c("welldata"))
   save(file=file.path(path$data, "histdata.rda"), list=c("histdata"))
+  save(file=file.path(path$data, "fieldnames.rda"), list=c("fieldnames"))
   
   
   # Cleanup histdata and merge with well data & proddata --------------------
@@ -362,9 +368,9 @@ dogmDataUpdate <- function(path, ver) {
   production <- as.data.frame(pwh_dt)
   
   
-  # Saved merged data.frame -------------------------------------------------
+  # Save merged data.frame --------------------------------------------------
   
   save(file=file.path(path$data,
                       paste("production_", ver, ".rda", sep = "")),
-       list=c("production"))
+       list=c("production"))  
 }
