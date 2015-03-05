@@ -1,4 +1,7 @@
-### Water Balance Function ###
+# Function Info -----------------------------------------------------------
+# Name:      water.R (Water balance calculation)
+# Author(s): Jon Wilkey
+# Contact:   jon.wilkey@gmail.com
 
 # Inputs ------------------------------------------------------------------
 
@@ -7,7 +10,6 @@
 
 # psim - matrix of production volume timeseries (of oil or gas) for each well
 
-# data_root - filepath to pre-processed water data (linear models and CDFs)
 
 # Outputs -----------------------------------------------------------------
 
@@ -43,11 +45,7 @@
 # with all the terms, are exported as a list object.
 
 # Function ----------------------------------------------------------------
-water <- function(wsim, psim, data_root) {
-  
-  # === Load required data files ===
-  load(file.path(data_root, "water_models.rda"))
-  
+water <- function() {
   
   # === Get total oil production in each time step for each run ===  
   # Predefine matrix for storing oil summation results with rows = runID and
@@ -146,3 +144,59 @@ water <- function(wsim, psim, data_root) {
   # Return result
   return(result)
 }
+
+
+# Extract coefficients ----------------------------------------------------
+
+m.pw <-    water.lm$pw.lm$coef[2]
+b.pw <-    water.lm$pw.lm$coef[1]
+m.disp <-  water.lm$disp.lm$coef[2]
+b.disp <-  water.lm$disp.lm$coef[1]
+m.flood <- water.lm$flood.lm$coef[2]
+m.dw <-    water.lm$dw.lm$coef[2]
+b.dw <-    water.lm$dw.lm$coef[1]
+wsim
+osim <- t.osim
+
+
+# Produced water and evaporation ------------------------------------------
+
+# Preallocate space for results
+pw <- matrix(0, nrow = nrow(osim), ncol = ncol(osim))
+evap <- pw
+
+# For each time step, calculate produced water for each well based on oil
+# production
+for (i in 1:ncol(osim)) {
+  pw[,i] <- m.pw*osim[,i]+b.pw
+  evap[,i] <- wsim$evap*pw[,i]
+}
+
+# Sum to get single value for each term as timeseries
+pw <- colSums(pw)
+evap <- colSums(evap)
+
+
+# Disposal water ----------------------------------------------------------
+
+disp <- m.disp*pw+b.disp
+
+
+# Recycled water ----------------------------------------------------------
+
+rec <- pw-(disp+evap)
+
+
+
+
+# Evaporated water --------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
