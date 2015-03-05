@@ -167,7 +167,7 @@ opt$mc.decline.type <- "b"
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
 #
-opt$ep.type <- "b"
+opt$ep.type <- "a"
 
 # Number of simulation time steps (in months)
 opt$MC.tsteps <- 119
@@ -177,6 +177,10 @@ opt$MC.tsteps <- 119
 # Year: 1998 | 1999 | 2004 | 2012 |
 # Num:    18 |   11 |   50 |   63 |
 opt$drilled.init <- 50
+
+# Quantiles vector (sequence of quantile values at which to estimate CDF). Used
+# everywhere quantile() or qnorm() is used to generate CDF.
+opt$xq <- seq(from = 0.0001, to = 0.9999, by = 0.0001)
 
 
 # 1.4 Time related options ------------------------------------------------
@@ -310,7 +314,6 @@ opt$strip.oil <- 20*30 # Oil production volume (bbl/month) below which a well is
 opt$strip.gas <- 60*30 # Gas production volume (MCF/month) below which a well is classified as a stripper well
 
 # --- EIA Error Analysis and AEO Forecast Options
-opt$EIAExq    <- seq(from = 0.0001, to = 0.9999, by = 0.0001) # Define quantiles at which to determine relative error values from sample
 opt$EIAtsteps <- 10                                           # Number of years into the future for which you want EIA error % CDFs
 opt$EIAbasis  <- 179.8                                        # Annual average CPI for 2003
 opt$Estart    <- 1                                            # Starting column of EIA error CDF matrix that corresponds to start of simulation period tstart
@@ -363,7 +366,6 @@ opt$Qupper.gas      <- c(Inf, Inf)     # Same as above but for gas
 
 # DCA CDF Generation - General options
 opt$DCA.CDF.type    <- "Quantile"            # Character string for switch funtion, valid options are either "Density" or "Quantile"
-opt$DCA.CDF.xq      <- seq(0, 1, 0.001)      # Sequence of xq probabilities at which to estimate quantile values
 opt$DCA.CDF.tstart  <- as.Date("1999-01-01") # Date well must be drilled by to be included in DCA CDF analysis
 opt$DCA.CDF.tstop   <- as.Date("2012-12-01") # Date well must be drilled before to be included in DCA CDF analysis
 
@@ -384,6 +386,12 @@ opt$Q.cdf.gas.to    <- c(200e3, 100e3)  # Same as above but for gas
 opt$Q.cdf.gas.np    <- c(10e3,  10e3)   # Same as above but for gas
 
 
+# Water balance input options ---------------------------------------------
+
+opt$f_mud <- 1    # Assumed volume ratio of (water used to mix with drilling mud) / (volume of borehole)
+opt$f_cem <- 4.97 # Water to cement ratio in (gal/sack), value of 4.97 is used for API Class G cement
+
+
 # Emission Factors --------------------------------------------------------
 
 # Emission factor category names and units
@@ -399,15 +407,15 @@ EF.names <- c("site",    # Site preparation                          (metric ton
               "transm")  # Transmission and distribution             (% of CH4 produced over lifecycle of well)
 
 # Input EF mean and standard deviation values here in order shown above in EF.names vector
-#..............................................................................................................................
-# Term      site     Tdrill   Tcompl   Trework  Tprod   drill compl    prod     proc     transm              Notes
-#..............................................................................................................................
-m.co2 <-  c(208,     0.4,     0.21,    3.05,    1.36,    569, 1940,    100,     901,     1.04)    # Mean CO2e EFs
-m.ch4 <-  c(9.9,     8.6e-6,  4.36e-6, 7.71e-5, 3.29e-5, 0,   92.4,    4.75,    5.58,    1.04)    # Mean CH4 EFs
-m.voc <-  c(1.75e-3, 0,       0,       0,       0,       0,   1.63e-2, 8.40e-4, 9.87e-4, 1.84e-4) # Mean VOC EFs
-sd.co2 <- c(79,      0.56,    0.29,    4.3,     1.93,    326, 46,      40,      46,      0.85)    # Standard deviation CO2e EFs
-sd.ch4 <- c(3.37,    1.22e-5, 6.16e-6, 1.01e-4, 4.65e-5, 0,   0,       1.9,     3.91,    0.85)    # Standard deviation CH4 EFs
-sd.voc <- c(0,       0,       0,       0,       0,       0,   0,       0,       0,       0)       # Standard deviation VOC EFs
+#...................................................................................................................
+# Term      site  Tdrill   Tcompl   Trework  Tprod   drill compl  prod  proc   transm     Notes
+#...................................................................................................................
+m.co2 <-  c(208,  0.4,     0.21,    3.05,    1.36,    569, 1940,  43,   901,    0)     # Mean CO2e EFs
+m.ch4 <-  c(9.9,  8.6e-6,  4.36e-6, 7.71e-5, 3.29e-5, 0,   92.4,  2.07, 5.58,   199)   # Mean CH4 EFs
+m.voc <-  c(1.58, 0,       0,       0,       0,       0,   14.78, 0.78, 0.8928, 31.82) # Mean VOC EFs
+sd.co2 <- c(79,   0.56,    0.29,    4.31,    1.93,    326, 967,   40,   46,     0)     # Standard deviation CO2e EFs
+sd.ch4 <- c(3.37, 1.22e-5, 6.16e-6, 1.01e-4, 4.65e-5, 0,   46,    1.9,  3.91,   163)   # Standard deviation CH4 EFs
+sd.voc <- c(0.6,  0,       0,       0,       0,       0,   7.37,  0.73, 0.62,   26)    # Standard deviation VOC EFs
 
 # If any EF has a standard deviation of zero, set it to the fraction of the mean
 # as specfied below
@@ -420,8 +428,9 @@ sd.voc <- ifelse(sd.voc == 0, m.voc*sdFracMean, sd.voc)
 opt$EF <- data.frame(m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, row.names = EF.names)
 
 # Unit conversions
-opt$EF["prod",] <- opt$EF["prod",]/12 # from (well year) to (well month)
-opt$EF["proc",] <- opt$EF["proc",]/1e6 # from ( / 10^9 CF gas) to ( / MCF gas)
+opt$EF["prod",] <-   opt$EF["prod",]/12    # from (well year) to (well month)
+opt$EF["proc",] <-   opt$EF["proc",]/1e6   # from ( / 10^9 CF gas) to ( / MCF gas)
+opt$EF["transm",] <- opt$EF["transm",]/1e6 # from ( / 10^9 CF gas) to ( / MCF gas)
 
 # Remove component vectors
 remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, sdFracMean)
@@ -441,14 +450,14 @@ opt$affix  <-     " -1e3run -EIAcalcError -v3.pdf" # Any text here will be added
 opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs actual
                    c("Gas Price",                  T), # Gas prices simulated vs actual
                    c("Drilling Schedule",          T), # Drilling schedule simulated vs actual
-                   c("Drilling Model Fit",         T), # Drilling fit vs actual
+                   c("Drilling Model Fit",         F), # Drilling fit vs actual
                    c("DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("DCA Coefficients - CDF",     F), # CDF DCA coefficients
                    c("Total Oil Production",       T), # Total oil production simulated vs actual
                    c("Total Gas Production",       T), # Total gas production simulated vs actual
-                   c("CO2e Emissions",             F), # CO2 emissions
-                   c("CH4 Emissions",              F), # CH4 emissions
-                   c("VOC Emissions",              F), # VOC emissions
+                   c("CO2e Emissions",             T), # CO2 emissions
+                   c("CH4 Emissions",              T), # CH4 emissions
+                   c("VOC Emissions",              T), # VOC emissions
                    c("Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
                    c("Field Fractions -OW",        F), # Same but just oil wells
                    c("Field Fractions -GW",        F), # Same but just gas wells
@@ -459,7 +468,7 @@ opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs
                    c("Enery Price History",        F), # FPP history for oil and gas from EIA data
                    c("NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
                    c("Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
-                   c("EIA AEO Error CDFs",         T) # CDFs for error % in EIA AEO forecasts for oil and gas
+                   c("EIA AEO Error CDFs",         F) # CDFs for error % in EIA AEO forecasts for oil and gas
 )
                    #c("?", 1),    # stack area plot or something v taxes and royalties
 
