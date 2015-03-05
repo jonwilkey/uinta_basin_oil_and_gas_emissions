@@ -64,6 +64,9 @@
 # pTaxRate - vector with mean and standard deviation of property tax rates 
 # expressed as a fraction of revenue from oil and gas sales
 
+# cdf.water - CDF for water disposed of via evaporation ponds and fracking water
+# usage (by well type)
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -126,7 +129,7 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                      production.type, basis, decline.type, EF, cdf.ff, cdf.flt,
                      prob, cdf.depth.ow, cdf.depth.gw, wsim.actual,
                      DCA.cdf.coef.oil, DCA.cdf.coef.gas, Q.DCA.cdf.coef.oil,
-                     Q.DCA.cdf.coef.gas, corpNTIfrac, pTaxRate) {
+                     Q.DCA.cdf.coef.gas, corpNTIfrac, pTaxRate, cdf.water) {
   
   # Pick well information that varies by simulation type --------------------
   
@@ -144,14 +147,14 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            cdf.flt <- as.matrix(cdf.flt)
            
            
-#            # Preprocess drilling schedule --------------------------------------
-#            
-#            # To prevent possibility of drilling negative wells, search for any
-#            # values < 0 and set them to zero
-#            if (min(Drilled) < 0) {
-#              temp <- which(Drilled < 0)
-#              Drilled[temp] <- 0
-#            }
+           # Preprocess drilling schedule --------------------------------------
+           
+           # To prevent possibility of drilling negative wells, search for any
+           # values < 0 and set them to zero
+           if (min(Drilled) < 0) {
+             temp <- which(Drilled < 0)
+             Drilled[temp] <- 0
+           }
            
            
            # Define wsim matrix and assign wellID #'s --------------------------
@@ -421,18 +424,13 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # Pick water balance terms based on CDFs ----------------------------------
   
-  # REPLACE THIS STEP ASAP
-  # Load Water Balance CDFs
-  load(file.path(path$data, "water_models.rda"))
-  
-  # Pick amount of water used for fracking each well (bbl)
+  # Pick amount of water used for fracking each well (bbl water)
   frack <- ifelse(test = type == "OW",
-                  yes = fw.ow.cdf$frackwater[findInterval(runif(length(type)), c(0, fw.ow.cdf$CDF))],
-                  no = fw.gw.cdf$frackwater[findInterval(runif(length(type)), c(0, fw.gw.cdf$CDF))])
+                  yes = cdf.water$fw.ow[findInterval(runif(length(type)), c(0, cdf.water$cdf))],
+                  no =  cdf.water$fw.gw[findInterval(runif(length(type)), c(0, cdf.water$cdf))])
   
-  # Pick flooding ratio (bbl water for flooding : bbl oil produced)
-  flood <- flood.cdf$ratio[findInterval(runif(length(type)), c(0, flood.cdf$CDF))]
-  
+  # Pick fraction of evaporation water to produced water
+  evap <- cdf.water$evap[findInterval(runif(length(type)), c(0, cdf.water$cdf))]
   
   
   # Format and return as data.table wsim ------------------------------------
@@ -457,7 +455,7 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                      pTaxfrac,
                      cost,
                      frack,
-                     flood,
+                     evap,
                      EFdrill.co2,
                      EFrework.co2,
                      EFprod.co2,
