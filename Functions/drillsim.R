@@ -46,9 +46,8 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel)
   
   drillsched <- function(OP,GP,Wo, a, b, c, d) {
     
-    # Function - take absolute value to prevent getting negative #s of wells
-    # drilled
-    W <- abs(a*OP+b*GP+c*Wo+d)
+    # Function
+    W <- a*OP+b*GP+c*Wo+d
     
     return(W)
   }
