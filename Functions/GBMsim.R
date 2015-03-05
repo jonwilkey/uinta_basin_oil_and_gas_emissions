@@ -93,8 +93,8 @@ GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, GBMfitOP,
   
   # Drop first column (prices at timestep just prior to start of simulation time
   # period)
-  GBMsim.OP[,-1]
-  GBMsim.GP[,-1]
+  GBMsim.OP <- GBMsim.OP[,-1]
+  GBMsim.GP <- GBMsim.GP[,-1]
   
   # Return result as list
   return(list(GBMsim.OP, GBMsim.GP))
