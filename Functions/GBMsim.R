@@ -97,5 +97,5 @@ GBMsim <- function(path, oil.fpp.init, gas.fpp.init, timesteps, nrun, GBMfitOP,
   GBMsim.GP <- GBMsim.GP[,-1]
   
   # Return result as list
-  return(list(GBMsim.OP, GBMsim.GP))
+  return(list(op = GBMsim.OP, gp = GBMsim.GP))
 }

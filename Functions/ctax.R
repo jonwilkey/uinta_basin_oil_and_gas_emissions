@@ -59,7 +59,7 @@ ctax <- function(OP, GP, osim, gsim, NTIfrac, CIrate.state, CIrate.fed) {
   }
   
   # Combine into list
-  result <- list(state, federal)
+  result <- list(state = state, fed = federal)
   
   # Return result
   return(result)

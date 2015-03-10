@@ -61,5 +61,5 @@ EIAsim <- function(nrun, Eoil, Egas, op.FC, gp.FC) {
   
   # Return results ----------------------------------------------------------
   
-  return(list(opsim, gpsim))
+  return(list(op = opsim, gp = gpsim))
 }

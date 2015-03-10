@@ -71,5 +71,5 @@ Ecalc <- function (osim, gsim, wsim) {
   Evoc <- Edrill.voc+Eprod.voc+Eproc.voc+Etransm.voc
   
   # Return result
-  return(list(Eco2, Ech4, Evoc))
+  return(list(CO2 = Eco2, CH4 = Ech4, VOC = Evoc))
 }
