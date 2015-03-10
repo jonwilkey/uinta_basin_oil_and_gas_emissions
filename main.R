@@ -64,7 +64,7 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "Ecalc.R",
                               #"RIMS.R",
                               #"workload.R",
-                              #"water.R",
+                              "water.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
@@ -295,7 +295,7 @@ if(opt$EIAforecast.update == TRUE) {
                     path =          path)
 }
 
-# Load EIA error CDF matrices (Eoil and Egas)
+# Load EIA forecast vector
 load(file.path(path$data, paste("EIAforecast_", opt$file_ver, ".rda", sep = "")))
 
 
@@ -435,14 +435,17 @@ if(opt$water.update == TRUE) {
   source(file.path(path$fun, "waterUpdate.R"))
   
   # Function call
-  waterUpdate(path =   path,
-              p =      p,
-              tstart = opt$tstart,
-              tstop =  opt$tstop,
-              xq =     opt$xq,
-              f_mud =  opt$f_mud,
-              f_cem =  opt$f_cem,
-              ver =    opt$file_ver)
+  waterUpdate(path =        path,
+              p =           p,
+              tstart =      opt$tstart,
+              tstop =       opt$tstop,
+              xq =          opt$xq,
+              f_mud =       opt$f_mud,
+              f_cem =       opt$f_cem,
+              rcut.pw.oil = opt$rcut.pw.oil,
+              rcut.pw.gas = opt$rcut.pw.gas,
+              rcut.disp =   opt$rcut.disp,
+              ver =         opt$file_ver)
 }
 
 # Load water balance term CDFs (cdf.water) and regression models (water.lm)
@@ -467,8 +470,8 @@ switch(opt$ep.type,
                          GBMfitGP =     GBMfitGP)
          
          # Extract individual data.frames from list object
-         op <- epsim[[1]]
-         gp <- epsim[[2]]
+         op <- epsim$op
+         gp <- epsim$gp
          
          # Remove list
          remove(epsim)
@@ -485,8 +488,8 @@ switch(opt$ep.type,
                          gp.FC <- gp.FC)
          
          # Extract objects from list
-         op <-    epsim[[1]]
-         gp <-    epsim[[2]]
+         op <- epsim$op
+         gp <- epsim$gp
          
          # Remove list
          remove(epsim)
@@ -512,17 +515,26 @@ Drilled <- drillsim(path =         path,
 
 # Preallocate results matrices
 osim <-    matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
-gsim <-    osim
-roy.oil <- osim
-roy.gas <- osim
-st.oil <-  osim
-st.gas <-  osim
-PT <-      osim
-CTstate <- osim
-CTfed <-   osim
-CO2 <-     osim
-CH4 <-     osim
-VOC <-     osim
+gsim <-    osim # osim/gsim total oil/gas production (bbl or MCF)
+roy.oil <- osim # royalty totals from oil production
+roy.gas <- osim # royalty totals from gas production
+st.oil <-  osim # severance tax totals from oil production
+st.gas <-  osim # severance tax totals from gas production
+PT <-      osim # property tax totals
+CTstate <- osim # corporate state income tax totals
+CTfed <-   osim # corporate federal income tax totals
+CO2 <-     osim # CO2 emission totals (metric tons)
+CH4 <-     osim # CH4 emission totals (metric tons)
+VOC <-     osim # VOC emission totals (metric tons)
+w.pw <-    osim # Produced water totals (bbl)
+w.disp <-  osim # Total water disposed of via injection wells (bbl)
+w.evap <-  osim # Total water evaporated in ponds (bbl)
+w.rec <-   osim # Water recycle totals (bbl)
+w.dw <-    osim # Total water usage for drilling (mud and cement - bbl)
+w.fw <-    osim # Total water usage for hydraulic fracturing (bbl)
+w.inj <-   osim # Total water usage for water flooding (bbl)
+w.in <-    osim # Total water coming into system (bbl)
+w.r <-     osim # Ratio of (water in) / (oil production)
 
 # Progress Bar (since this next for-loop takes a while)
 pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
@@ -569,14 +581,6 @@ for (i in 1:opt$nrun) {
                         osim.actual =     osim.actual,
                         gsim.actual =     gsim.actual)
   
-  # Pullout list components osim (oil production records) and gsim (gas
-  # production records)
-  t.osim <- psim[[1]]
-  t.gsim <- psim[[2]]
-  
-  # Remove original
-  remove(psim)
-  
   
   # 3.3.3 Royalties -----------------------------------------------------
   
@@ -584,13 +588,13 @@ for (i in 1:opt$nrun) {
   t.roy.oil <- royalty(royaltyRate = opt$royaltyRate,
                        ep =          op[i,],
                        lease =       wsim$lease,
-                       psim =        t.osim)
+                       psim =        psim$osim)
   
   # Calculate royalty for gas production
   t.roy.gas <- royalty(royaltyRate = opt$royaltyRate,
                        ep =          gp[i,],
                        lease =       wsim$lease,
-                       psim =        t.gsim)
+                       psim =        psim$gsim)
   
   
   # 3.3.4 Severance Taxes ----------------------------------------------
@@ -598,7 +602,7 @@ for (i in 1:opt$nrun) {
   # Calculate ST for oil production
   t.st.oil <- stax(type =    "oil",
                    tDrill =  wsim$tDrill,
-                   psim =    t.osim,
+                   psim =    psim$osim,
                    rsim =    t.roy.oil,
                    ep =      op[i,],
                    st.low =  opt$st.low,
@@ -611,7 +615,7 @@ for (i in 1:opt$nrun) {
   # Calculate ST for gas production
   t.st.gas <- stax(type =    "gas",
                    tDrill =  wsim$tDrill,
-                   psim =    t.gsim,
+                   psim =    psim$gsim,
                    rsim =    t.roy.gas,
                    ep =      gp[i,],
                    st.low =  opt$st.low,
@@ -627,8 +631,8 @@ for (i in 1:opt$nrun) {
   # Calculate property taxes
   t.PT <- ptax(OP = op[i,],
                GP = gp[i,],
-               osim = t.osim,
-               gsim = t.gsim,
+               osim = psim$osim,
+               gsim = psim$gsim,
                pTaxfrac = wsim$pTaxfrac)
   
   
@@ -637,68 +641,69 @@ for (i in 1:opt$nrun) {
   # Run corporate income tax calculation
   CT <- ctax(OP =           op[i,],
              GP =           gp[i,],
-             osim =         t.osim,
-             gsim =         t.gsim,
+             osim =         psim$osim,
+             gsim =         psim$gsim,
              NTIfrac =      wsim$NTIfrac,
              CIrate.state = opt$CIrate.state,
              CIrate.fed =   opt$CIrate.fed)
-  
-  # Split out individual matrices from list
-  t.CTstate <- CT[[1]] # Corporate state income taxes
-  t.CTfed <-   CT[[2]] # Corporate federal income taxes
-  
-  # Remove list
-  remove(CT)
   
   
   # 3.3.7 Emissions ----------------------------------------------------
   
   # Calculate emissions
-  ET <- Ecalc(osim = t.osim,
-              gsim = t.gsim,
+  ET <- Ecalc(osim = psim$osim,
+              gsim = psim$gsim,
               wsim = wsim)
   
-  # Extract component matrices from ET
-  t.CO2 <- ET[[1]]
-  t.CH4 <- ET[[2]]
-  t.VOC <- ET[[3]]
   
-  # Remove list
-  remove(ET)
+  # 3.3.8 Water Balance -------------------------------------------------
+  
+  # Calculate water balance
+  WB <- water(wsim = wsim,
+              osim = psim$osim,
+              gsim = psim$gsim,
+              dw.lm = water.lm$dw.lm)
   
   
   # 3.3.x Get totals for MC run i ---------------------------------------
   
   # Calculate column sums for each results matrix generated to get totals
-  osim[i,] <-    colSums(t.osim)
-  gsim[i,] <-    colSums(t.gsim)
+  osim[i,] <-    colSums(psim$osim)
+  gsim[i,] <-    colSums(psim$gsim)
   roy.oil[i,] <- colSums(t.roy.oil)
   roy.gas[i,] <- colSums(t.roy.gas)
   st.oil[i,] <-  colSums(t.st.oil)
   st.gas[i,] <-  colSums(t.st.gas)
   PT[i,] <-      colSums(t.PT)
-  CTstate[i,] <- colSums(t.CTstate)
-  CTfed[i,] <-   colSums(t.CTfed)
-  CO2[i,] <-     colSums(t.CO2)
-  CH4[i,] <-     colSums(t.CH4)
-  VOC[i,] <-     colSums(t.VOC)
+  CTstate[i,] <- colSums(CT$state)
+  CTfed[i,] <-   colSums(CT$fed)
+  CO2[i,] <-     colSums(ET$CO2)
+  CH4[i,] <-     colSums(ET$CH4)
+  VOC[i,] <-     colSums(ET$VOC)
+  w.pw[i,] <-    WB$pw
+  w.disp[i,] <-  WB$disp
+  w.evap[i,] <-  WB$evap
+  w.rec[i,] <-   WB$recycle
+  w.dw[i,] <-    WB$dw
+  w.fw[i,] <-    WB$fw
+  w.inj[i,] <-   WB$inj
+  w.in[i,] <-    WB$wtr.in
+  w.r[i,] <-     WB$wtr.r
   
   
   # 3.4.x Cleanup -------------------------------------------------------
   
-  # Remove temporary matrices
-  remove(t.osim,
-         t.gsim,
+  # Remove temporary results
+  remove(wsim,
+         psim,
          t.roy.oil,
          t.roy.gas,
          t.st.oil,
          t.st.gas,
          t.PT,
-         t.CTstate,
-         t.CTfed,
-         t.CO2,
-         t.CH4,
-         t.VOC)
+         CT,
+         ET,
+         WB)
   
   # Update progress bar
   Sys.sleep(1e-3)
@@ -725,13 +730,6 @@ close(pb)
 #                           timesteps = timesteps)
 # 
 # 
-# # 3.9 Water Balance -------------------------------------------------------
-# 
-# # Determine water balance
-# water.balance <- water(wsim = wsim,
-#                        psim = psim,
-#                        data_root = data_root)
-
 
 # 3.10 Energy Balance -----------------------------------------------------
 
