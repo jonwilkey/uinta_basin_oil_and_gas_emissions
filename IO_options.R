@@ -167,7 +167,7 @@ opt$mc.decline.type <- "b"
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
 #
-opt$ep.type <- "a"
+opt$ep.type <- "b"
 
 # Number of simulation time steps (in months)
 opt$MC.tsteps <- 119
@@ -388,8 +388,11 @@ opt$Q.cdf.gas.np    <- c(10e3,  10e3)   # Same as above but for gas
 
 # Water balance input options ---------------------------------------------
 
-opt$f_mud <- 1    # Assumed volume ratio of (water used to mix with drilling mud) / (volume of borehole)
-opt$f_cem <- 4.97 # Water to cement ratio in (gal/sack), value of 4.97 is used for API Class G cement
+opt$f_mud       <- 1    # Assumed volume ratio of (water used to mix with drilling mud) / (volume of borehole)
+opt$f_cem       <- 4.97 # Water to cement ratio in (gal/sack), value of 4.97 is used for API Class G cement
+opt$rcut.pw.oil <- 100  # Maximum ratio of produced water to oil production to be included in CDF for produced water from oil wells
+opt$rcut.pw.gas <- 10   # Maximum ratio of produced water to gas production to be included in CDF for produced water from gas wells
+opt$rcut.disp   <- 0.6  # Maximum ratio of disposal water to produced water to be included in CDF for disposal water
 
 
 # Emission Factors --------------------------------------------------------
@@ -439,25 +442,25 @@ remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, sdFracMean)
 # Outputs -----------------------------------------------------------------
 
 # Export options
-opt$exportFlag <- F                  # If true, will plot to PDF located in path$plot directory
+opt$exportFlag <- T                  # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "pp "              # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e3run -EIAcalcError -v3.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e2run -EIAcalcError -v3.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
 
-opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs actual
-                   c("Gas Price",                  T), # Gas prices simulated vs actual
-                   c("Drilling Schedule",          T), # Drilling schedule simulated vs actual
+opt$plist <- rbind(c("Oil Price",                  F), # Oil prices simulated vs actual
+                   c("Gas Price",                  F), # Gas prices simulated vs actual
+                   c("Drilling Schedule",          F), # Drilling schedule simulated vs actual
                    c("Drilling Model Fit",         F), # Drilling fit vs actual
                    c("DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("DCA Coefficients - CDF",     F), # CDF DCA coefficients
-                   c("Total Oil Production",       T), # Total oil production simulated vs actual
-                   c("Total Gas Production",       T), # Total gas production simulated vs actual
-                   c("CO2e Emissions",             T), # CO2 emissions
-                   c("CH4 Emissions",              T), # CH4 emissions
-                   c("VOC Emissions",              T), # VOC emissions
+                   c("Total Oil Production",       F), # Total oil production simulated vs actual
+                   c("Total Gas Production",       F), # Total gas production simulated vs actual
+                   c("CO2e Emissions",             F), # CO2 emissions
+                   c("CH4 Emissions",              F), # CH4 emissions
+                   c("VOC Emissions",              F), # VOC emissions
                    c("Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
                    c("Field Fractions -OW",        F), # Same but just oil wells
                    c("Field Fractions -GW",        F), # Same but just gas wells
@@ -468,7 +471,9 @@ opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs
                    c("Enery Price History",        F), # FPP history for oil and gas from EIA data
                    c("NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
                    c("Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
-                   c("EIA AEO Error CDFs",         F) # CDFs for error % in EIA AEO forecasts for oil and gas
+                   c("EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
+                   c("Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
+                   c("Water Balance Results",      T) # Results of water balance calculations for each term in WB eq.
 )
                    #c("?", 1),    # stack area plot or something v taxes and royalties
 
