@@ -22,17 +22,26 @@
 
 # f_cem <- Water to cement ratio in (gal/sack)
 
+# rcut.pw.oil - Maximum ratio of produced water to oil production to be included
+# in CDF for produced water from oil wells
+
+# rcut.pw.gas - Maximum ratio of produced water to gas production to be included
+# in CDF for produced water from gas wells
+
+# rcut.disp - Maximum ratio of disposal water to produced water to be included
+# in CDF for disposal water
+
 # ver <- File version number
 
 
 # Outputs -----------------------------------------------------------------
 
-# cdf.water - CDF for water disposed of via evaporation ponds and fracking water
-# usage (by well type)
+# cdf.water - CDF for produced water (by well type), water disposed of via
+# injection wells, water injected for water flooding, water disposed of via
+# evaporation ponds and fracking water usage (by well type)
 
-# water.lm - linear regression model objects for produced water, water disposed 
-# of via injection wells, water injected for water flooding, and water usage for
-# drilling (i.e. mud mixing and cementing)
+# water.lm - linear regression model object for water usage in drilling (i.e.
+# mud mixing and cementing)
 
 
 # Description -------------------------------------------------------------
@@ -78,15 +87,16 @@
 
 # Function ----------------------------------------------------------------
 
-waterUpdate <- function(path, p, tstart, tstop, xq, f_mud, f_cem, ver) {
+waterUpdate <- function(path, p, tstart, tstop, xq, f_mud, f_cem, rcut.pw.oil,
+                        rcut.pw.gas, rcut.disp, ver) {
   
   # Internal values - uncomment to debug ------------------------------------
   
-  tstart <- opt$tstart
-  tstop <-  opt$tstop
-  xq <-     opt$xq
-  f_mud <-  opt$f_mud
-  f_cem <-  opt$f_cem
+#   tstart <- opt$tstart
+#   tstop <-  opt$tstop
+#   xq <-     opt$xq
+#   f_mud <-  opt$f_mud
+#   f_cem <-  opt$f_cem
   
   
   # Load required data files ------------------------------------------------
@@ -237,23 +247,67 @@ waterUpdate <- function(path, p, tstart, tstop, xq, f_mud, f_cem, ver) {
   evap <- zoo(evap[,2], order.by = as.yearqtr(evap[,1]))
   wdQ <- merge(wdQ, evap)
   
+  
   # Fit all terms in water balance equation ---------------------------------
   
-  # Produced Water - linear regression
-  pw.lm <- lm(pw.all ~ oil, data = wd)
+  # -- Produced water ---  
+  # Get produced water to oil/gas ratio based on cumulative production reported 
+  # in DOGM welldata database for wells (1) located within the Uinta Basin (i.e.
+  # data frame p), (2) drilled within the time frame of interest, (3) that have
+  # a nonzero cumulative oil/gas production, and (4) that have any value of
+  # cumulative water production other than NA.
+  prod.r <- sqldf("select distinct p_api, w_totcum_gas, w_totcum_oil, w_totcum_wtr, h_first_prod, h_well_type
+                  from p")
   
-  # Disposal well injection water - linear regression
-  disp.lm <- lm(disp~pw.all, data = wd)
+  # Subset for oil wells
+  prod.r.ow <- subset(prod.r, subset = (h_well_type == "OW" &
+                                        w_totcum_oil > 0 &
+                                        !is.na(w_totcum_wtr) &
+                                        h_first_prod >= tstart &
+                                        h_first_prod <= tstop))
   
-  # Evaporation pond water - CDF
+  # Subset for gas wells
+  prod.r.gw <- subset(prod.r, subset = (h_well_type == "GW" &
+                                          w_totcum_gas > 0 &
+                                          !is.na(w_totcum_wtr) &
+                                          h_first_prod >= tstart &
+                                          h_first_prod <= tstop))
   
+  # Calculate ratio
+  prod.r.ow$r <- prod.r.ow$w_totcum_wtr/prod.r.ow$w_totcum_oil
+  prod.r.gw$r <- prod.r.gw$w_totcum_wtr/prod.r.gw$w_totcum_gas
+  
+  # Since there is a long tail to produced water for both oil and gas wells, cut
+  # any value which has an r value > 100 for oil and r value > 10 for gas wells
+  prod.r.ow <- prod.r.ow[which(prod.r.ow$r <= rcut.pw.oil),]
+  prod.r.gw <- prod.r.gw[which(prod.r.gw$r <= rcut.pw.gas),]
+  
+  # Calculate CDF for produced water and add to data.frame cdf.water
+  cdf.water <- data.frame(cdf = xq,
+                          pw.oil = CDFq(prod.r.ow$r, xq)[,1],
+                          pw.gas = CDFq(prod.r.gw$r, xq)[,1])
+  
+  
+  # -- Disposal well injection water --  
+  # Get ratio of water injectd into disposal wells vs. produced water from all
+  # wells
+  disp.r <- wd$disp/wd$pw.all
+  
+  # Reject single outlining data point (~0.93)
+  disp.r <- disp.r[which(disp.r < rcut.disp)]
+  
+  # Calculate CDF and add to cdf.water data frame
+  cdf.water$disp <- CDFq(disp.r, xq)[,1]
+  
+  
+  # -- Evaporation pond water --  
   # Calculate as fraction of produced water
   evapf <- wdQ$evap/wdQ$pw.all
   
-  # Assuming a normal distribution and add to data.frame cdf.water.
-  cdf.water <- data.frame(cdf = xq, evap = qnorm(xq,
-                                                 mean = mean(evapf, na.rm = T),
-                                                 sd = sd(evapf, na.rm = T)))
+  # Assuming a normal distribution .
+  cdf.water$evap <- qnorm(xq,
+                          mean = mean(evapf, na.rm = T),
+                          sd = sd(evapf, na.rm = T))
   
   # Zero out any values in evap that are < 0
   if(min(cdf.water$evap) < 0) {
@@ -279,10 +333,16 @@ waterUpdate <- function(path, p, tstart, tstop, xq, f_mud, f_cem, ver) {
   cdf.water$fw.ow <- CDFq(fw.ow$water, xq)[,1]
   cdf.water$fw.gw <- CDFq(fw.gw$water, xq)[,1]
   
-  # Flooding Water - linear regression
-  flood.lm <- lm(inj~oil-1, wd)
   
-  # Drilling Water - linear regression
+  # -- Flooding Water --
+    # Calculate ratio of water injected for flooding vs. oil production from wd
+  inj.r <- wd$inj/wd$oil
+  
+  # Calculate CDF and add to cdf.water
+  cdf.water$inj <- CDFq(inj.r, xq)[,1]
+  
+  # -- Drilling Water --
+  # Use linear regression to fit as function of well depth
   dw.lm <- lm(water~depth, dw)
   
   
@@ -290,10 +350,7 @@ waterUpdate <- function(path, p, tstart, tstop, xq, f_mud, f_cem, ver) {
   
   # Make list out of all the different water regression models
   water.lm <- NULL
-  water.lm$pw.lm <-    pw.lm
-  water.lm$disp.lm <-  disp.lm
-  water.lm$flood.lm <- flood.lm
-  water.lm$dw.lm <-    dw.lm
+  water.lm$dw.lm <- dw.lm
   
   # Save to file
   save(file=file.path(path$data,
