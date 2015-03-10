@@ -51,23 +51,51 @@ EIAerrorUpdate <- function(path, xq, tsteps, ver) {
   
   # Expand errors from annual to monthly basis ------------------------------
   
-  # Assume that error in each month is same as error that year. Just need to
-  # make 12 repetitions of each annual value
-  
   # Define monthly error matrices
-  moil <- NULL
+  moil <- matrix(0, nrow = nrow(eoil), ncol = 12*ncol(eoil))
   mgas <- moil
   
-  # For each year in eoil/egas
-  for (i in 1:ncol(eoil)) {
+  # For each set of AEO forecast error observations (i.e. rows) in eoil/egas
+  for (i in 1:nrow(eoil)) {
     
-    # Get column for this timestep and save as temp
-    ot <- eoil[,i]
-    gt <- eoil[,i]
+    # Get sequence of error observations. Zero is concatonated in front of first
+    # error observation because its assumed that zero error occurs in forecast
+    # at start of time period.
+    obs.oil <- c(0, eoil[i,])
+    obs.gas <- c(0, egas[i,])
     
-    # Repeat column i 12 times and merge with previous monthly oil/gas matrix
-    moil <- cbind(moil, ot, ot, ot, ot, ot, ot, ot, ot, ot, ot, ot, ot)
-    mgas <- cbind(mgas, gt, gt, gt, gt, gt, gt, gt, gt, gt, gt, gt, gt)
+    # Define sequence of months into future from start of forecast (t = 0) to
+    # end of AEO forecast error observation period
+    m <- seq(from = 0, to = 12*(length(obs.oil)-1), by = 12)
+    
+    # Define temporary results vector
+    roil <- NULL
+    rgas <- roil
+    
+    # For each annual observation, interpolate using approx() function
+    for (j in 1:(length(obs.oil)-1)) {
+      
+      # Check: is error observation at end of time period NA? If yes, skip.
+      if (!is.na(obs.oil[j+1])) {
+        
+        # Call approx()
+        int.oil <- approx(x = m[j:(j+1)], y = obs.oil[j:(j+1)], n = 13)$y
+        int.gas <- approx(x = m[j:(j+1)], y = obs.gas[j:(j+1)], n = 13)$y
+        
+        # Write out interpolation results to temporary vector
+        roil <- c(roil, int.oil[2:13])
+        rgas <- c(rgas, int.gas[2:13])
+      } else {
+        
+        # Fill in the rest of the monthly observation periods with NAs
+        roil <- c(roil, rep(NA, times = (ncol(moil)-length(roil))))
+        rgas <- c(rgas, rep(NA, times = (ncol(moil)-length(rgas))))
+      }
+    }
+    
+    # Write out result to monthly error matrix
+    moil[i,] <- roil
+    mgas[i,] <- rgas
   }
   
   # Finally, rename as eoil/egas
