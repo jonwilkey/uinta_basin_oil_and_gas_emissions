@@ -147,16 +147,6 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            cdf.flt <- as.matrix(cdf.flt)
            
            
-           # Preprocess drilling schedule --------------------------------------
-           
-           # To prevent possibility of drilling negative wells, search for any
-           # values < 0 and set them to zero
-           if (min(Drilled) < 0) {
-             temp <- which(Drilled < 0)
-             Drilled[temp] <- 0
-           }
-           
-           
            # Define wsim matrix and assign wellID #'s --------------------------
            
            # Predefine space for results matrix
@@ -217,8 +207,8 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
            ind.gw <- which(type == "GW")
            
            # Generate total measured depth for each well based on well type
-           depth[ind.ow] <- cdf.depth.ow$x[findInterval(runif(length(ind.ow)), c(0, cdf.depth.ow$y))]
-           depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)), c(0, cdf.depth.gw$y))]
+           depth[ind.ow] <- cdf.depth.ow$x[findInterval(runif(length(ind.ow)), c(0, cdf.depth.ow$y), all.inside = T)]
+           depth[ind.gw] <- cdf.depth.gw$x[findInterval(runif(length(ind.gw)), c(0, cdf.depth.gw$y), all.inside = T)]
            
            # Pick surface lease (1 - Federal, 2 - Indian, 3 - State, 4 - Fee)
            for (i in 1:length(field)) {
@@ -281,14 +271,14 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                cdf.td.gas <- DCA.cdf.coef.gas[[(i-1)*4+4]]
                
                # Pick values for each coefficient
-               qo.oil[ind] <- cdf.qo.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.oil$CDF))]
-               b.oil[ind]  <- cdf.b.oil$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.oil$CDF ))]
-               Di.oil[ind] <- cdf.Di.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.oil$CDF))]
-               td.oil[ind] <- cdf.td.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.oil$CDF))]
-               qo.gas[ind] <- cdf.qo.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.gas$CDF))]
-               b.gas[ind]  <- cdf.b.gas$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.gas$CDF ))]
-               Di.gas[ind] <- cdf.Di.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.gas$CDF))]
-               td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF))]
+               qo.oil[ind] <- cdf.qo.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.oil$CDF), all.inside = T)]
+               b.oil[ind]  <- cdf.b.oil$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.oil$CDF ), all.inside = T)]
+               Di.oil[ind] <- cdf.Di.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.oil$CDF), all.inside = T)]
+               td.oil[ind] <- cdf.td.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.oil$CDF), all.inside = T)]
+               qo.gas[ind] <- cdf.qo.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.gas$CDF), all.inside = T)]
+               b.gas[ind]  <- cdf.b.gas$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.gas$CDF ), all.inside = T)]
+               Di.gas[ind] <- cdf.Di.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.gas$CDF), all.inside = T)]
+               td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF), all.inside = T)]
              }
            },
            
@@ -318,12 +308,12 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                cdf.c1.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+2]]
                
                # Pick values for each coefficient
-               td.oil[ind] <- cdf.td.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.oil$CDF))]
-               td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF))]
-               Cp.oil[ind] <- cdf.Cp.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.oil$CDF))]
-               c1.oil[ind] <- cdf.c1.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.oil$CDF))]
-               Cp.gas[ind] <- cdf.Cp.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.gas$CDF))]
-               c1.gas[ind] <- cdf.c1.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.gas$CDF))]
+               td.oil[ind] <- cdf.td.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.oil$CDF), all.inside = T)]
+               td.gas[ind] <- cdf.td.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.td.gas$CDF), all.inside = T)]
+               Cp.oil[ind] <- cdf.Cp.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.oil$CDF), all.inside = T)]
+               c1.oil[ind] <- cdf.c1.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.oil$CDF), all.inside = T)]
+               Cp.gas[ind] <- cdf.Cp.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.gas$CDF), all.inside = T)]
+               c1.gas[ind] <- cdf.c1.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.gas$CDF), all.inside = T)]
              }
            })
     
@@ -424,13 +414,25 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
   
   # Pick water balance terms based on CDFs ----------------------------------
   
-  # Pick amount of water used for fracking each well (bbl water)
-  frack <- ifelse(test = type == "OW",
-                  yes = cdf.water$fw.ow[findInterval(runif(length(type)), c(0, cdf.water$cdf))],
-                  no =  cdf.water$fw.gw[findInterval(runif(length(type)), c(0, cdf.water$cdf))])
+  # Pick produced water ratio (vol produced water / vol oil/gas) based on well
+  # type
+  pw <- ifelse(test = type == "OW",
+               yes =  cdf.water$pw.oil[findInterval(runif(length(type)), c(0, cdf.water$cdf), all.inside = T)],
+               no =   cdf.water$pw.gas[findInterval(runif(length(type)), c(0, cdf.water$cdf), all.inside = T)])
+  
+  # Pick disposal water ratio (vol disposal / vol produced)
+  disp <- cdf.water$disp[findInterval(runif(length(type)), c(0, cdf.water$cdf), all.inside = T)]
   
   # Pick fraction of evaporation water to produced water
-  evap <- cdf.water$evap[findInterval(runif(length(type)), c(0, cdf.water$cdf))]
+  evap <- cdf.water$evap[findInterval(runif(length(type)), c(0, cdf.water$cdf), all.inside = T)]
+  
+  # Pick amount of water used for fracking each well (bbl water)
+  frack <- ifelse(test = type == "OW",
+                  yes = cdf.water$fw.ow[findInterval(runif(length(type)), c(0, cdf.water$cdf), all.inside = T)],
+                  no =  cdf.water$fw.gw[findInterval(runif(length(type)), c(0, cdf.water$cdf), all.inside = T)])
+  
+  # Pick water injection for water flooding ratio (vol water injected / vol oil produced)
+  inj <- cdf.water$inj[findInterval(runif(length(type)), c(0, cdf.water$cdf), all.inside = T)]
   
   
   # Format and return as data.table wsim ------------------------------------
@@ -454,8 +456,11 @@ welldata <- function(path, sched.type, Drilled, timesteps, nrun, field, ver,
                      NTIfrac,
                      pTaxfrac,
                      cost,
-                     frack,
+                     pw,
+                     disp,
                      evap,
+                     frack,
+                     inj,
                      EFdrill.co2,
                      EFrework.co2,
                      EFprod.co2,
