@@ -183,5 +183,5 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
   gsim <- ifelse(test = gsim < 0 , yes = 0, no = gsim)
   
   # Return results
-  return(list(osim, gsim))
+  return(list(osim = osim, gsim = gsim))
 }
