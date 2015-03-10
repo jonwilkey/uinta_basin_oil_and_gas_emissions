@@ -38,6 +38,15 @@ gp.q <-      Drilled.q
 CO2.q <-     Drilled.q
 CH4.q <-     Drilled.q
 VOC.q <-     Drilled.q
+w.pw.q <-    Drilled.q
+w.disp.q <-  Drilled.q
+w.evap.q <-  Drilled.q
+w.rec.q <-   Drilled.q
+w.dw.q <-    Drilled.q
+w.fw.q <-    Drilled.q
+w.inj.q <-   Drilled.q
+w.in.q <-    Drilled.q
+w.r.q <-     Drilled.q
 
 # For each timestep, get quantiles
 for (i in 1:ncol(Drilled.q)) {
@@ -49,6 +58,15 @@ for (i in 1:ncol(Drilled.q)) {
   CO2.q[,i] <-     quantile(CO2[,i], opt$quant)
   CH4.q[,i] <-     quantile(CH4[,i], opt$quant)
   VOC.q[,i] <-     quantile(gp[,i], opt$quant)
+  w.pw.q[,i] <-    quantile(w.pw[,i], opt$quant)
+  w.disp.q[,i] <-  quantile(w.disp[,i], opt$quant)
+  w.evap.q[,i] <-  quantile(w.evap[,i], opt$quant)
+  w.rec.q[,i] <-   quantile(w.rec[,i], opt$quant)
+  w.dw.q[,i] <-    quantile(w.dw[,i], opt$quant)
+  w.fw.q[,i] <-    quantile(w.fw[,i], opt$quant)
+  w.inj.q[,i] <-   quantile(w.inj[,i], opt$quant)
+  w.in.q[,i] <-    quantile(w.in[,i], opt$quant)
+  w.r.q[,i] <-     quantile(w.r[,i], opt$quant)
 }
 
 
@@ -705,21 +723,21 @@ if(opt$plist$plot[j] == TRUE) {
 # Increment counter
 j <- j+1
 
+
 # EIA AEO Error CDFs -------------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
-  # CDF for % error in oil
-  
+  # CDF for % error in oil  
   # Line colors
-  linecolor <- rainbow(ncol(Eoil))
+  elinecolor <- rainbow(ncol(Eoil))
   
   # Main plot
   plot(Eoil[,1], opt$EIAExq,
        type = "l",
-       col = linecolor[1],
+       col = elinecolor[1],
        xlim = c(1.1*min(Eoil), 1.1*max(Eoil)),
        ylim = c(0, 1),
        xlab = "% Error",
@@ -728,17 +746,17 @@ if(opt$plist$plot[j] == TRUE) {
   
   # For all other timesteps
   for (i in 2:ncol(Eoil)) {
-    lines(Eoil[,i], opt$EIAExq, col = linecolor[i])
+    lines(Eoil[,i], opt$EIAExq, col = elinecolor[i])
   }
   
   legend("topleft",
          c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7", "Y8", "Y9", "Y10"),
-         ncol = 2, lty = 1, col = linecolor)
+         ncol = 2, lty = 1, col = elinecolor)
   
   # Main plot for gas
   plot(Egas[,1], opt$EIAExq,
        type = "l",
-       col = linecolor[1],
+       col = elinecolor[1],
        xlim = c(1.1*min(Egas), 1.1*max(Egas)),
        ylim = c(0, 1),
        xlab = "% Error",
@@ -747,12 +765,242 @@ if(opt$plist$plot[j] == TRUE) {
   
   # For all other timesteps
   for (i in 2:ncol(Egas)) {
-    lines(Egas[,i], opt$EIAExq, col = linecolor[i])
+    lines(Egas[,i], opt$EIAExq, col = elinecolor[i])
   }
   
   legend("topleft",
          c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7", "Y8", "Y9", "Y10"),
-         ncol = 2, lty = 1, col = linecolor)
+         ncol = 2, lty = 1, col = elinecolor)
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# Water balance terms CDFs and regression models ----------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # CDF of produced water from oil wells
+  plot(cdf ~ pw.oil, data = cdf.water,
+       type = "l",
+       xlab = "Ratio of (Produced Water) / (Oil Production)",
+       ylab = "Cumulative Probability",
+       main = "CDF of Produced Water Ratio for Oil Wells")
+  
+  # CDF of produced water from gas wells
+  plot(cdf ~ pw.gas, data = cdf.water,
+       type = "l",
+       xlab = "Ratio of (Produced Water) / (Gas Production)",
+       ylab = "Cumulative Probability",
+       main = "CDF of Produced Water Ratio for Gas Wells")
+  
+  # CDF of disposal water vs produced water
+  plot(cdf ~ disp, data = cdf.water,
+       type = "l",
+       xlab = "Ratio of (Disposal Well Water) / (Produced Water)",
+       ylab = "Cumulative Probability",
+       main = "CDF of Disposal Well Water Ratio")
+  
+  # CDF of evaporation water vs produced water
+  plot(cdf ~ evap, data = cdf.water,
+       type = "l",
+       xlab = "Ratio of (Evaporation Pond Water) / (Produced Water)",
+       ylab = "Cumulative Probability",
+       main = "CDF of Evaporation Pond Water Ratio")
+  
+  # CDF of fracking water by well type
+  plot(cdf ~ fw.ow, data = cdf.water,
+       col = "blue",
+       type = "l",
+       xlab = "Hydraulic Fracturing Water Usage (bbl)",
+       ylab = "Cumulative Probability",
+       main = "CDF of Hydraulic Fracturing Water Usage by Well Type")
+  
+  # Add line for gas wells
+  lines(cdf~fw.gw, data = cdf.water, col = "red")
+  
+  # Add legend
+  legend("bottomright", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue", "red"))
+  
+  # CDF for flooding water vs oil production
+  plot(cdf ~ inj, data = cdf.water,
+       type = "l",
+       xlab = "Ratio of (Flooding Water) / (Oil Production)",
+       ylab = "Cumulative Probability",
+       main = "CDF of Water Flooding Ratio")
+  
+  # Linear regression model for drilling water usage
+  plot(water~depth, data = water.lm$dw.lm$model,
+       xlab = "Well Depth (ft)",
+       ylab = "Drilling Water Usage (bbl)",
+       main = "Drilling (Mud and Cement) Water Usage Model")
+  lines(water.lm$dw.lm$model$depth, fitted(water.lm$dw.lm), col = "blue")
+  legend("topleft", c("Data", "Fit"), pch = c(1, NA), lty = c(NA, 1), col = c("black", "blue"))
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# Water balance results ---------------------------------------------------
+
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Produced water - Main plot with largest quantile result
+  plot(opt$tsteps, w.pw.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.pw.q),
+                1.1*max(w.pw.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Produced Water (bbl)",
+       main = "Total Produced Water")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.pw.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Disposal water - Main plot with largest quantile result
+  plot(opt$tsteps, w.disp.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.disp.q),
+                1.1*max(w.disp.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Disposal Well Water (bbl)",
+       main = "Total Disposal Well Water")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.disp.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Evaporation water - Main plot with largest quantile result
+  plot(opt$tsteps, w.evap.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.evap.q),
+                1.1*max(w.evap.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Water Evaporated in Ponds (bbl)",
+       main = "Total Evaporation Pond Water")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.evap.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Water recycle - Main plot with largest quantile result
+  plot(opt$tsteps, w.rec.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.rec.q),
+                1.1*max(w.rec.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Water Recycled (bbl)",
+       main = "Total Water Recycle")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.rec.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Drilling water - Main plot with largest quantile result
+  plot(opt$tsteps, w.dw.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.dw.q),
+                1.1*max(w.dw.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Drilling Water Usage (bbl)",
+       main = "Total Drilling Water Usage")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.dw.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Fracking water - Main plot with largest quantile result
+  plot(opt$tsteps, w.fw.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.fw.q),
+                1.1*max(w.fw.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Hydraulic Fracturing Water Usage (bbl)",
+       main = "Total Hydraulic Fracturing Water Usage")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.fw.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Water Flooding - Main plot with largest quantile result
+  plot(opt$tsteps, w.inj.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.inj.q),
+                1.1*max(w.inj.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Water Flooding (bbl)",
+       main = "Total Water Flooding")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.inj.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Water In - Main plot with largest quantile result
+  plot(opt$tsteps, w.in.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.in.q),
+                1.1*max(w.in.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Water In (bbl)",
+       main = "Total Water In")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.in.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  
+  # Water Intensity Ratio - Main plot with largest quantile result
+  plot(opt$tsteps, w.r.q[1,],
+       type = "l",
+       ylim = c(0.9*min(w.r.q),
+                1.1*max(w.r.q)),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Water Intensity Ratio (water_in / oil)",
+       main = "Water Intensity Ratio")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.r.q[i,], col = linecolor[i])}
+  
+  # Legend
+  legend("topright", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
