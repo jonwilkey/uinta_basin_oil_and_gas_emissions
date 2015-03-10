@@ -72,6 +72,11 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel)
                                         b = drillModel$coefficients["GP"],
                                         c = drillModel$coefficients["prior"],
                                         d = drillModel$coefficients["(Intercept)"]))
+    
+    # Check - has drilling schedule gone negative? If so, overwrite as 0
+    Drilled[,(i+1)] <- ifelse(test = Drilled[,(i+1)] < 0,
+                              yes =  0,
+                              no =   Drilled[,(i+1)])
   }
   
   # Drop first column (# of wells drilled in prior time period)
