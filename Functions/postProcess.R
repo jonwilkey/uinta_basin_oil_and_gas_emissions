@@ -225,19 +225,20 @@ j <- j+1
 # Boxplots of decline curve coefficients by field -------------------------
 if(opt$plist$plot[j] == TRUE) {
   
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Source hyperbolic and cumulative boxplot functions
-  source(file.path(path$plotfun, "bplotHypDCAcoef.R"))
-  source(file.path(path$plotfun, "bplotQfitDCAcoef.R"))
-  
-  # Run plotting functions
-  bplotHypDCAcoef()
-  bplotQfitDCAcoef()  
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+# Plots below are broken because of dynamic field selection in scheduleUpdate - fix me
+#   # If exporting to PDF
+#   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+#   
+#   # Source hyperbolic and cumulative boxplot functions
+#   source(file.path(path$plotfun, "bplotHypDCAcoef.R"))
+#   source(file.path(path$plotfun, "bplotQfitDCAcoef.R"))
+#   
+#   # Run plotting functions
+#   bplotHypDCAcoef()
+#   bplotQfitDCAcoef()  
+#   
+#   # If exporting to PDF, close PDF
+#   if(opt$exportFlag == TRUE) {dev.off()}
 }
 
 # Increment counter
@@ -254,7 +255,7 @@ if(opt$plist$plot[j] == TRUE) {
   source(file.path(path$plotfun, "cdfDCAcoef.R"))
   
   # Run plotting functions
-  cdfDCAcoef()
+  cdfDCAcoef(hyp = F, Qfit = T)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -433,7 +434,7 @@ if(opt$plist$plot[j] == TRUE) {
   bp <- barplot(height = fcount,
                 names.arg = as.character(cdf.ff$Field),
                 #log = "y",
-                ylim = c(0, 3.5e3),
+                #ylim = c(0, 3.5e3),
                 ylab = "Well Count",
                 xlab = "Field Number",
                 main = "Well Counts by Field")
@@ -687,8 +688,8 @@ if(opt$plist$plot[j] == TRUE) {
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
   # Plot
-  plot(x = qnorm(p = opt$DCA.CDF.xq, mean = corpNTIfrac["mean"], sd = corpNTIfrac["sd"]),
-       y = opt$DCA.CDF.xq,
+  plot(x = qnorm(p = opt$xq, mean = corpNTIfrac["mean"], sd = corpNTIfrac["sd"]),
+       y = opt$xq,
        type = "l",
        xlab = "NTI Revenue Fraction (dimensionless)",
        ylab = "Cumulative Probability",
@@ -709,8 +710,8 @@ if(opt$plist$plot[j] == TRUE) {
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
   # Plot
-  plot(x = qnorm(p = opt$DCA.CDF.xq, mean = pTaxRate["mean"], sd = pTaxRate["sd"]),
-       y = opt$DCA.CDF.xq,
+  plot(x = qnorm(p = opt$xq, mean = pTaxRate["mean"], sd = pTaxRate["sd"]),
+       y = opt$xq,
        type = "l",
        xlab = "Property Tax Revenue Fraction (dimensionless)",
        ylab = "Cumulative Probability",
@@ -732,10 +733,10 @@ if(opt$plist$plot[j] == TRUE) {
   
   # CDF for % error in oil  
   # Line colors
-  elinecolor <- rainbow(ncol(Eoil))
+  elinecolor <- rainbow(ncol(Eoil)/12)
   
   # Main plot
-  plot(Eoil[,1], opt$EIAExq,
+  plot(Eoil[,12], opt$xq,
        type = "l",
        col = elinecolor[1],
        xlim = c(1.1*min(Eoil), 1.1*max(Eoil)),
@@ -745,16 +746,16 @@ if(opt$plist$plot[j] == TRUE) {
        main = "CDF of Relative % Error of EIA Oil Price Forecasts")
   
   # For all other timesteps
-  for (i in 2:ncol(Eoil)) {
-    lines(Eoil[,i], opt$EIAExq, col = elinecolor[i])
+  for (i in seq(from = 24, to = ncol(Eoil), by = 12)) {
+    lines(Eoil[,i], opt$xq, col = elinecolor[i/12])
   }
   
   legend("topleft",
-         c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7", "Y8", "Y9", "Y10"),
+         c("Y1", "Y2", "Y3", "Y4", "Y5"),
          ncol = 2, lty = 1, col = elinecolor)
   
   # Main plot for gas
-  plot(Egas[,1], opt$EIAExq,
+  plot(Egas[,12], opt$xq,
        type = "l",
        col = elinecolor[1],
        xlim = c(1.1*min(Egas), 1.1*max(Egas)),
@@ -764,12 +765,12 @@ if(opt$plist$plot[j] == TRUE) {
        main = "CDF of Relative % Error of EIA Gas Price Forecasts")
   
   # For all other timesteps
-  for (i in 2:ncol(Egas)) {
-    lines(Egas[,i], opt$EIAExq, col = elinecolor[i])
+  for (i in seq(from = 24, to = ncol(Egas), by = 12)) {
+    lines(Egas[,i], opt$xq, col = elinecolor[i/12])
   }
   
   legend("topleft",
-         c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7", "Y8", "Y9", "Y10"),
+         c("Y1", "Y2", "Y3", "Y4", "Y5"),
          ncol = 2, lty = 1, col = elinecolor)
   
   # If exporting to PDF, close PDF
