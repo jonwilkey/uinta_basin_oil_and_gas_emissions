@@ -37,7 +37,6 @@ shinyServer(function(input, output) {
     
     barplot(height = wcount$count,
             names.arg = as.character(wcount$field),
-            ylim = c(0, 3.5e3),
             ylab = "Well Count",
             xlab = "Field Number",
             main = "Well Counts by Field")
