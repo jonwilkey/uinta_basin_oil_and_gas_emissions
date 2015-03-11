@@ -68,7 +68,8 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
-                              "CDFq.R"))
+                              "CDFq.R",
+                              "tpick.R"))
 
 # Load each function in list then remove temporary file list variables
 for (f in flst) source(f); remove(f, flst)
@@ -129,7 +130,7 @@ if(opt$schedule.update == TRUE) {
   # Function call
   scheduleUpdate(path =            path,
                  p =               p,
-                 tsteps =          opt$tsteps,
+                 tsteps =          with(opt, tpick(SU.tp, tsteps, SU.tsteps)),
                  min.depth =       opt$min.well.depth,
                  max.depth =       opt$max.well.depth,
                  well.depth.step = opt$well.depth.step,
@@ -152,7 +153,7 @@ load(file.path(path$data, paste("well_actual_", opt$file_ver, ".rda", sep = ""))
 load(file.path(path$data, paste("cdf_schedule_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.4 Lease operating cost lm() fit update --------------------------------
+# 2.3 Lease operating cost lm() fit update --------------------------------
 
 # Run function if opt$lease.update flag is set to "TRUE"
 if(opt$lease.update == TRUE) {
@@ -163,9 +164,8 @@ if(opt$lease.update == TRUE) {
   # Function call
   leaseOpCostUpdate(path =     path,
                     ver =      opt$file_ver,
-                    tstart =   opt$tstart,
-                    tstop =    opt$tstop,
-                    full =     opt$fullDataFit,
+                    tstart =   with(opt, tpick(LU.tp, tstart, LU.tstart)),
+                    tstop =    with(opt, tpick(LU.tp, tstop,  LU.tstop)),
                     basis =    opt$cpi,
                     LOCbasis = opt$LOCbasis)
 }
@@ -176,7 +176,7 @@ if(opt$lease.update == TRUE) {
 load(file.path(path$data, paste("leaseOpCost_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.x EIA energy price history --------------------------------------------
+# 2.4 EIA energy price history --------------------------------------------
 
 # Run function if opt$EIAprice.update is set to "TRUE"
 if(opt$EIAprice.update == TRUE) {
@@ -195,7 +195,7 @@ if(opt$EIAprice.update == TRUE) {
 load(file.path(path$data, paste("EIAprices_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.3 Corporate income tax conversion factor CDF generation ---------------
+# 2.5 Corporate income tax conversion factor CDF generation ---------------
 
 # Run function if opt$corptax.update flag is set to "TRUE"
 if(opt$corptax.update == TRUE) {
@@ -216,7 +216,7 @@ if(opt$corptax.update == TRUE) {
 load(file.path(path$data, paste("corpNTIfrac_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.x Property tax update -------------------------------------------------
+# 2.6 Property tax update -------------------------------------------------
 
 # Run function if opt$ptax.update flag is set to "TRUE"
 if(opt$ptax.update == TRUE) {
@@ -237,7 +237,7 @@ if(opt$ptax.update == TRUE) {
 load(file.path(path$data, paste("pTaxRate_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.5 Drilling Schedule Model lm() fit update -----------------------------
+# 2.7 Drilling Schedule Model lm() fit update -----------------------------
 
 # Run function if opt$drillmodel.update flag is set to "TRUE"
 if(opt$drillmodel.update == TRUE) {
@@ -249,6 +249,8 @@ if(opt$drillmodel.update == TRUE) {
   drillingModelUpdate(path =      path,
                       p =         p,
                       min.depth = opt$min.well.depth,
+                      tstart =    with(opt, tpick(DMU.tp, tstart, DMU.tstart)),
+                      tstop =     with(opt, tpick(DMU.tp, tstop,  DMU.tstop)),
                       ver =       opt$file_ver,
                       eia.hp =    eia.hp)
 }
@@ -257,7 +259,7 @@ if(opt$drillmodel.update == TRUE) {
 load(file.path(path$data, paste("drillModel_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.6 GBM parameter fit update --------------------------------------------
+# 2.8 GBM parameter fit update --------------------------------------------
 
 # Run function if opt$GBMfit.update flag is set to "TRUE"
 if(opt$GBMfit.update == TRUE) {
@@ -268,6 +270,8 @@ if(opt$GBMfit.update == TRUE) {
   # Function call
   GBMfitUpdate(path =   path,
                eia.hp = eia.hp,
+               tstart = with(opt, tpick(GBM.tp, tstart, GBM.tstart)),
+               tstop =  with(opt, tpick(GBM.tp, tstop,  GBM.tstop)),
                ver =    opt$file_ver)
 }
 
@@ -275,7 +279,7 @@ if(opt$GBMfit.update == TRUE) {
 load(file.path(path$data, paste("GBMfit_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.x EIA Forecast Update -------------------------------------------------
+# 2.9 EIA Forecast Update -------------------------------------------------
 
 # Run function if opt$EIAforecast.update flag is set to "TRUE"
 if(opt$EIAforecast.update == TRUE) {
@@ -287,7 +291,7 @@ if(opt$EIAforecast.update == TRUE) {
   EIAforecastUpdate(forecast <-     opt$forecast,
                     basis <-        opt$cpi,
                     EIAbasis <-     opt$EIAbasis,
-                    tsteps <-       opt$tsteps,
+                    tsteps <-       with(opt, tpick(EFU.tp, tsteps, EFU.tsteps)),
                     oil.fpp.init <- opt$oil.fpp.init,
                     gas.fpp.init <- opt$gas.fpp.init,
                     FPPdate <-      opt$FPPdate,
@@ -299,7 +303,7 @@ if(opt$EIAforecast.update == TRUE) {
 load(file.path(path$data, paste("EIAforecast_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.7 EIA Error Analysis Update -------------------------------------------
+# 2.10 EIA Error Analysis Update ------------------------------------------
 
 # Run function if opt$EIAerror.update flag is set to "TRUE"
 if(opt$EIAerror.update == TRUE) {
@@ -310,7 +314,7 @@ if(opt$EIAerror.update == TRUE) {
   # Function call
   EIAerrorUpdate(path =   path,
                  xq =     opt$xq,
-                 tsteps = opt$EIAtsteps,
+                 tsteps = opt$EEU.tsteps,
                  ver =    opt$file_ver)
 }
 
@@ -318,7 +322,7 @@ if(opt$EIAerror.update == TRUE) {
 load(file.path(path$data, paste("EIAerror_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.8 Decline curve analysis update ---------------------------------------
+# 2.11 Decline curve analysis update --------------------------------------
 
 # Run function if opt$DCA.update flag is set to "TRUE"
 if(opt$DCA.update == TRUE) {
@@ -360,7 +364,7 @@ if(opt$DCA.update == TRUE) {
 load(file.path(path$data, paste("DCA_fits_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.9 DCA CDF Update ------------------------------------------------------
+# 2.12 DCA CDF Update ------------------------------------------------------
 
 # Run function if opt$DCA.CDF.update flag is set to "TRUE"
 if(opt$DCA.CDF.update == TRUE) {
@@ -381,8 +385,8 @@ if(opt$DCA.CDF.update == TRUE) {
                cdf.gas.np =   opt$cdf.gas.np,
                DCA.CDF.xq =   opt$xq,
                path =         path,
-               tstart =       opt$DCA.CDF.tstart,
-               tstop =        opt$DCA.CDF.tstop,
+               tstart =       with(opt, tpick(DCA.tp, tstart, DCA.tstart)),
+               tstop =        with(opt, tpick(DCA.tp, tstop,  DCA.tstop)),
                mo =           mo,
                mg =           mg)
   
@@ -398,8 +402,8 @@ if(opt$DCA.CDF.update == TRUE) {
                    Q.cdf.gas.np =   opt$Q.cdf.gas.np,
                    DCA.CDF.xq =     opt$xq,
                    path =           path,
-                   tstart =         opt$DCA.CDF.tstart,
-                   tstop =          opt$DCA.CDF.tstop,
+                   tstart =         with(opt, tpick(DCA.tp, tstart, DCA.tstart)),
+                   tstop =          with(opt, tpick(DCA.tp, tstop,  DCA.tstop)),
                    mo =             mo,
                    mg =             mg)
 }
@@ -409,7 +413,7 @@ load(file.path(path$data, paste("DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")
 load(file.path(path$data, paste("Q_DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.10 Drilling and Completion Capital Cost Model Update -------------------
+# 2.13 Drilling and Completion Capital Cost Model Update -------------------
 
 # Run function if opt$drillCapCost.update flag is set to "TRUE"
 if(opt$drillCapCost.update == TRUE) {
@@ -426,7 +430,7 @@ if(opt$drillCapCost.update == TRUE) {
 load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.x Water balance data analysis and update ------------------------------
+# 2.14 Water balance data analysis and update -----------------------------
 
 # Run function if opt$water.update flag is set to "TRUE"
 if(opt$water.update == TRUE) {
@@ -437,8 +441,8 @@ if(opt$water.update == TRUE) {
   # Function call
   waterUpdate(path =        path,
               p =           p,
-              tstart =      opt$tstart,
-              tstop =       opt$tstop,
+              tstart =      with(opt, tpick(WU.tp, tstart, WU.tstart)),
+              tstop =       with(opt, tpick(WU.tp, tstop,  WU.tstop)),
               xq =          opt$xq,
               f_mud =       opt$f_mud,
               f_cem =       opt$f_cem,
