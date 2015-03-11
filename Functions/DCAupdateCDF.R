@@ -137,27 +137,52 @@ DCAupdateCDF <- function(field, ver, DCA.CDF.type, cdf.oil.from, cdf.oil.to,
              # If getting CDF via density() function
              Density = {
                
-               # CDFd call, assigned to DCA as list element "list.ind"
-               DCA.cdf.coef.oil[[list.ind]] <- CDFd(vector = otemp[,j],
-                                                    from =   cdf.oil.from[j],
-                                                    to =     cdf.oil.to[j],
-                                                    np =     cdf.oil.np[j])
-               
-               DCA.cdf.coef.gas[[list.ind]] <- CDFd(vector = gtemp[,j],
-                                                    from =   cdf.gas.from[j],
-                                                    to =     cdf.gas.to[j],
-                                                    np =     cdf.gas.np[j])
+               # Check - are there any observations (i.e. rows)? If so, then
+               # calculate CDF.
+               if (nrow(otemp) > 0) {
+                 
+                 # CDFd call, assigned to DCA as list element "list.ind"
+                 DCA.cdf.coef.oil[[list.ind]] <- CDFd(vector = otemp[,j],
+                                                      from =   cdf.oil.from[j],
+                                                      to =     cdf.oil.to[j],
+                                                      np =     cdf.oil.np[j])
+                 
+                 DCA.cdf.coef.gas[[list.ind]] <- CDFd(vector = gtemp[,j],
+                                                      from =   cdf.gas.from[j],
+                                                      to =     cdf.gas.to[j],
+                                                      np =     cdf.gas.np[j])
+               } else {
+                 
+                 # There are no observations, so make 2x2 fake and all zero CDF
+                 DCA.cdf.coef.oil[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                            CDF = c(0, 1))
+                 
+                 DCA.cdf.coef.gas[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                            CDF = c(0, 1))
+               }
              },
              
              # If getting CDF via quantile() function
              Quantile = {
                
-               # CDFq call, assigned to DCA as list element "list.ind"
-               DCA.cdf.coef.oil[[list.ind]] <- CDFq(vector = otemp[,j],
-                                                    xq =     DCA.CDF.xq)
-               
-               DCA.cdf.coef.gas[[list.ind]] <- CDFq(vector = gtemp[,j],
-                                                    xq =     DCA.CDF.xq)
+               # Check - are there any observations (i.e. rows)? If so, then
+               # calculate CDF.
+               if (nrow(otemp) > 0) {
+                 
+                 # CDFq call, assigned to DCA as list element "list.ind"
+                 DCA.cdf.coef.oil[[list.ind]] <- CDFq(vector = otemp[,j],
+                                                      xq =     DCA.CDF.xq)
+                 
+                 DCA.cdf.coef.gas[[list.ind]] <- CDFq(vector = gtemp[,j],
+                                                      xq =     DCA.CDF.xq)
+               } else {
+                 # There are no observations, so make 2x2 fake and all zero CDF
+                 DCA.cdf.coef.oil[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                            CDF = c(0, 1))
+                 
+                 DCA.cdf.coef.gas[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                            CDF = c(0, 1))
+               }
              })
       
       # Set name for list
@@ -192,27 +217,51 @@ DCAupdateCDF <- function(field, ver, DCA.CDF.type, cdf.oil.from, cdf.oil.to,
            # If getting CDF via density() function
            Density = {
              
-             # CDFd call, assigned to DCA as list element "list.ind"
-             DCA.cdf.coef.oil[[list.ind]] <- CDFd(vector = otemp[,j],
-                                                  from =   cdf.oil.from[j],
-                                                  to =     cdf.oil.to[j],
-                                                  np =     cdf.oil.np[j])
-             
-             DCA.cdf.coef.gas[[list.ind]] <- CDFd(vector = gtemp[,j],
-                                                  from =   cdf.gas.from[j],
-                                                  to =     cdf.gas.to[j],
-                                                  np =     cdf.gas.np[j])
+             # Check - are there any observations (i.e. rows)? If so, then
+             # calculate CDF.
+             if (nrow(otemp) > 0) {
+               
+               # CDFd call, assigned to DCA as list element "list.ind"
+               DCA.cdf.coef.oil[[list.ind]] <- CDFd(vector = otemp[,j],
+                                                    from =   cdf.oil.from[j],
+                                                    to =     cdf.oil.to[j],
+                                                    np =     cdf.oil.np[j])
+               
+               DCA.cdf.coef.gas[[list.ind]] <- CDFd(vector = gtemp[,j],
+                                                    from =   cdf.gas.from[j],
+                                                    to =     cdf.gas.to[j],
+                                                    np =     cdf.gas.np[j])
+             } else {
+               # There are no observations, so make 2x2 fake and all zero CDF
+               DCA.cdf.coef.oil[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                          CDF = c(0, 1))
+               
+               DCA.cdf.coef.gas[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                          CDF = c(0, 1))
+             }
            },
            
            # If getting CDF via quantile() function
            Quantile = {
              
-             # CDFq call, assigned to DCA as list element "list.ind"
-             DCA.cdf.coef.oil[[list.ind]] <- CDFq(vector = otemp[,j],
-                                                  xq =     DCA.CDF.xq)
-             
-             DCA.cdf.coef.gas[[list.ind]] <- CDFq(vector = gtemp[,j],
-                                                  xq =     DCA.CDF.xq)
+             # Check - are there any observations (i.e. rows)? If so, then
+             # calculate CDF.
+             if (nrow(otemp) > 0) {
+               
+               # CDFq call, assigned to DCA as list element "list.ind"
+               DCA.cdf.coef.oil[[list.ind]] <- CDFq(vector = otemp[,j],
+                                                    xq =     DCA.CDF.xq)
+               
+               DCA.cdf.coef.gas[[list.ind]] <- CDFq(vector = gtemp[,j],
+                                                    xq =     DCA.CDF.xq)
+             } else {
+               # There are no observations, so make 2x2 fake and all zero CDF
+               DCA.cdf.coef.oil[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                          CDF = c(0, 1))
+               
+               DCA.cdf.coef.gas[[list.ind]] <- data.frame(PDF.x = c(0, 0),
+                                                          CDF = c(0, 1))
+             }
            })
     
     # Set name for list
