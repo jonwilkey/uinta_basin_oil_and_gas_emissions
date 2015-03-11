@@ -13,6 +13,10 @@
 # inflation adjusted to the date associated with "cpi" option input), and "GP"
 # for FFP of gas in Utah ($/MMBtu, also inflation adjusted)
 
+# tstart - start date of prices to include in analysis
+
+# tstop - stop date of prices to include in analysis
+
 # ver - Version number for file naming of exported data.frames
 
 
@@ -25,13 +29,14 @@
 # Description -------------------------------------------------------------
 
 # This function uses Maximum Likelihood Estimation to fit the parameters "v" and
-# "mu" to the price paths in eia.hp. These parameters can then subsequently be
-# used to generate random price paths according to GBM.
+# "mu" to the price paths in eia.hp within the tstart to tstop time period.
+# These parameters can then subsequently be used to generate random price paths
+# according to GBM.
 
 
 # Function ----------------------------------------------------------------
 
-GBMfitUpdate <- function(path, eia.hp, ver) {
+GBMfitUpdate <- function(path, eia.hp, tstart, tstop, ver) {
   
   # Define vectors from eia.hp columns
   dates <- eia.hp$month
@@ -42,6 +47,10 @@ GBMfitUpdate <- function(path, eia.hp, ver) {
   # series functions such as diff().
   OP.z <- zoo(OP, order.by=dates)
   GP.z <- zoo(GP, order.by=dates)
+  
+  # Subset to specified time range
+  OP.z <- window(OP.z, start = as.yearmon(tstart), end = as.yearmon(tstop))
+  GP.z <- window(GP.z, start = as.yearmon(tstart), end = as.yearmon(tstop))
   
   
   # Fit GBM parameters ------------------------------------------------------

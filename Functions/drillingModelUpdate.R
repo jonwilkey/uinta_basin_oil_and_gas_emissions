@@ -12,6 +12,10 @@
 
 # min.depth - Minimum well depth, used as subsetting criteria
 
+# tstart - Starting date for wells to be included in analysis
+
+# tstop - Stopping date for wells to be included in analysis
+
 # ver - Version number for file naming of exported data.frames
 
 # eia.hp - EIA historical energy prices
@@ -25,8 +29,9 @@
 
 # Description -------------------------------------------------------------
 
-# This function fits the drilling history in the Basin to the EIA historical oil
-# and gas prices according to the following function:
+# This function fits the drilling history in the Basin within the specified time
+# period to the EIA historical oil and gas prices according to the following
+# function:
 
 # W_n = a * OP_n + b * GP_n + c * W_n-1 + d
 
@@ -39,7 +44,7 @@
 
 # Function ----------------------------------------------------------------
 
-drillingModelUpdate <- function(path, p, min.depth, ver, eia.hp) {
+drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp) {
   
   # Determine number of wells drilled each month ------------------------------
   
@@ -57,12 +62,12 @@ drillingModelUpdate <- function(path, p, min.depth, ver, eia.hp) {
   # Only wells (1) inside price history timeframe (and prior month), (2) with
   # depths > 0, and (3) that were drilled with the intention of being producing
   # wells (i.e. oil wells, gas wells, or dry wells).
-  well <- subset(well, subset = (drill_month >= (min(eia.hp$month)-1/12) &
-                                   drill_month <= max(eia.hp$month) &
-                                   h_td_md > min.depth &
-                                   (h_well_type == "OW" |
-                                      h_well_type == "GW" |
-                                      h_well_type == "D")))
+  well <- subset(well, subset = (drill_month >= (as.yearmon(tstart)-1/12) &
+                                 drill_month <= as.yearmon(tstop) &
+                                 h_td_md > min.depth &
+                                 (h_well_type == "OW" |
+                                  h_well_type == "GW" |
+                                  h_well_type == "D")))
   
   # Determine total number of wells drilled each year
   drill <- sqldf("select drill_month, count(p_api)

@@ -50,7 +50,7 @@
 
 # Function ----------------------------------------------------------------
 
-leaseOpCostUpdate <- function(path, ver, tstart, tstop, full, basis, LOCbasis) {
+leaseOpCostUpdate <- function(path, ver, tstart, tstop, basis, LOCbasis) {
   
   # Load EIA *.csv files ----------------------------------------------------
   LOC.oil <- read.csv(file.path(path$raw, "LOC oil.csv"))
@@ -59,20 +59,19 @@ leaseOpCostUpdate <- function(path, ver, tstart, tstop, full, basis, LOCbasis) {
   
   # Process raw data --------------------------------------------------------
   
-  # All that we need to do is rename columns
+  # Rename columns
   names(LOC.oil) <- c("year", "CPI", "nominal.price", "real.price", "depth",
                       "cost")
   names(LOC.gas) <- c("year", "CPI", "nominal.price", "real.price", "prodrate",
                       "depth", "cost")
   
-  
-  # Optional data subsetting ------------------------------------------------
-  
-  if(full == FALSE) {
-    LOC.oil <- subset(LOC.oil,
-                      subset = (year >= as.numeric(format(opt$tstart, "%Y")) &
-                                year <= as.numeric(format(opt$tstop, "%Y"))))
-  }
+  # Subset to specified time period
+  LOC.oil <- subset(LOC.oil,
+                    subset = (year >= as.numeric(format(tstart, "%Y")) &
+                              year <= as.numeric(format(tstop, "%Y"))))
+  LOC.gas <- subset(LOC.gas,
+                    subset = (year >= as.numeric(format(tstart, "%Y")) &
+                              year <= as.numeric(format(tstop, "%Y"))))
   
   
   # Inflation adjustment ----------------------------------------------------
@@ -90,6 +89,7 @@ leaseOpCostUpdate <- function(path, ver, tstart, tstop, full, basis, LOCbasis) {
                     data = LOC.oil)
   fit.LOC.gas <- lm(formula = cost ~ real.price + depth + prodrate,
                     data = LOC.gas)
+  
   
   # Save results ------------------------------------------------------------
   
