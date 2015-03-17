@@ -55,6 +55,7 @@ setwd(path$work)
 flst <- file.path(path$fun, c("GBMsim.R",
                               "EIAsim.R",
                               "drillsim.R",
+                              "priorProd.R",
                               "welldata.R",
                               "productionsim.R",
                               "royalty.R",
@@ -357,14 +358,44 @@ if(opt$DCA.update == TRUE) {
             Cp.start.gas =    opt$Cp.start.gas,
             c1.start.gas =    opt$c1.start.gas,
             Qlower.gas =      opt$Qlower.gas,
-            Qupper.gas =      opt$Qupper.gas)
+            Qupper.gas =      opt$Qupper.gas,
+            tstart =          opt$tstart)
 }
 
 # Load DCA fits mo (oil) and mg (gas)
 load(file.path(path$data, paste("DCA_fits_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.12 DCA CDF Update ------------------------------------------------------
+# 2.12 Field DCA Update ---------------------------------------------------
+
+# Run function if opt$field.DCA.update flag is set to "TRUE"
+if(opt$field.DCA.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "DCAupdateField.R"))
+  
+  DCAupdateField(path =         path,
+                 p =            p,
+                 minDayProd =   opt$minDayProd,
+                 field =        field,
+                 DCAplot =      opt$DCAplot,
+                 ver =          opt$file_ver,
+                 b.start.oil =  opt$b.start.oil,
+                 Di.start.oil = opt$Di.start.oil,
+                 lower.oil =    opt$lower.oil,
+                 upper.oil =    opt$upper.oil,
+                 b.start.gas =  opt$b.start.gas,
+                 Di.start.gas = opt$Di.start.gas,
+                 lower.gas =    opt$lower.gas,
+                 upper.gas =    opt$upper.gas,
+                 quant =        opt$quant)
+}
+
+# Load field-level DCA fits (hypFF)
+load(file.path(path$data, paste("DCA_field_fits_", opt$file_ver, ".rda", sep = "")))
+
+
+# 2.13 DCA CDF Update ------------------------------------------------------
 
 # Run function if opt$DCA.CDF.update flag is set to "TRUE"
 if(opt$DCA.CDF.update == TRUE) {
@@ -413,7 +444,7 @@ load(file.path(path$data, paste("DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")
 load(file.path(path$data, paste("Q_DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.13 Drilling and Completion Capital Cost Model Update -------------------
+# 2.14 Drilling and Completion Capital Cost Model Update -------------------
 
 # Run function if opt$drillCapCost.update flag is set to "TRUE"
 if(opt$drillCapCost.update == TRUE) {
@@ -430,7 +461,7 @@ if(opt$drillCapCost.update == TRUE) {
 load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.14 Water balance data analysis and update -----------------------------
+# 2.15 Water balance data analysis and update -----------------------------
 
 # Run function if opt$water.update flag is set to "TRUE"
 if(opt$water.update == TRUE) {
@@ -509,6 +540,18 @@ Drilled <- drillsim(path =         path,
                     nrun =         opt$nrun,
                     drilled.init = opt$drilled.init,
                     drillModel =   drillModel)
+
+
+# 3.3 Prior production calculation ----------------------------------------
+
+# Run prior oil and gas production calculation
+prior <- priorProd(hypFF =     hypFF,
+                   mo =        mo,
+                   mg =        mg,
+                   MC.tsteps = opt$MC.tsteps)
+
+# FIX ME ASAP
+prior$oil <- prior$oil*(5631/6870)
 
 
 # 3.3 Monte-Carlo Loop ----------------------------------------------------
@@ -695,7 +738,7 @@ for (i in 1:opt$nrun) {
   w.r[i,] <-     WB$wtr.r
   
   
-  # 3.4.x Cleanup -------------------------------------------------------
+  # 3.3.x Cleanup -------------------------------------------------------
   
   # Remove temporary results
   remove(wsim,

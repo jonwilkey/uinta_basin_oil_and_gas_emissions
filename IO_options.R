@@ -16,7 +16,7 @@
 opt <- NULL
 
 # Enter number of overall simulation iterations
-opt$nrun <- 1e3
+opt$nrun <- 1e2
 
 # Number of simulation time steps (in months)
 opt$MC.tsteps <- 59
@@ -89,6 +89,7 @@ opt$GBMfit.update       <- F # Fits GBM parameters "v" and "mu" to energy prices
 opt$EIAforecast.update  <- F # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
 opt$EIAerror.update     <- F # Generates CDFs for error in EIA AEO forecasts
 opt$DCA.update          <- F # Fits decline curves
+opt$field.DCA.update    <- F # Fits field level decline curves
 opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
 opt$water.update        <- F # Generates all CDFs and linear regression models for water balance terms
@@ -321,9 +322,10 @@ opt$minProdRec      <- 12   # Minimum number of non-zero production records
 opt$minDayProd      <- 28   # Minimum number of days of a well produced in a given month required to include production data point
 opt$diff.bin.cutoff <- 0.15 # Minimum production differential on normalized scale required to consider a well as being restarted
 opt$bin             <- 12   # Bin size
-opt$DCAplot         <- TRUE # True/False flag indicating whether or not to print
+opt$DCAplot         <- T    # True/False flag indicating whether or not to print
 opt$n.stopB.min     <- 4    # Any stop points identified that are lower than this value will be ignored
 opt$n.startT.search <- 3    # Look at the top "n" number of production points and pick the one with the lowest time value
+opt$DCAtcutoff      <- opt$tstart # Any production records >= this date will be excluded from fits
 
 # Hyperbolic DC Options
 opt$b.start.oil     <- 1.78            # Initial guess value for b coefficient for oil decline curve
@@ -346,7 +348,11 @@ opt$Qlower.gas      <- c(0,  -Inf) # Same as above but for gas
 opt$Qupper.gas      <- c(Inf, Inf) # Same as above but for gas
 
 
-# 2.12 DCA CDF Update Options ---------------------------------------------
+# 2.12 DCA Field Update Options -------------------------------------------
+
+
+
+# 2.13 DCA CDF Update Options ---------------------------------------------
 
 # Character string for switch funtion, valid options are either "Density" or
 # "Quantile"
@@ -374,10 +380,10 @@ opt$Q.cdf.gas.to    <- c(200e3, 100e3) # Same as above but for gas
 opt$Q.cdf.gas.np    <- c(10e3,  10e3)  # Same as above but for gas
 
 
-# 2.13 drillCapCostUpdate Options -----------------------------------------
+# 2.14 drillCapCostUpdate Options -----------------------------------------
 
 
-# 2.14 waterUpdate Options ------------------------------------------------
+# 2.15 waterUpdate Options ------------------------------------------------
 
 opt$f_mud       <- 1    # Assumed volume ratio of (water used to mix with drilling mud) / (volume of borehole)
 opt$f_cem       <- 4.97 # Water to cement ratio in (gal/sack), value of 4.97 is used for API Class G cement
@@ -396,7 +402,7 @@ opt$WU.tstop   <- as.Date("2012-12-01")
 # Energy price path simulation method. Valid options are:
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
-opt$ep.type <- "b"
+opt$ep.type <- "a"
 
 
 # 3.2 drillSim Options ----------------------------------------------------

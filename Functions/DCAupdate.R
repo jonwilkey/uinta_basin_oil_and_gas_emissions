@@ -52,6 +52,9 @@
 
 # p - production database
 
+# tstart - the date at which the simulation starts, used to calculate how far
+# along each well is in its production history
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -86,7 +89,8 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                       Di.start.oil, lower.oil, upper.oil, b.start.gas,
                       Di.start.gas, lower.gas, upper.gas, field, ver, path, p,
                       Cp.start.oil, c1.start.oil, Qlower.oil, Qupper.oil,
-                      Cp.start.gas, c1.start.gas, Qlower.gas, Qupper.gas) {
+                      Cp.start.gas, c1.start.gas, Qlower.gas, Qupper.gas,
+                      tstart) {
   
   # Internal Debug Variables  -----------------------------------------------
   
@@ -155,6 +159,11 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   # Add two columns for cumulative production fraction (CPF) of oil and gas
   well$CPFo <- well$w_totcum_oil/sum(well$w_totcum_oil)
   well$CPFg <- well$w_totcum_gas/sum(well$w_totcum_gas)
+  
+  # Add column for difference in time between date of first production and date 
+  # of start of simulation period (used to track how far into DC each individual
+  # well is)
+  well$tend <- as.numeric(round(difftime(tstart, well$h_first_prod, units = "days")/(365.25/12)))
   
   
   # DCA Fitting - Oil -------------------------------------------------------
