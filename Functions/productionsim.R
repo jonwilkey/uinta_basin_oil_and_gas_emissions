@@ -21,6 +21,9 @@
 
 # gsim.actual - Same as osim.actual but for gas production
 
+# acut - threshold oil production rate below which a well is consider to be
+# abandoned
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -56,7 +59,7 @@
 
 # Function ---------------------------------------------------------------- 
 productionsim <- function(wsim, timesteps, production.type, decline.type,
-                          osim.actual, gsim.actual) {
+                          osim.actual, gsim.actual, acut) {
   
   # Switch for production simulation type. Options are "a" for calculating 
   # production from decline curve coefficients in wsim, or "b" for loading the 
@@ -181,6 +184,47 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
   # Check for and overwrite any negative production values
   osim <- ifelse(test = osim < 0 , yes = 0, no = osim)
   gsim <- ifelse(test = gsim < 0 , yes = 0, no = gsim)
+  
+  
+  # Well reworks ------------------------------------------------------------
+  
+  # To account for reworks, rewrite any wells with nonzero rework values with
+  # zeroes starting from date of rework
+  for (i in 1:length(wsim$rework)) {
+    
+    # If nonzero and not NA rework value
+    if (wsim$rework[i] > 0 & !is.na(wsim$rework[i])) {
+      
+      # Vector of values to replace
+      temp <- wsim$rework[i]:timesteps
+      
+      # Zero out production after rework
+      osim[i,wsim$rework[i]:timesteps] <- 0
+      gsim[i,wsim$rework[i]:timesteps] <- 0
+    }
+  }
+  
+  
+  # Well abandonment --------------------------------------------------------
+  
+  # Get row index of oil wells
+  ind <- which(wsim$wellType == "OW")
+  
+  # For each oil well
+  for (i in 1:length(ind)) {
+    
+    # Get index of elements in oil production vector that are < value of acut
+    temp <- which(osim[ind[i],] < acut)
+    
+    # If there are elements which are < acut
+    if (length(temp) > 0) {
+      
+      # Then rewrite the production values in those elements with zeroes
+      osim[ind[i],temp] <- 0
+      gsim[ind[i],temp] <- 0
+    }
+  }
+  
   
   # Return results
   return(list(osim = osim, gsim = gsim))

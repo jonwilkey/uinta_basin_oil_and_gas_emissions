@@ -85,16 +85,16 @@ QfitDCAupdateCDF <- function(field, ver, DCA.CDF.type, Q.cdf.oil.from,
                              Cp.1 >=         Q.cdf.oil.from[1] &
                              c1.1 <=         Q.cdf.oil.to[2] &
                              c1.1 >=         Q.cdf.oil.from[2] &
-                             h_first_prod >= tstart &
-                             h_first_prod <= tstop &
+                             firstprod >= tstart &
+                             firstprod <= tstop &
                              Qfit.1 ==       1))
   
   mg <- subset(mg, subset = (Cp.1 <=         Q.cdf.gas.to[1] &
                              Cp.1 >=         Q.cdf.gas.from[1] &
                              c1.1 <=         Q.cdf.gas.to[2] &
                              c1.1 >=         Q.cdf.gas.from[2] &
-                             h_first_prod >= tstart &
-                             h_first_prod <= tstop &
+                             firstprod >= tstart &
+                             firstprod <= tstop &
                              Qfit.1 ==       1))
   
   

@@ -7,6 +7,10 @@
 
 # wsim - data.table with well information
 
+# wellType - vector of well types
+
+# depth - vector of well depths in feet
+
 # osim/gsim - matrix of production volume timeseries (of oil or gas) for each
 # well
 
@@ -42,7 +46,7 @@
 
 
 # Function ----------------------------------------------------------------
-water <- function(wsim, osim, gsim, dw.lm) {
+water <- function(wsim, osim, gsim, wellType, depth, dw.lm) {
   
   # Calculate known/modeled water balance terms -----------------------------
   
@@ -59,13 +63,13 @@ water <- function(wsim, osim, gsim, dw.lm) {
     
     # Calculate produced water as timeseries based on well type. Check - is well
     # oil well?
-    if (wsim$wellType[i] == "OW") {
+    if (wellType[i] == "OW") {
       
       # If yes, multiply produced water ratio by oil production
       pw[i,] <- wsim$pw[i]*osim[i,]
       
       # Alternatively, it could be a gas well
-    } else if (wsim$wellType[i] == "GW") {
+    } else if (wellType[i] == "GW") {
       
       # In which case multiply instead by gas production
       pw[i,] <- wsim$pw[i]*gsim[i,]
@@ -90,10 +94,10 @@ water <- function(wsim, osim, gsim, dw.lm) {
     # regression model, assume that any well shallower than the shallowest well
     # in the model fit uses the same amount of water as the fitted value of that
     # shallowest well
-    if (wsim$depth[i] >= min(dw.lm$model$depth)) {
+    if (depth[i] >= min(dw.lm$model$depth)) {
       
       # If depth is greater than the shallowest well, just use the fitted model
-      dw[i, wsim$tDrill[i]] <- dw.lm$coef[2]*wsim$depth[i]+dw.lm$coef[1]
+      dw[i, wsim$tDrill[i]] <- dw.lm$coef[2]*depth[i]+dw.lm$coef[1]
       
     } else {
       

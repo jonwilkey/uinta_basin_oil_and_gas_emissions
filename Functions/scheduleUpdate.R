@@ -140,115 +140,6 @@ scheduleUpdate <- function(path, p, tsteps, min.depth, max.depth,
   field <- c(wcount$field, 999)
   
   
-  # Actual oil and gas production histories ---------------------------------
-  
-  # This segment shuffles the actual DOGM data into the same format used in
-  # the "wsim" & "psim" data.frame/matrix.
-  
-  # === psim ===
-  
-  # Initial definition of osim and gsim (oil/gas production simulation
-  # data.frame)
-  osim <- data.frame(tsteps)
-  gsim <- osim
-  
-  # Get list of unique well API #s in "well" data.frame (some wells have
-  # multiple rows because of change in well type).
-  
-  
-  # WARNING - very slow loop. This loop creates a subset of p for each unique 
-  # well in "well," then pulls out that well's oil/gas production into two
-  # temporary subsets. Finally, the loop merges the subsets from the current
-  # well with the results from all previous iterations and renames the columns
-  # as it goes.
-  for (i in 1:length(api.list)) {
-    temp <- unique(subset(p,
-                          subset = p$p_api == api.list[i],
-                          select = c("p_rpt_period", "p_oil_prod", "p_gas_prod")))
-    osim <- merge(x = osim, y = temp[,c(1,2)],
-                  by.x = "tsteps", by.y = "p_rpt_period",
-                  all.x = TRUE)
-    gsim <- merge(x = gsim, y = temp[,c(1,3)],
-                  by.x = "tsteps", by.y = "p_rpt_period",
-                  all.x = TRUE)
-    names(osim)[i+1] <- i
-    names(gsim)[i+1] <- i
-  }
-  
-  # Transform from data.frame into matrix
-  osim <- as.matrix(osim[,2:(length(api.list)+1)])
-  gsim <- as.matrix(gsim[,2:(length(api.list)+1)])
-  
-  # Transpose so that matrix rows = wells and columns = timesteps
-  osim <- t(osim)
-  gsim <- t(gsim)
-  
-  # Rename for export
-  osim.actual <- osim
-  gsim.actual <- gsim
-  
-  # === wsim ===
-  
-  # Define new column "runID" as runID == 1 for all wells
-  runID <- rep(1, times = nrow(well))
-  
-  # Conventiently, use runID to predefine space for "tDrill", which holds
-  # timestep that each well is drilled in
-  tDrill <- runID
-  
-  # Match indices where wells were drilled (prod_date) with equivalent timesteps
-  # in "tsteps"
-  for (i in 1:length(tsteps)) {
-    ind <- which (well$prod_date == tsteps[i])
-    tDrill[ind] <- i
-  }
-  
-  # Create new vector of field numbers
-  fieldnum <- well$w_field_num
-  
-  # We need to find all rows which are associated with field numbers not
-  # included in the vector "field" for individual analysis. For each field # in
-  # "field" except the catch-all field (999), find which rows in fieldnum which
-  # match that field and concatonate them together into the vector "ind".
-  ind <- NULL
-  for (i in 1:(length(field)-1)) {
-    temp <- which(fieldnum == field[i])
-    ind <- c(ind, temp)
-  }
-  
-  # Now generate a sequence of row #s equal to the length of fieldnum
-  ind999 <- seq(1:length(fieldnum))
-  
-  # Subtract out all elements in "ind" to get row #s of wells located fields
-  # other than those listed in vector "field"
-  ind999 <- ind999[-ind]
-  
-  # Replace all such fields with the catch-all field "999"
-  fieldnum[ind999] <- 999
-  
-  # Create new vector for lease type and retype as numeric vector
-  lease <- as.numeric(well$w_lease_type)
-  
-  # Get maximum production rate for each well
-  acoef.oil <- apply(osim.actual, MARGIN = 1, FUN = max)
-  acoef.gas <- apply(gsim.actual, MARGIN = 1, FUN = max)
-  
-  # Generate dataframe for export
-  wsim.actual <- data.frame(seq(1:nrow(well)), # Unique well ID #
-                            tDrill,
-                            runID,
-                            well$h_well_type,
-                            fieldnum,
-                            well$h_td_md,
-                            lease,
-                            acoef.oil,
-                            acoef.gas)
-  
-  # Rename to match wsim format
-  names(wsim.actual) <- c("wellID", "tDrill", "runID", "wellType", "fieldnum",
-                          "depth", "lease", "acoefOil", "acoefGas")
-  
-  
   # Field Fractions ---------------------------------------------------------
   
   # Field count (fc) = # of unique well APIs in each field
@@ -279,6 +170,27 @@ scheduleUpdate <- function(path, p, tsteps, min.depth, max.depth,
   # Turn into dataframe for export
   cdf.ff <- data.frame(field, cdf.ff)
   names(cdf.ff) <- c("Field", "CDF")
+  
+  
+  # Find index of wells in Field 999 ----------------------------------------
+  
+  # We need to find all rows which are associated with field numbers not 
+  # included in the vector "field" for individual analysis. For each field # in 
+  # "field" except the catch-all field (999), find which rows in
+  # well$w_field_num which match that field and concatonate them together into
+  # the vector "ind".
+  ind <- NULL
+  for (i in 1:(length(field)-1)) {
+    temp <- which(well$w_field_num == field[i])
+    ind <- c(ind, temp)
+  }
+  
+  # Now generate a sequence of row #s equal to the length of well$w_field_num
+  ind999 <- seq(1:length(well$w_field_num))
+  
+  # Subtract out all elements in "ind" to get row #s of wells located fields
+  # other than those listed in vector "field"
+  ind999 <- ind999[-ind]
   
   
   # Probabilities for well type by field ------------------------------------
@@ -384,17 +296,6 @@ scheduleUpdate <- function(path, p, tsteps, min.depth, max.depth,
               "cdf.depth.gw",
               "prob",
               "field"))
-  
-  # Save wsim.actual data.frame
-  save(file=file.path(path$data,
-                      paste("wsim_actual_", ver, ".rda", sep = "")),
-       list=c("wsim.actual"))
-  
-  # Save osim.actual & gsim.actual matrices
-  save(file=file.path(path$data,
-                      paste("psim_actual_", ver, ".rda", sep = "")),
-       list=c("osim.actual",
-              "gsim.actual"))
   
   # Save well.actual data.frame
   save(file=file.path(path$data,

@@ -336,6 +336,10 @@ dogmDataUpdate <- function(path, ver) {
   pwh_dt[, time := 1 + diffMonPOSIX(first = min(p_rpt_period),
                                     last = p_rpt_period), by = "p_api"]
   
+  # Add cumulative oil and gas production time series
+  pwh_dt[, coil_prod := cumsum(p_oil_prod), by = "p_api"]
+  pwh_dt[, cgas_prod := cumsum(p_gas_prod), by = "p_api"]
+  
   # Add count of production records.
   pwh_dt[, nrec := length(unique(p_rpt_period)), by = "p_api"]
   

@@ -18,16 +18,13 @@ opt <- NULL
 # Enter number of overall simulation iterations
 opt$nrun <- 1e2
 
-# Number of simulation time steps (in months)
-opt$MC.tsteps <- 59
-
-# Enter start and stop point for simulation in "YYYY-MM-DD" format by changing 
-# values inside quotations of opt$tstart and opt$tstop. These values will be the
-# default time range for all analysis and update functions unless over-ridden by
-# options set for a specific function.
-opt$tstart <- as.Date("2010-01-01")
-opt$tstop  <- as.Date("2014-11-01")
-opt$tsteps <- seq(from = opt$tstart, to = opt$tstop, by = "months")
+# Time Options
+opt$tstart <-    as.Date("2010-01-01")                                 # Start date of simulation period
+opt$tstop  <-    as.Date("2014-12-01")                                 # Stop date of simulation period
+opt$train.start <- as.Date("2000-01-01")
+opt$train.stop  <- as.Date("2009-12-01")
+opt$tsteps <-    seq(from = opt$tstart, to = opt$tstop, by = "months")
+opt$MC.tsteps <- length(opt$tsteps)
 
 # CPI value for inflation adjustment and it's associated date (as character
 # string). Current value is for average 2014 USD.
@@ -36,7 +33,7 @@ opt$cpiDate <- "2014"
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
-opt$file_ver <- "v4"
+opt$file_ver <- "v5"
 
 # Quantiles vector (sequence of quantile values at which to estimate CDF). Used
 # everywhere quantile() or qnorm() is used to generate CDF.
@@ -52,20 +49,28 @@ opt$cf.MCF.to.MMBtu <- (1081)*(1e3)*(1/1e6)
 opt$min.well.depth <- 5e3
 
 # Initial prices for EIA/GBM price path simulation (from last recorded EIA FPP). 
+#
 # Sources:
 # [Gas 1] http://tonto.eia.gov/dnav/ng/hist/na1140_sut_3a.htm
 # [Gas 2] http://www.eia.gov/dnav/ng/hist/n9190us3A.htm
 # [Oil 1] http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=pet&s=f004049__3&f=a
-
+#
 # Note that gas FPP are calculated by converting US national average price (UT 
 # gas prices are only recorded by EIA on annual basis; nation gas FPPs are 
 # recorded on monthly basis). Values are in 'basis' inflation adjusted $ per bbl
-# or MCF (for gas). Values below are for 2009-12-01.
-opt$oil.fpp.init <- 72.10
-opt$gas.fpp.init <- 4.90
+# or MCF (for gas). Values below are for December in the year indicated.
+#                         |-2012-|-2011-|-2010-|-2009-|-1999-|
+opt$oil.fpp.init <- 72.10 # 79.05| 90.60| 81.89| 72.10| 34.73|
+opt$gas.fpp.init <-  4.90 #  3.26|  3.11|  4.77|  4.90|  2.97|
 
 # FPP date - enter month here associated with FPPs above
 opt$FPPdate <- as.Date("2009-12-01")
+
+# Threshold oil production rate (bbl per month) below which a well is consider 
+# to be abandoned. Used in both priorProd and productionsim functions.
+# Calculated here as minimum revenue ($2000 in oil sales)/(Dec. 2014 FPP for
+# oil)
+opt$acut <- 2000/51.72
 
 
 # 1.1 Flags for updating prepared data files ----------------------------------
@@ -93,6 +98,7 @@ opt$field.DCA.update    <- F # Fits field level decline curves
 opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
 opt$water.update        <- F # Generates all CDFs and linear regression models for water balance terms
+opt$rework.update       <- F # Generates CDF for well reworks
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
@@ -145,10 +151,10 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"w_unit_name",  # The name of the unit if applicable.
                #"w_lat_surf",   # Latitude surface coordinates in degrees; UTM Zone 12, NAD83. Note- used NAD27 prior to Oct. 26, 2011.
                #"w_long_surf",  # Longitude surface coordinates in degrees; UTM Zone 12, NAD83. Note- used NAD27 prior to Oct. 26, 2011.
-                "h_apd_aprovd", # Date DOGM approved the well's APD
+               #"h_apd_aprovd", # Date DOGM approved the well's APD
                #"h_work_type",  # Work type code. Go here for list: (https://oilgas.ogm.utah.gov/Data_Center/DataDown/Read_Hist.htm)
-                "h_spud_dry",   # Date drilling commenced with a dry hole auger or other surface rig
-                "h_spud_rotry", # Date drilling commenced with a rotary rig
+               #"h_spud_dry",   # Date drilling commenced with a dry hole auger or other surface rig
+               #"h_spud_rotry", # Date drilling commenced with a rotary rig
                #"h_prod_zone",  # The producing zone as shown in well completion report
                 "h_compl_date", # Date that drilling operations were completed per the operators well completion report
                #"h_intent_rec", # The date a Sundry Notice of Intent to do the identified work was received by DOGM
@@ -162,9 +168,9 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"h_choke",      # Well choke during initial production test.
                #"h_tubng_prs",  # Well tubing pressure during initial production test.
                #"h_casng_prs",  # Well casing pressure during initial production test.
-                "h_oil_24hr",   # Oil volume produced during initial 24 hour production test.
-                "h_gas_24hr",   # Gas volume produced during initial 24 hour production test.
-                "h_water_24hr", # Water volume produced during initial 24 hour production test.
+               #"h_oil_24hr",   # Oil volume produced during initial 24 hour production test.
+               #"h_gas_24hr",   # Gas volume produced during initial 24 hour production test.
+               #"h_water_24hr", # Water volume produced during initial 24 hour production test.
                #"h_dir_survey", # Directional Survey flag ('Y' = yes; 'N' = no).
                #"h_cored",      # Core flag ('Y' = yes; 'N' = no).
                #"h_dst",        # Drill Stem Test flag ('Y' = yes; 'N' = no).
@@ -181,7 +187,9 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
                #"orphan",       # Boolean for whether well was ever orphaned
                #"everpa",       # Boolean for whether well was ever plugged and abandoned
                #"padiff",       # Number of months between w_abndondate and p_rpt_period
-                "time")         # Months since given well first appeared in proddata (i.e. since well's h_first_prod date)
+                "time",         # Months since given well first appeared in proddata (i.e. since well's h_first_prod date)
+                "coil_prod",    # Cumulative oil production
+                "cgas_prod")    # Cumulative gas production
 
 
 # 2.1 dogmDataUpdate Options ----------------------------------------------
@@ -198,14 +206,13 @@ opt$psub <- "a"
 # 2.2 scheduleUpdate Options ----------------------------------------------
 
 # Time step options
-opt$SU.tp <- T # Set to T to use global tstep range, or F to use alternative specified on next line
-opt$SU.tsteps <- seq(from = as.Date("2005-01-01"), to = as.Date("2014-01-01"), by = "months")
+opt$SU.tsteps <- seq(from = opt$train.start, to = opt$train.stop, by = "months")
 
 # Fraction of wells located in a given field compared to total number of wells 
 # in the Uinta Basin that is required for a field to be analyzed individually.
 # If a field's well count fraction is lower than this threshold, all of its
 # wells will be accounted for in the catch-all "Field 999."
-opt$field.cutoff <- 0.03
+opt$field.cutoff <- 0.01
 
 # Well depth criteria (minimum, maximum, and resolution of well depth CDF) in 
 # feet. Minimum well depth is set in global options (Section 1.0). Note that one
@@ -219,7 +226,6 @@ opt$well.depth.step <- 10
 # 2.3 leaseOpCostUpdate Options -------------------------------------------
 
 # Time step options
-opt$LU.tp <- F # Set to T to use global tstep range, or F to use alternative specified on next line
 opt$LU.tstart <- as.Date("1994-01-01") # Beginning of LOC data range (annual data)
 opt$LU.tstop  <- as.Date("2009-01-01") # End of LOC data range (annual data)
 
@@ -273,17 +279,15 @@ opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
 # Note - uses opt$min.well.depth option set in Section 1.0
 
 # Time step options
-opt$DMU.tp <- F # Set to T to use global tstep range, or F to use alternative specified on next line
-opt$DMU.tstart <- as.Date("1977-07-01") # Values here are equivalent to full range of eia.hp data
-opt$DMU.tstop  <- as.Date("2014-11-01")
+opt$DMU.tstart <- as.Date("1977-07-01")
+opt$DMU.tstop  <- as.Date("2014-12-01")
 
 
 # 2.8 GBMfitUpdate Options ------------------------------------------------
 
 # Time step options
-opt$GBM.tp <- F # Set to T to use global tstep range, or F to use alternative specified on next line
-opt$GBM.tstart <- as.Date("1977-07-01") # Values here are equivalent to full range of eia.hp data
-opt$GBM.tstop  <- as.Date("2014-11-01")
+opt$GBM.tstart <- as.Date("1977-07-01")
+opt$GBM.tstop  <- as.Date("2014-12-01")
 
 
 # 2.9 EIAforecastUpdate Options -------------------------------------------
@@ -295,37 +299,62 @@ opt$GBM.tstop  <- as.Date("2014-11-01")
 # EIA price given is for the middle of each year of the EIA forecast (i.e. 
 # June). The final date of the modeled time period should be equal to or greater
 # than the last date in the year column.
-year <- seq(as.Date("2010-06-01"), as.Date("2014-06-01"), by = "year")           # Year (time step for EIA price forecasts)
+
+# # AEO 2013 Forecast
+# year <- seq(as.Date("2013-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
+# oil  <- c(94.65, 94.84) # Rocky Mountain wellhead oil price forecast in 2011 $/bbl from Table 101
+# gas  <- c( 3.26,  3.20) # Rocky Mountain wellhead gas price forecast in 2011 $/MCF from Table 102
+
+# # AEO 2012 Forecast
+# year <- seq(as.Date("2012-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
+# oil  <- c(101.73, 110.29, 118.23) # Rocky Mountain wellhead oil price forecast in 2010 $/bbl from Table 101
+# gas  <- c(  3.19,   3.33,   3.46) # Rocky Mountain wellhead gas price forecast in 2010 $/MCF from Table 102
+
+# # AEO 2011 Forecast
+# year <- seq(as.Date("2000-06-01"), as.Date("2012-06-01"), by = "year") # Year (time step for EIA price forecasts)
+# oil  <- c(88.76, 91.15) # Rocky Mountain wellhead oil price forecast in 2009 $/bbl from Table 101
+# gas  <- c( 3.93,  3.94) # Rocky Mountain wellhead gas price forecast in 2009 $/MCF from Table 102
+
+# AEO 2010 Forecast
+year <- seq(as.Date("2010-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
 oil  <- c(73.90, 74.13, 81.39, 87.98, 93.26) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
 gas  <- c( 4.16,  5.33,  5.65,  5.48,  5.44) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
+
+# # AEO 2000 Forecast
+# year <- seq(as.Date("2000-06-01"), as.Date("2012-06-01"), by = "year") # Year (time step for EIA price forecasts)
+# oil  <- c(19.98,19.69,19.82,19.95,20.07,20.21,20.27,20.38,20.54,20.60,20.69,21.18,21.04) # Rocky Mountain wellhead oil price forecast in 1998 $/bbl from Table 101
+# gas  <- c(1.87,1.90,1.95,2.05,2.16,2.28,2.38,2.49,2.56,2.58,2.59,2.58,2.55) # Rocky Mountain wellhead gas price forecast in 1998 $/MCF from Table 102
+
 opt$forecast <- data.frame(year, oil, gas)
 remove(year, oil, gas)
 
 # EIA CPI basis
-opt$EIAbasis  <- 215.303 # Annual average CPI for 2008
+opt$EIAbasis  <- 215.303 # Annual average CPI for whatever dollar year is used above
 
 # Time step options
-opt$EFU.tp <- T # Set to T to use global tstep range, or F to use alternative specified on next line
-opt$EFU.tsteps <- seq(from = as.Date("2005-01-01"), to = as.Date("2014-01-01"), by = "months")
+opt$EFU.tsteps <- seq(from = opt$tstart, to = opt$tstop, by = "months")
 
 
 # 2.10 EIAerrorUpdate Options ---------------------------------------------
 
 # Time step options
-opt$EEU.tsteps <- 5 # Number of years into the future for which you want EIA error % CDFs
+opt$EEU.tsteps <- nrow(opt$forecast) # Number of years into the future for which you want EIA error % CDFs
 
 
 # 2.11 DCAupdate Options --------------------------------------------------
 
 # General DCA Fitting Options
-opt$minProdRec      <- 12   # Minimum number of non-zero production records
-opt$minDayProd      <- 28   # Minimum number of days of a well produced in a given month required to include production data point
-opt$diff.bin.cutoff <- 0.15 # Minimum production differential on normalized scale required to consider a well as being restarted
-opt$bin             <- 12   # Bin size
-opt$DCAplot         <- T    # True/False flag indicating whether or not to print
-opt$n.stopB.min     <- 4    # Any stop points identified that are lower than this value will be ignored
-opt$n.startT.search <- 3    # Look at the top "n" number of production points and pick the one with the lowest time value
-opt$DCAtcutoff      <- opt$tstart # Any production records >= this date will be excluded from fits
+opt$minProdRec      <- 12         # Minimum number of non-zero production records
+opt$minDayProd      <- 28         # Minimum number of days of a well produced in a given month required to include production data point
+opt$diff.bin.cutoff <- 0.15       # Minimum production differential on normalized scale required to consider a well as being restarted
+opt$bin             <- 12         # Bin size
+opt$DCAplot         <- F          # True/False flag indicating whether or not to print
+opt$n.stopB.min     <- 4          # Any stop points identified that are lower than this value will be ignored
+opt$n.startT.search <- 3          # Look at the top "n" number of production points and pick the one with the lowest time value
+
+# Time step options - these tsteps need to cover all time prior to start of sim
+opt$DCA.tstart <- as.Date("1984-01-01") # Start cutoff date, only p_rpt_period values >= this date will be included in DCA
+opt$DCA.tstop  <- opt$train.stop        # Stop cutoff date, only p_rpt_period values <= this date will be included in DCA
 
 # Hyperbolic DC Options
 opt$b.start.oil     <- 1.78            # Initial guess value for b coefficient for oil decline curve
@@ -350,6 +379,9 @@ opt$Qupper.gas      <- c(Inf, Inf) # Same as above but for gas
 
 # 2.12 DCA Field Update Options -------------------------------------------
 
+# Time step options
+opt$FDC.tstart <- opt$train.start # Start cutoff date, only p_rpt_period values >= this date will be included in DCA
+opt$FDC.tstop  <- opt$train.stop  # Stop cutoff date, only p_rpt_period values <= this date will be included in DCA
 
 
 # 2.13 DCA CDF Update Options ---------------------------------------------
@@ -359,9 +391,8 @@ opt$Qupper.gas      <- c(Inf, Inf) # Same as above but for gas
 opt$DCA.CDF.type <- "Quantile"
 
 # Time step options
-opt$DCA.tp <- T # Set to T to use global tstep range, or F to use alternative specified on next line
-opt$DCA.tstart  <- as.Date("1999-01-01")
-opt$DCA.tstop   <- as.Date("2012-12-01")
+opt$DCAcdf.tstart <- opt$train.start # Start cutoff date, only p_rpt_period values >= this date will be included in DCA
+opt$DCAcdf.tstop  <- opt$train.stop  # Stop cutoff date, only p_rpt_period values <= this date will be included in DCA
 
 # DCA CDF Generation - Hyperbolic DC
 opt$cdf.oil.from    <- c(0,0,0,0)             # Lower limit for CDF function for (qo, b, Di, tdelay)
@@ -392,9 +423,15 @@ opt$rcut.pw.gas <- 10   # Maximum ratio of produced water to gas production to b
 opt$rcut.disp   <- 0.6  # Maximum ratio of disposal water to produced water to be included in CDF for disposal water
 
 # Time step options
-opt$WU.tp <- T # Set to T to use global tstep range, or F to use alternative specified on next line
-opt$WU.tstart  <- as.Date("1999-01-01")
-opt$WU.tstop   <- as.Date("2012-12-01")
+opt$WU.tstart <- opt$train.start
+opt$WU.tstop  <- opt$train.stop
+
+
+# 2.16 reworkUpdate Options -----------------------------------------------
+
+# Time step options
+opt$RWU.tstart <- opt$train.start
+opt$RWU.tstop  <- opt$train.stop
 
 
 # 3.1 Energy Price Path Simulation Options --------------------------------
@@ -402,24 +439,27 @@ opt$WU.tstop   <- as.Date("2012-12-01")
 # Energy price path simulation method. Valid options are:
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
-opt$ep.type <- "a"
+opt$ep.type <- "b"
 
 
 # 3.2 drillSim Options ----------------------------------------------------
 
 # Initial number of wells drilled during prior time step at start of simulated 
 # time. Some specific values (all in Dec.):
-# Year: 1998 | 1999 | 2004 | 2009 |2012 |
-# Num:    18 |   11 |   50 |   43 |  63 |
+# Year: 1998 | 1999 | 2004 | 2009 | 2010 | 2011 | 2012 |
+# Num:    18 |   11 |   50 |   43 |   88 |   59 |   63 |
 opt$drilled.init <- 43
+
+# Select drilling simulation type. Valid options are:
+#  sim - for simulated drilling schedule based on economic drilling model
+#  actual - for actual drilling schedule
+opt$DStype <- "actual"
+
+
+# 3.3 priorProd Options ---------------------------------------------------
 
 
 # 3.3.1-2 welldata and productionsim Options ------------------------------
-
-# Select drilling schedule type. Valid options are:
-#  a - Simulated drilling schedule
-#  b - Actual drilling schedule
-opt$sched.type <- "a"
 
 # Select production type. Valid options are:
 #  a - Simulated production from decline curve coefficients
@@ -437,7 +477,7 @@ opt$mc.decline.type <- "b"
 
 # Royatly rates for Federal, Indian, State, and Fee type leases (in that order).
 # Second command adds names to each element to match.
-opt$royaltyRate <- c(0.1250, 0.1667, 0.1250, 0.1250)
+opt$royaltyRate <-        c(0.1250, 0.1667, 0.1250, 0.1250)
 names(opt$royaltyRate) <- c("federal", "indian", "state", "fee")
 
 
@@ -470,29 +510,23 @@ EF.names <- c("site",    # Site preparation                          (metric ton
               "Tcompl",  # Transporation of materials for completion (metric tons / well)
               "Trework", # Transporation of materials for rework     (metric tons / well)
               "Tprod",   # Transporation of materials for production (metric tons / well)
-              "drill",   # Drilling and fracturing                   (metric tons / well)
               "compl",   # Completion                                (metric tons / well)
-              "prod",    # Production                                (metric tons / well year)
-              "proc",    # Processing                                (metric tons / 10^9 CF gas)
-              "transm")  # Transmission and distribution             (% of CH4 produced over lifecycle of well)
+              "prod",    # Gas production                            (metric tons / well year)
+              "proc",    # Gas processing                            (metric tons / 10^9 CF gas)
+              "transm",  # Gas transmission and distribution         (metric tons / 10^9 CF gas)
+              "oprod",   # Oil production                            (metric tons / bbl)
+              "otrans")  # Oil transport by tanker trunk             (metric tons / bbl transported)
 
 # Input EF mean and standard deviation values here in order shown above in EF.names vector
-#...................................................................................................................
-# Term      site  Tdrill   Tcompl   Trework  Tprod   drill compl  prod  proc   transm     Notes
-#...................................................................................................................
-m.co2 <-  c(208,  0.4,     0.21,    3.05,    1.36,    569, 1940,  43,   901,    0)     # Mean CO2e EFs
-m.ch4 <-  c(9.9,  8.6e-6,  4.36e-6, 7.71e-5, 3.29e-5, 0,   92.4,  2.07, 5.58,   199)   # Mean CH4 EFs
-m.voc <-  c(1.58, 0,       0,       0,       0,       0,   14.78, 0.78, 0.8928, 31.82) # Mean VOC EFs
-sd.co2 <- c(79,   0.56,    0.29,    4.31,    1.93,    326, 967,   40,   46,     0)     # Standard deviation CO2e EFs
-sd.ch4 <- c(3.37, 1.22e-5, 6.16e-6, 1.01e-4, 4.65e-5, 0,   46,    1.9,  3.91,   163)   # Standard deviation CH4 EFs
-sd.voc <- c(0.6,  0,       0,       0,       0,       0,   7.37,  0.73, 0.62,   26)    # Standard deviation VOC EFs
-
-# If any EF has a standard deviation of zero, set it to the fraction of the mean
-# as specfied below
-sdFracMean <- 1
-sd.co2 <- ifelse(sd.co2 == 0, m.co2*sdFracMean, sd.co2)
-sd.ch4 <- ifelse(sd.ch4 == 0, m.ch4*sdFracMean, sd.ch4)
-sd.voc <- ifelse(sd.voc == 0, m.voc*sdFracMean, sd.voc)
+#......................................................................................................................................
+# Term      site    Tdrill   Tcompl   Trework  Tprod    compl    prod   proc    transm  oprod    otrans           Notes
+#......................................................................................................................................
+m.co2 <-  c(208.00, 0.40,    0.21,    3.05,    1.36,    1940.00, 43.00, 901.00, 4177.0, 4.91e-5, 1.15e-3) # Mean CO2e EFs
+m.ch4 <-  c(  9.90, 8.60e-6, 4.36e-6, 7.71e-5, 3.29e-5,   92.40,  2.07,   5.58,  199.0, 2.34e-6, 2.82e-7) # Mean CH4 EFs
+m.voc <-  c(  1.58, 1.38e-6, 6.97e-7, 1.15e-5, 5.26e-6,   14.80,  0.78,   0.89,   31.8, 8.88e-7, 3.84e-7) # Mean VOC EFs
+sd.co2 <- c( 79.00, 0.56,    0.29,    4.31,    1.93,     967.00, 40.00,  46.00, 3423.0, 4.91e-5, 1.15e-3) # Standard deviation CO2e EFs
+sd.ch4 <- c(  3.37, 1.22e-5, 6.16e-6, 1.01e-4, 4.65e-5,   46.00,  1.90,   3.91,  163.0, 2.34e-6, 2.82e-7) # Standard deviation CH4 EFs
+sd.voc <- c(  0.60, 1.95e-6, 9.86e-7, 1.62e-5, 7.43e-6,    7.37,  0.73,   0.62,   26.0, 8.88e-7, 3.84e-7) # Standard deviation VOC EFs
 
 # Make EF statistics data.frame
 opt$EF <- data.frame(m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, row.names = EF.names)
@@ -503,7 +537,27 @@ opt$EF["proc",] <-   opt$EF["proc",]/1e6   # from ( / 10^9 CF gas) to ( / MCF ga
 opt$EF["transm",] <- opt$EF["transm",]/1e6 # from ( / 10^9 CF gas) to ( / MCF gas)
 
 # Remove component vectors
-remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, sdFracMean)
+remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc)
+
+# EF reductions from NSPS starting beginning Nov. 2012
+opt$EFred.Nov12 <- data.frame(co2 = c(-0.66, -0.20, -0.005),
+                              ch4 = c(-0.66, -0.40, -0.005),
+                              voc = c(-0.66, -0.40, -0.005),
+                              row.names = c("prod", "proc", "transm"))
+
+# EF reductions from NSPS starting beginning Jan. 2015
+opt$EFred.Jan15 <- data.frame(co2 = c(0.02, -0.96),
+                              ch4 = c(0.00, -0.96),
+                              voc = c(0.00, -0.96),
+                              row.names = c("site", "compl"))
+
+# EF reductions from pneumatic controls on state/federal lands beginning Jan 2015
+opt$EFred.pneum <- data.frame(ch4 = c(-0.5, -0.27),
+                              voc = c(-0.5, -0.27),
+                              row.names = c("Duchesne", "Uintah"))
+
+# Effective date of emissions reductions
+opt$edcut <- c(as.Date("2012-11-01"), as.Date("2015-01-01"))
 
 
 # 4.1 postProcess Options -------------------------------------------------
@@ -511,23 +565,26 @@ remove(EF.names, m.co2, m.ch4, m.voc, sd.co2, sd.ch4, sd.voc, sdFracMean)
 # Export options
 opt$exportFlag <- F                  # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "pp "              # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e3run -EIA -2010to2015 -v4.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e3run -EIA -0acut.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
-
-opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs actual
-                   c("Gas Price",                  T), # Gas prices simulated vs actual
-                   c("Drilling Schedule",          T), # Drilling schedule simulated vs actual
+opt$plist <- rbind(c("Oil Price",                  F), # Oil prices simulated vs actual
+                   c("Gas Price",                  F), # Gas prices simulated vs actual
+                   c("Drilling Schedule",          F), # Drilling schedule simulated vs actual
                    c("Drilling Model Fit",         F), # Drilling fit vs actual
                    c("DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("DCA Coefficients - CDF",     F), # CDF DCA coefficients
-                   c("Total Oil Production",       T), # Total oil production simulated vs actual
-                   c("Total Gas Production",       T), # Total gas production simulated vs actual
-                   c("CO2e Emissions",             T), # CO2 emissions
-                   c("CH4 Emissions",              T), # CH4 emissions
-                   c("VOC Emissions",              T), # VOC emissions
+                   c("Total Oil Production",       F), # Total oil production simulated vs actual
+                   c("Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
+                   c("Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
+                   c("Total Gas Production",       F), # Total gas production simulated vs actual
+                   c("Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
+                   c("Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
+                   c("CO2e Emissions",             F), # CO2 emissions
+                   c("CH4 Emissions",              F), # CH4 emissions
+                   c("VOC Emissions",              F), # VOC emissions
                    c("Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
                    c("Field Fractions -OW",        F), # Same but just oil wells
                    c("Field Fractions -GW",        F), # Same but just gas wells
@@ -540,7 +597,8 @@ opt$plist <- rbind(c("Oil Price",                  T), # Oil prices simulated vs
                    c("Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
                    c("EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
                    c("Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
-                   c("Water Balance Results",      F) # Results of water balance calculations for each term in WB eq.
+                   c("Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
+                   c("CDF for Well Reworks",       F) # CDFs for well reworks
 )
                    #c("?", 1),    # stack area plot or something v taxes and royalties
 

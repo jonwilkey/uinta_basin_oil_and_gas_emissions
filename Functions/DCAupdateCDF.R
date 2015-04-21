@@ -86,16 +86,16 @@ DCAupdateCDF <- function(field, ver, DCA.CDF.type, cdf.oil.from, cdf.oil.to,
                              b.1 <=          cdf.oil.to[2] &
                              Di.1 <=         cdf.oil.to[3] &
                              tdelay <=       cdf.oil.to[4] &
-                             h_first_prod >= tstart &
-                             h_first_prod <= tstop &
+                             firstprod >= tstart &
+                             firstprod <= tstop &
                              fit.1 ==        1))
   
   mg <- subset(mg, subset = (qo.1 <=         cdf.gas.to[1] &
                              b.1 <=          cdf.gas.to[2] &
                              Di.1 <=         cdf.gas.to[3] &
                              tdelay <=       cdf.gas.to[4] &
-                             h_first_prod >= tstart &
-                             h_first_prod <= tstop &
+                             firstprod >= tstart &
+                             firstprod <= tstop &
                              fit.1 ==        1))
   
   

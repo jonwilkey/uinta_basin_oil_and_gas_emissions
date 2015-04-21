@@ -1,5 +1,5 @@
 # Function Info -----------------------------------------------------------
-# Name:      DCAupdateField.R (Field-Level Decline Curve Analysis)
+# Name:      QfitDCAupdateField.R (Cumulative Production Field-Level Decline Curve Analysis)
 # Author(s): Jon Wilkey
 # Contact:   jon.wilkey@gmail.com
 
@@ -11,24 +11,14 @@
 
 # DCAplot - True/False flag indicating whether or not to print
 
-# b.start.oil - Initial guess value for b coefficient for oil decline curve
+# Cp.start.oil/gas - Initial guess value for Cp coefficient for oil/gas
 
-# Di.start.oil - Initial guess value for Di coefficient for oil decline curve
+# c1.start.oil/gas - Initial guess value for c1 coefficient for oil/gas
 
-# lower.oil - Lower limits for NLS for oil decline curve for (qo, b, Di)
+# Qlower.oil/gas - Lower limits for NLS for oil/gas decline curve for (Cp, c1) 
 # coefficients
 
-# upper.oil - Upper limits for NLS for oil decline curve for (qo, b, Di)
-# coefficients
-
-# b.start.gas - Initial guess value for b coefficient for gas decline curve
-
-# Di.start.gas - Initial guess value for Di coefficient for gas decline curve
-
-# lower.gas - Lower limits for NLS for gas decline curve for (qo, b, Di)
-# coefficients
-
-# upper.gas - Upper limits for NLS for gas decline curve for (qo, b, Di)
+# Qupper.oil/gas - Upper limits for NLS for oil/gas decline curve for (Cp, c1)
 # coefficients
 
 # field - List of fields to be analyzed individually
@@ -51,24 +41,24 @@
 
 # Outputs -----------------------------------------------------------------
 
-# hypFF - data.frame containing hyperbolic decline curve coefficients for oil
-# and gas production for each field
+# QFF - data.frame containing cumulative production coefficients for oil and gas
+# production for each field
 
 
 # Description -------------------------------------------------------------
 
-# This function fits the hyperbolic decline curve function:
+# This function fits the cumulative production function:
 
-# q(t) = qo * (1 + b * Di * t) ^ (-1 / b)
+# Q(t) = Cp * sqrt(t) + c1
 
 # to all oil and gas production records in the Uinta Basin by field.
 
 
 # Function ----------------------------------------------------------------
-DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
-                           lower.oil, upper.oil, b.start.gas, Di.start.gas,
-                           lower.gas, upper.gas, field, ver, path, p, quant,
-                           tstart, tstop) {
+QDCAupdateField <- function(minDayProd, DCAplot, Cp.start.oil, c1.start.oil,
+                            Qlower.oil, Qupper.oil, Cp.start.gas, c1.start.gas,
+                            Qlower.gas, Qupper.gas, field, ver, path, p, quant,
+                            tstart, tstop) {
   
   # Internal Debug Variables  -----------------------------------------------
   
@@ -77,17 +67,17 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
   # field        <- field
   # DCAplot      <- opt$DCAplot
   # ver          <- opt$file_ver
-  # b.start.oil  <- opt$b.start.oil
-  # Di.start.oil <- opt$Di.start.oil
-  # lower.oil    <- opt$lower.oil
-  # upper.oil    <- opt$upper.oil
   # quant        <- opt$quant
-  # b.start.gas  <- opt$b.start.gas
-  # Di.start.gas <- opt$Di.start.gas
-  # lower.gas    <- opt$lower.gas
-  # upper.gas    <- opt$upper.gas
   # tstart       <- opt$FDC.tstart
   # tstop        <- opt$FDC.tstop
+  # Cp.start.oil <- opt$Cp.start.oil
+  # Cp.start.gas <- opt$Cp.start.gas
+  # c1.start.oil <- opt$c1.start.oil
+  # c1.start.gas <- opt$c1.start.gas
+  # Qlower.oil   <- opt$Qlower.oil
+  # Qupper.oil   <- opt$Qupper.oil
+  # Qlower.gas   <- opt$Qlower.gas
+  # Qupper.gas   <- opt$Qupper.gas
   
   
   # Subset data -------------------------------------------------------------
@@ -99,8 +89,8 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
                            p_rpt_period >= tstart &
                            p_rpt_period <= tstop),
                select = c("p_api",
-                          "p_oil_prod",
-                          "p_gas_prod",
+                          "coil_prod",
+                          "cgas_prod",
                           "time",
                           "w_field_num"))
   
@@ -111,7 +101,7 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
   if (DCAplot == TRUE) {
     
     # Call PDF printer
-    pdf(file.path(path$plot, paste("Field level DCA fits ", ver, ".pdf", sep = "")))
+    pdf(file.path(path$plot, paste("Field level DCA Qfits ", ver, ".pdf", sep = "")))
     
     # Set linecolors for quantile outputs
     linecolor <- rainbow(length(quant))
@@ -121,11 +111,11 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
       
       # If type is oil
       if (type == "oil") {
-        label.y <-    "Oil Production (bbl)"
-        label.main <- paste("Hyperbolic Fit for Oil from Field ", field)
+        label.y <-    "Cumulative Oil Production (bbl)"
+        label.main <- paste("Cumulative Fit for Oil from Field ", field)
       } else {
-        label.y <-    "Gas Production (MCF)"
-        label.main <- paste("Hyperbolic Fit for Gas from Field ", field)
+        label.y <-    "Cumulative Gas Production (MCF)"
+        label.main <- paste("Cumulative Fit for Gas from Field ", field)
       }
       
       # Set time vector
@@ -151,13 +141,13 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
         lines(tv, wq[k,], col = linecolor[k])
       }
       
-      # Hyperbolic fit
-      lines(tv, (coef(hyp)[1]*(1+coef(hyp)[2]*coef(hyp)[3]*tv)^(-1/coef(hyp)[2])),
+      # Cumulative fit
+      lines(tv, (coef(Qfit)[1]*sqrt(tv)+coef(Qfit)[2]),
             col = "black",
             lwd = 1.5)
       
       # Legend
-      legend("topright", c("90%", "70%", "50%", "30%", "10%", "Fit"),
+      legend("topleft", c("90%", "70%", "50%", "30%", "10%", "Fit"),
              lty = 1,
              lwd = c(rep(1, times = length(quant)), 1.5),
              col = c(linecolor, "black"),
@@ -173,10 +163,8 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
   ind999 <- NULL
   
   # Predefine fit results vectors
-  ffo <-    NULL
-  qo.oil <- NULL
-  b.oil  <- NULL
-  Di.oil <- NULL
+  Cp.oil <- NULL
+  c1.oil  <- NULL
   
   # For each field to be analyzed individually
   for (i in 1:(length(field)-1)) {
@@ -185,41 +173,31 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
     ind <- which(ps$w_field_num == field[i])
     
     # Pull subset of production records on rows in 'ind'
-    w <- ps[ind, c("time", "p_oil_prod")]
+    w <- ps[ind, c("time", "coil_prod")]
     
     # Only keep productions records which are > 0
-    w <- w[w$p_oil_prod > 0,]
+    w <- w[w$coil_prod > 0,]
     
-    # Define hyp
-    hyp <- NULL
+    # Run nlsLM for cumulative production curve fit
+    Qfit <- nlsLM(formula = coil_prod ~ Cp*sqrt(time)+c1,
+                  data =    w,
+                  start =   list(Cp = Cp.start.oil, c1 = c1.start.oil),
+                  lower =   Qlower.oil,
+                  upper =   Qupper.oil,
+                  control = list(maxiter=1000))
     
-    # Run nlsLM for hyperbolic decline curve fit
-    try(hyp <- nlsLM(formula = p_oil_prod ~ qo*(1+b*Di*time)^(-1/b),
-                 data =    w,
-                 start =   list(qo = max(w$p_oil_prod), b = b.start.oil, Di = Di.start.oil),
-                 lower =   lower.oil,
-                 upper =   upper.oil,
-                 control = list(maxiter=1000)),
-        silent = TRUE)
+    # Save fit coefficients
+    Cp.oil <- c(Cp.oil, coef(Qfit)[1])
+    c1.oil <- c(c1.oil, coef(Qfit)[2])
     
-    # If fit worked, hyp won't be null
-    if(!is.null(hyp)) {
+    # Build index of non-Field 999 rows
+    ind999 <- c(ind999, ind)
+    
+    # If plotting, do so now
+    if (DCAplot == TRUE) {
       
-      # Save fit coefficients
-      ffo <-    c(ffo, field[i])
-      qo.oil <- c(qo.oil, coef(hyp)[1])
-      b.oil  <- c(b.oil,  coef(hyp)[2])
-      Di.oil <- c(Di.oil, coef(hyp)[3])
-      
-      # Build index of non-Field 999 rows
-      ind999 <- c(ind999, ind)
-      
-      # If plotting, do so now
-      if (DCAplot == TRUE) {
-        
-        # Plot using custom print function
-        DCAfieldplot(type = "oil", field = field[i])
-      }
+      # Plot using custom print function
+      DCAfieldplot(type = "oil", field = field[i])
     }
   }
   
@@ -229,24 +207,22 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
   ind <- ind[-ind999]
   
   # Pull subset of production records on rows in 'ind'
-  w <- ps[ind, c("time", "p_oil_prod")]
+  w <- ps[ind, c("time", "coil_prod")]
   
   # Only keep productions records which are > 0
-  w <- w[w$p_oil_prod > 0,]
+  w <- w[w$coil_prod > 0,]
   
-  # Run nlsLM for hyperbolic decline curve fit
-  hyp <- nlsLM(formula = p_oil_prod ~ qo*(1+b*Di*time)^(-1/b),
-               data =    w,
-               start =   list(qo = max(w$p_oil_prod), b = b.start.oil, Di = Di.start.oil),
-               lower =   lower.oil,
-               upper =   upper.oil,
-               control = list(maxiter=1000))
+  # Run nlsLM for cumulative production curve fit
+  Qfit <- nlsLM(formula = coil_prod ~ Cp*sqrt(time)+c1,
+                data =    w,
+                start =   list(Cp = Cp.start.oil, c1 = c1.start.oil),
+                lower =   Qlower.oil,
+                upper =   Qupper.oil,
+                control = list(maxiter=1000))
   
   # Save fit coefficients
-  ffo <-    c(ffo, 999)
-  qo.oil <- c(qo.oil, coef(hyp)[1])
-  b.oil  <- c(b.oil,  coef(hyp)[2])
-  Di.oil <- c(Di.oil, coef(hyp)[3])
+  Cp.oil <- c(Cp.oil, coef(Qfit)[1])
+  c1.oil <- c(c1.oil, coef(Qfit)[2])
   
   # If plotting, do so now
   if (DCAplot == TRUE) {
@@ -263,10 +239,8 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
   ind999 <- NULL
   
   # Predefine fit results vectors
-  ffg    <- NULL
-  qo.gas <- NULL
-  b.gas  <- NULL
-  Di.gas <- NULL
+  Cp.gas <- NULL
+  c1.gas <- NULL
   
   # For each field to be analyzed individually
   for (i in 1:(length(field)-1)) {
@@ -275,41 +249,31 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
     ind <- which(ps$w_field_num == field[i])
     
     # Pull subset of production records on rows in 'ind'
-    w <- ps[ind, c("time", "p_gas_prod")]
+    w <- ps[ind, c("time", "cgas_prod")]
     
     # Only keep productions records which are > 0
-    w <- w[w$p_gas_prod > 0,]
+    w <- w[w$cgas_prod > 0,]
     
-    # Define hyp
-    hyp <- NULL
+    # Run nlsLM for cumulative production curve fit
+    Qfit <- nlsLM(formula = cgas_prod ~ Cp*sqrt(time)+c1,
+                  data =    w,
+                  start =   list(Cp = Cp.start.gas, c1 = c1.start.gas),
+                  lower =   Qlower.gas,
+                  upper =   Qupper.gas,
+                  control = list(maxiter=1000))
     
-    # Run nlsLM for hyperbolic decline curve fit
-    try(hyp <- nlsLM(formula = p_gas_prod ~ qo*(1+b*Di*time)^(-1/b),
-                 data =    w,
-                 start =   list(qo = max(w$p_gas_prod), b = b.start.gas, Di = Di.start.gas),
-                 lower =   lower.gas,
-                 upper =   upper.gas,
-                 control = list(maxiter=1000)),
-        silent = TRUE)
+    # Save fit coefficients
+    Cp.gas <- c(Cp.gas, coef(Qfit)[1])
+    c1.gas <- c(c1.gas, coef(Qfit)[2])
     
-    # If fit worked, hyp won't be null
-    if(!is.null(hyp)) {
+    # Build index of non-Field 999 rows
+    ind999 <- c(ind999, ind)
+    
+    # If plotting, do so now
+    if (DCAplot == TRUE) {
       
-      # Save fit coefficients
-      ffg    <- c(ffg, field[i])
-      qo.gas <- c(qo.gas, coef(hyp)[1])
-      b.gas  <- c(b.gas,  coef(hyp)[2])
-      Di.gas <- c(Di.gas, coef(hyp)[3])
-      
-      # Build index of non-Field 999 rows
-      ind999 <- c(ind999, ind)
-      
-      # If plotting, do so now
-      if (DCAplot == TRUE) {
-        
-        # Plot using custom print function
-        DCAfieldplot(type = "gas", field = field[i])
-      }
+      # Plot using custom print function
+      DCAfieldplot(type = "gas", field = field[i])
     }
   }
   
@@ -319,24 +283,22 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
   ind <- ind[-ind999]
   
   # Pull subset of production records on rows in 'ind'
-  w <- ps[ind, c("time", "p_gas_prod")]
+  w <- ps[ind, c("time", "cgas_prod")]
   
   # Only keep productions records which are > 0
-  w <- w[w$p_gas_prod > 0,]
+  w <- w[w$cgas_prod > 0,]
   
-  # Run nlsLM for hyperbolic decline curve fit
-  hyp <- nlsLM(formula = p_gas_prod ~ qo*(1+b*Di*time)^(-1/b),
-               data =    w,
-               start =   list(qo = max(w$p_gas_prod), b = b.start.gas, Di = Di.start.gas),
-               lower =   lower.gas,
-               upper =   upper.gas,
-               control = list(maxiter=1000))
+  # Run nlsLM for cumulative production curve fit
+  Qfit <- nlsLM(formula = cgas_prod ~ Cp*sqrt(time)+c1,
+                data =    w,
+                start =   list(Cp = Cp.start.gas, c1 = c1.start.gas),
+                lower =   Qlower.gas,
+                upper =   Qupper.gas,
+                control = list(maxiter=1000))
   
   # Save fit coefficients
-  ffg    <- c(ffg, 999)
-  qo.gas <- c(qo.gas, coef(hyp)[1])
-  b.gas  <- c(b.gas,  coef(hyp)[2])
-  Di.gas <- c(Di.gas, coef(hyp)[3])
+  Cp.gas <- c(Cp.gas, coef(Qfit)[1])
+  c1.gas <- c(c1.gas, coef(Qfit)[2])
   
   # If plotting, do so now
   if (DCAplot == TRUE) {
@@ -352,11 +314,10 @@ DCAupdateField <- function(minDayProd, DCAplot, b.start.oil, Di.start.oil,
   # Export Results ----------------------------------------------------------
   
   # Make results data.frame
-  hypFF <- list(oil = data.frame(ffo, qo.oil, b.oil, Di.oil),
-                gas = data.frame(ffg, qo.gas, b.gas, Di.gas))
+  QFF <- data.frame(field, Cp.oil, c1.oil, Cp.gas, c1.gas)
   
   # Save fit results
   save(file=file.path(path$data,
-                      paste("DCA_field_fits_", ver, ".rda", sep = "")),
-       list=c("hypFF"))
+                      paste("DCA_field_Qfits_", ver, ".rda", sep = "")),
+       list=c("QFF"))
 }

@@ -15,12 +15,16 @@
 # drilled. Postive values indicate that the well was drilled 'n' # of months in
 # the past, negative value 'n' # of months in the future
 
+# MC.steps - number of time steps in simulation period
+
+# acut - threshold oil production rate below which a well is consider to be
+# abandoned
 
 # Outputs -----------------------------------------------------------------
 
-# data.frame with vector of total oil/gas production from all wells drilled 
-# prior to the start of the simulation period (i.e. prior wells) based on how
-# far into production history each well is and what field its located in
+# list with matrices of oil/gas production from each well drilled prior to the
+# start of the simulation period (i.e. prior wells) based on how far into
+# production history each well is and what field its located in
 
 
 # Description -------------------------------------------------------------
@@ -40,77 +44,80 @@
 
 
 # Function ----------------------------------------------------------------
-priorProd <- function(hypFF, mo, mg, MC.tsteps) {
+priorProd <- function(hypFF, mo, mg, MC.tsteps, acut) {
   
-  # Create subset of DCAfit that contains on those wells drilled prior to start of
-  # simulation period
-  ow <- subset(mo, subset = (tend > 0), select = c("w_field_num", "tend"))
-  gw <- subset(mg, subset = (tend > 0), select = c("w_field_num", "tend"))
+  # Create subset of DCAfit that contains only those wells drilled prior to
+  # start of simulation period
+  ow <- subset(mo, subset = (tend > 0), select = c("p_api", "w_field_num", "tend", "h_well_type"))
+  gw <- subset(mg, subset = (tend > 0), select = c("p_api", "w_field_num", "tend", "h_well_type"))
   
   # Rename columns
-  names(ow) <- c("field", "tend")
-  names(gw) <- c("field", "tend")
+  names(ow) <- c("api", "field", "tend", "wellType")
+  names(gw) <- c("api", "field", "tend", "wellType")
   
-  # Predefine space for total production vectors
-  oil <- rep(0, times = MC.tsteps)
-  gas <- oil
+  # Add hypFF DCA coefficients to ow/gw matrices
   
-  # Predefine index for Field 999
-  ind999.ow <- NULL
-  ind999.gw <- NULL
+  # Step 1: add columns for coefficients
+  ow <- data.frame(ow, qo = rep(NA, nrow(ow)), b = rep(NA, nrow(ow)), Di = rep(NA, nrow(ow)))
+  gw <- data.frame(gw, qo = rep(NA, nrow(gw)), b = rep(NA, nrow(gw)), Di = rep(NA, nrow(gw)))
   
-  # For all fields being analyzed individually
-  for (i in 1:(nrow(hypFF)-1)) {
+  # Step 2: For each individual field, replace NAs with DCCs, starting with oil
+  for (i in 1:(nrow(hypFF$oil)-1)) {
+    ow$qo[which(ow$field == hypFF$oil$ffo[i])] <- hypFF$oil$qo.oil[i]
+    ow$b[ which(ow$field == hypFF$oil$ffo[i])] <- hypFF$oil$b.oil[i]
+    ow$Di[which(ow$field == hypFF$oil$ffo[i])] <- hypFF$oil$Di.oil[i]
+  }
+  
+  # Next for gas
+  for (i in 1:(nrow(hypFF$gas)-1)) {
+    gw$qo[which(gw$field == hypFF$gas$ffg[i])] <- hypFF$gas$qo.gas[i]
+    gw$b[ which(gw$field == hypFF$gas$ffg[i])] <- hypFF$gas$b.gas[i]
+    gw$Di[which(gw$field == hypFF$gas$ffg[i])] <- hypFF$gas$Di.gas[i]
+  }
+  
+  # Step 3: Replace any remaining NAs with DCCs for Field 999
+  ow$qo[which(is.na(ow$qo))] <- hypFF$oil$qo.oil[nrow(hypFF$oil)]
+  ow$b[ which(is.na(ow$b))] <-  hypFF$oil$b.oil[nrow(hypFF$oil)]
+  ow$Di[which(is.na(ow$Di))] <- hypFF$oil$Di.oil[nrow(hypFF$oil)]
+  
+  gw$qo[which(is.na(gw$qo))] <- hypFF$gas$qo.gas[nrow(hypFF$gas)]
+  gw$b[ which(is.na(gw$b))] <-  hypFF$gas$b.gas[nrow(hypFF$gas)]
+  gw$Di[which(is.na(gw$Di))] <- hypFF$gas$Di.gas[nrow(hypFF$gas)]
+  
+  
+  # Predefine production matrix
+  oil <- matrix(0, nrow = nrow(ow), ncol = MC.tsteps)
+  gas <- matrix(0, nrow = nrow(gw), ncol = MC.tsteps)
+  
+  # For each time step, calculate production
+  for (i in 1:MC.tsteps) {
     
-    # Get index of rows in ow/gw that exist in field i
-    ind.ow <- which(ow$field == hypFF$field[i])
-    ind.gw <- which(gw$field == hypFF$field[i])
+    # Calculate production
+    oil[,i] <- with(ow, qo*(1+b*Di*(tend+i-1))^(-1/b))
+    gas[,i] <- with(gw, qo*(1+b*Di*(tend+i-1))^(-1/b))
+  }
+  
+  
+  # Well abandonment --------------------------------------------------------
+  
+  # Get row index of oil wells
+  ind <- which(ow$wellType == "OW")
+  
+  # For each oil well
+  for (i in 1:length(ind)) {
     
-    # Get vector of tend values for field i
-    otend <- ow$tend[ind.ow]
-    gtend <- gw$tend[ind.gw]
+    # Get index of elements in oil production vector that are < value of acut
+    temp <- which(oil[ind[i],] < acut)
     
-    # Predefine space for results of production calculation
-    oq <- matrix(0, nrow = length(otend), ncol = MC.tsteps)
-    gq <- matrix(0, nrow = length(gtend), ncol = MC.tsteps)
-    
-    # For each timestep in the simulation period
-    for (j in 1:MC.tsteps) {
+    # If there are elements which are < acut
+    if (length(temp) > 0) {
       
-      # Calculate production vector for each element of tend
-      oq[,j] <- hypFF$qo.oil[i]*(1+hypFF$b.oil[i]*hypFF$Di.oil[i]*(otend+j-1))^(-1/hypFF$b.oil[i])
-      gq[,j] <- hypFF$qo.gas[i]*(1+hypFF$b.gas[i]*hypFF$Di.gas[i]*(gtend+j-1))^(-1/hypFF$b.gas[i])
+      # Then rewrite the production values in those elements with zeroes
+      oil[ind[i],temp] <- 0
+      gas[ind[i],temp] <- 0
     }
-    
-    # Calculate total oil/gas production from field i
-    oil <- oil+colSums(oq)
-    gas <- gas+colSums(gq)
-    
-    # Build index of rows to exclude from Field 999
-    ind999.ow <- c(ind999.ow, ind.ow)
-    ind999.gw <- c(ind999.gw, ind.gw)
   }
-  
-  # For Field 999, use exclusion index to get tend values
-  otend <- ow$tend[-ind999.ow]
-  gtend <- gw$tend[-ind999.gw]
-  
-  # Predefine space for results of production calculation
-  oq <- matrix(0, nrow = length(otend), ncol = MC.tsteps)
-  gq <- matrix(0, nrow = length(gtend), ncol = MC.tsteps)
-  
-  # For each timestep in the simulation period
-  for (j in 1:MC.tsteps) {
-    
-    # Calculate production vector for each element of tend
-    oq[,j] <- hypFF$qo.oil[i]*(1+hypFF$b.oil[i]*hypFF$Di.oil[i]*(otend+j-1))^(-1/hypFF$b.oil[i])
-    gq[,j] <- hypFF$qo.gas[i]*(1+hypFF$b.gas[i]*hypFF$Di.gas[i]*(gtend+j-1))^(-1/hypFF$b.gas[i])
-  }
-  
-  # Calculate total oil/gas production from field i
-  oil <- oil+colSums(oq)
-  gas <- gas+colSums(gq)
   
   # Return result
-  return(data.frame(oil = oil, gas = gas))
+  return(list(oil = oil, gas = gas, apilist = ow$api))
 }

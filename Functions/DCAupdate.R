@@ -52,7 +52,11 @@
 
 # p - production database
 
-# tstart - the date at which the simulation starts, used to calculate how far
+# tstart - cutoff date, production records must occur beginning at this date
+
+# tstop - cutoff date, production records must occur ending at this date
+
+# tend - the date at which the simulation starts, used to calculate how far
 # along each well is in its production history
 
 
@@ -90,7 +94,7 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                       Di.start.gas, lower.gas, upper.gas, field, ver, path, p,
                       Cp.start.oil, c1.start.oil, Qlower.oil, Qupper.oil,
                       Cp.start.gas, c1.start.gas, Qlower.gas, Qupper.gas,
-                      tstart) {
+                      tstart, tstop, tend) {
   
   # Internal Debug Variables  -----------------------------------------------
   
@@ -136,10 +140,15 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   
   ps <- subset(p,
                subset = (time != 0 &
-                           (p$h_well_type == "OW" |
-                              p$h_well_type == "GW") &
-                           p$p_days_prod >= minDayProd),
+                           (h_well_type == "OW" |
+                              h_well_type == "GW") &
+                           p_days_prod >= minDayProd &
+                           p_rpt_period >= tstart &
+                           p_rpt_period < tstop &
+                           h_first_prod >= tstart &
+                           h_first_prod < tstop),
                select = c("p_api",
+                          "p_rpt_period",
                           "p_oil_prod",
                           "p_gas_prod",
                           "p_water_prod",
@@ -152,18 +161,24 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                           "nrec"))
   
   # Get list of unique wells and order by cumulative oil and gas production
-  well <- sqldf("select distinct p_api, w_field_num, w_totcum_oil, w_totcum_gas, nrec, h_first_prod
+  well <- sqldf("select distinct p_api, w_field_num, h_well_type, w_totcum_oil, w_totcum_gas, nrec
                 from ps
                 order by w_totcum_oil DESC, w_totcum_gas DESC")
   
   # Add two columns for cumulative production fraction (CPF) of oil and gas
   well$CPFo <- well$w_totcum_oil/sum(well$w_totcum_oil)
   well$CPFg <- well$w_totcum_gas/sum(well$w_totcum_gas)
+    
+  # Get first reported production date
+  well$firstprod <- as.Date(rep(NA, times = nrow(well)))
+  for (i in 1:nrow(well)) {
+    well$firstprod[i] <- min(ps$p_rpt_period[which(ps$p_api == well$p_api[i])])
+  }
   
   # Add column for difference in time between date of first production and date 
   # of start of simulation period (used to track how far into DC each individual
   # well is)
-  well$tend <- as.numeric(round(difftime(tstart, well$h_first_prod, units = "days")/(365.25/12)))
+  well$tend <- as.numeric(round(difftime(tend, well$firstprod, units = "days")/(365.25/12)))
   
   
   # DCA Fitting - Oil -------------------------------------------------------

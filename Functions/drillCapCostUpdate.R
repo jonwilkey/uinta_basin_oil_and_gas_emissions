@@ -28,7 +28,7 @@
 
 # drillCost.data - data.frame with total inflation adjusted development costs
 # and measured depths (in feet) for ~65 wells randomly selected from the DOGM
-# database.
+# database. Note - costs in this file are cumulative.
 
 # drillCost.fit - lm() fit object for modeling development costs as an
 # exponential function of well depth.
@@ -38,10 +38,10 @@
 
 # This function loads a *.csv file containing records for the drilling and 
 # completion costs for a variety of wells that were collected from DOGM database
-# well report files. These costs are adjusted for inflation and summed up for 
-# each well into a total development cost. After trying various fitting 
-# approaches, the following model was found to give the best fit to the cost
-# data:
+# well report files. These costs are adjusted for inflation and maximum value
+# for each well is taken as the total development cost. After trying various
+# fitting approaches, the following model was found to give the best fit to the
+# cost data:
 
 # cost = a * exp(depth) + b
 
@@ -116,7 +116,7 @@ drillCapCostUpdate <- function(path, basis, ver) {
   # SQL Queries -------------------------------------------------------------
   
   # Compile dataframe with columns for API #, total drilling cost, date, and depth
-  cost <- sqldf("select distinct(API), sum(drill), sum(compl), max(DEPTH), max(DAYS)
+  cost <- sqldf("select distinct(API), max(drill), max(compl), max(DEPTH), max(DAYS)
               from data
               group by API")
   
@@ -141,9 +141,19 @@ drillCapCostUpdate <- function(path, basis, ver) {
   # Fit as log(y) = a + b * depth
   drillCost.fit <- lm(formula = log(cost) ~ depth, data = drillCost.data)
   
+  # Get ratio of completion cost to drilling cost
+  ratio <- with(cost[which(cost$completion > 0 & cost$drill > 0),], completion/drill)
+  
+  # Drop outlier
+  ratio <- ratio[ratio < 10]
+  
+  # Get mean and standard deviation
+  complCR <- c(mean(ratio), sd(ratio))
+  names(complCR) <- c("mean", "sd")
+  
   
   # Save results ------------------------------------------------------------
   
   save(file = file.path(path$data, paste("drillCost_", ver, ".rda", sep = "")),
-       list= c ("drillCost.data", "drillCost.fit"))
+       list= c ("drillCost.data", "drillCost.fit", "complCR"))
 }
