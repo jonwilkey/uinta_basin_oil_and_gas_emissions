@@ -19,15 +19,25 @@ pdf(file.path(path$plot, "priorProd.pdf"))
 
 # Plots
 plot(new.p$date, (all.p$oil-new.p$oil),
-     ylim = c(500e3, 1.1*max(prior$oil)),
+     ylim = c(500e3, 1.6e6),
      type = "l",
      xlab = "Date (months)",
      ylab = "Oil Production (bbl)",
      main = "Oil from Existing Wells")
-lines(new.p$date, prior$oil, col = "red")
-lines(new.p$date, prior$oil*(5631/6870), col = "blue")
+prior <- priorProd(hypFF =     hypFF,
+                   mo =        mo,
+                   mg =        mg,
+                   MC.tsteps = opt$MC.tsteps,
+                   acut =      0)
+lines(new.p$date, colSums(prior$oil), col = "red")
+prior <- priorProd(hypFF =     hypFF,
+                   mo =        mo,
+                   mg =        mg,
+                   MC.tsteps = opt$MC.tsteps,
+                   acut =      opt$acut)
+lines(new.p$date, colSums(prior$oil), col = "blue")
 legend("topright",
-       c("Actual", "Fit", "Reduced Fit"),
+       c("Actual", "Predicted", "Predicted + Abandoment"),
        lty = 1,
        col = c("black", "red", "blue"))
 
@@ -36,9 +46,9 @@ plot(new.p$date, (all.p$gas-new.p$gas),
      xlab = "Date (months)",
      ylab = "Gas Production (MCF)",
      main = "Gas from Existing Wells")
-lines(new.p$date, prior$gas, col = "red")
+lines(new.p$date, colSums(prior$gas), col = "red")
 legend("topright",
-       c("Actual", "Fit"),
+       c("Actual", "Predicted"),
        lty = 1,
        col = c("black", "red"))
 
