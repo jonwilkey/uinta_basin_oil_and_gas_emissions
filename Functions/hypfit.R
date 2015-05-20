@@ -78,10 +78,11 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
   QfitFirst <- qo                # Binary indicating 1 if fit first curve of cumulative production curve
   QfitLast  <- qo                # Binary for last cumulative production curve
   Qfailed   <- qo                # Binary indicating at least one cumulative curve was not fit by nlsLM
+  rework    <- qo                # Binary - has well been reworked (i.e. more than one decline curve?), 1 if yes, 0 if no
   
   # Make data.frame for r
   r <- data.frame(api, qo, b, Di, tdelay, fitFirst, fitLast, skipped, failed,
-                  Cp, c1, QfitFirst, QfitLast, Qfailed)
+                  Cp, c1, QfitFirst, QfitLast, Qfailed, rework)
   
   # Calculate cumulative production
   Q <- cumsum(ws$prod)
@@ -166,6 +167,9 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     }
   } else {
     # The two curves are different, and we have to fit each one seperately
+    
+    # Switch value of rework column to indicate that well has been reworked
+    r$rework[1:2] <- 1
     
     # --- First Curve ---
     # Check if minimum records requirement is met for first decline curve

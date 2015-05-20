@@ -20,6 +20,13 @@
 # acut - threshold oil production rate below which a well is consider to be
 # abandoned
 
+# tend.cut - cutoff threshold for how old a well can be and still be included as
+# a prior well. For example, if tend.cut == 50, then any well that doesn't have 
+# a last decline curve fit (either because it had too few production records or 
+# because the solver failed to converge) and is > 50 months old would dropped
+# from population of prior wells
+
+
 # Outputs -----------------------------------------------------------------
 
 # list with matrices of oil/gas production from each well drilled prior to the
@@ -44,16 +51,30 @@
 
 
 # Function ----------------------------------------------------------------
-priorProd <- function(hypFF, mo, mg, MC.tsteps, acut) {
+priorProd <- function(hypFF, mo, mg, MC.tsteps, acut, tend.cut) {
+  
+  # Get DCCs from wells with fits -----------------------------------------
   
   # Create subset of DCAfit that contains only those wells drilled prior to
-  # start of simulation period
-  ow <- subset(mo, subset = (tend > 0), select = c("p_api", "w_field_num", "tend", "h_well_type"))
-  gw <- subset(mg, subset = (tend > 0), select = c("p_api", "w_field_num", "tend", "h_well_type"))
+  # start of simulation period and that have a last decline curve fit
+  ind <- which(mo$tend > 0 & mo$fit.2 == 1 & mg$fit.2 == 1)
+  fit.ow <- subset(mo[ind,], select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod", "qo.2", "b.2", "Di.2"))
+  fit.gw <- subset(mg[ind,], select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod", "qo.2", "b.2", "Di.2"))
   
   # Rename columns
-  names(ow) <- c("api", "field", "tend", "wellType")
-  names(gw) <- c("api", "field", "tend", "wellType")
+  names(fit.ow) <- c("api", "field", "tend", "wellType", "firstprod", "qo", "b", "Di")
+  names(fit.gw) <- c("api", "field", "tend", "wellType", "firstprod", "qo", "b", "Di")
+  
+  
+  # Get Field Level DCCs for wells w/o fits -------------------------------
+  
+  # Drop wells that had fits and select only those wells within tend constraints
+  ow <- subset(mo[-ind,], subset = (tend > 0 & tend <= tend.cut), select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod"))
+  gw <- subset(mg[-ind,], subset = (tend > 0 & tend <= tend.cut), select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod"))
+  
+  # Rename columns
+  names(ow) <- c("api", "field", "tend", "wellType", "firstprod")
+  names(gw) <- c("api", "field", "tend", "wellType", "firstprod")
   
   # Add hypFF DCA coefficients to ow/gw matrices
   
@@ -85,6 +106,12 @@ priorProd <- function(hypFF, mo, mg, MC.tsteps, acut) {
   gw$Di[which(is.na(gw$Di))] <- hypFF$gas$Di.gas[nrow(hypFF$gas)]
   
   
+  # Combine and calculate production --------------------------------------
+  
+  # Combine
+  ow <- rbind(fit.ow, ow)
+  gw <- rbind(fit.gw, gw)
+  
   # Predefine production matrix
   oil <- matrix(0, nrow = nrow(ow), ncol = MC.tsteps)
   gas <- matrix(0, nrow = nrow(gw), ncol = MC.tsteps)
@@ -98,7 +125,7 @@ priorProd <- function(hypFF, mo, mg, MC.tsteps, acut) {
   }
   
   
-  # Well abandonment --------------------------------------------------------
+  # Well abandonment ------------------------------------------------------
   
   # Get row index of oil wells
   ind <- which(ow$wellType == "OW")
@@ -119,5 +146,5 @@ priorProd <- function(hypFF, mo, mg, MC.tsteps, acut) {
   }
   
   # Return result
-  return(list(oil = oil, gas = gas, apilist = ow$api))
+  return(list(oil = oil, gas = gas, apilist = ow$api, firstprod = ow$firstprod))
 }

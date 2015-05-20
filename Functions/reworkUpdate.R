@@ -17,6 +17,9 @@
 
 # ver - Version number for file naming of exported data.frames
 
+# wc.min - minimum number of wells in population required in order to include in
+# CDF
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -45,7 +48,7 @@
 
 # Function ----------------------------------------------------------------
 
-reworkUpdate <- function(path, p, tstart, tstop, ver) {
+reworkUpdate <- function(path, p, tstart, tstop, ver, wc.min) {
   
   # Load data ---------------------------------------------------------------
   
@@ -143,6 +146,17 @@ reworkUpdate <- function(path, p, tstart, tstop, ver) {
                            wc.gw,
                            re.ow,
                            re.gw)
+  
+  # Step 4: It's possible to have a CDF > 1 if the population of wells at long 
+  # times becomes small and on the same order of magnitude as the rework count. 
+  # To prevent this, drop any data points beyond which the number of wells in 
+  # the well count population is below a specified threshold. Find the last row
+  # at which both the oil and gas well counts are above this threshold - that
+  # will become the cutoff point
+  cutoff <- length(which(cdf.rework$wc.ow > wc.min & cdf.rework$wc.gw > wc.min))
+  
+  # Drop any rows after cutoff
+  cdf.rework <- cdf.rework[1:cutoff,]
   
   
   # Export results ----------------------------------------------------------

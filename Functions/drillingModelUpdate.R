@@ -20,6 +20,9 @@
 
 # eia.hp - EIA historical energy prices
 
+# twindow - length of time window (i.e. number of months) for rolling drill
+# model fit
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -44,7 +47,8 @@
 
 # Function ----------------------------------------------------------------
 
-drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp) {
+drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp,
+                                twindow) {
   
   # Determine number of wells drilled each month ------------------------------
   
@@ -100,23 +104,35 @@ drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp) 
   drillModel <- lm(formula = (wells ~ OP + GP + prior),
                    data = analysis)
   
-  # # Plot - Uncomment if plot is desired
-  # with(analysis,
-  #      plot(month, wells,
-  #           type = "l",
-  #           xlab = "Year",
-  #           ylab = "Total Wells Drilled (oil, gas, or dry)",
-  #           main = "Drilling Schedule Model")
-  # )
-  # with(analysis,
-  #      lines(month, fitted(drillModel),
-  #            col = "red")
-  # )
-  # mtext(expression(W==a%.%OP+b%.%GP+c%.%W[n-1]+d))
-  # legend("topleft",
-  #        c("Actual", "Fit"),
-  #        lty = c(1,1),
-  #        col = c("black","red"))
+  # Fit rolling drilling model ----------------------------------------------
+  
+  # Make monthly time sequence tsteps
+  tsteps <- seq(from = tstart, to = tstop, by = "months")
+  
+  # Calculate number of windows in time sequence
+  nwin <- (length(tsteps)-twindow+1)
+  
+  # Make data.frame for storing coefficients
+  dmw <- matrix(0, nrow = nwin, ncol = 5)
+  
+  # For each nwin period
+  for (i in 1:nwin) {
+    
+    # Fit model to time subset
+    temp <- lm(formula = (wells ~ OP + GP + prior),
+               data = analysis[which(as.Date(analysis$month) >= tsteps[i] &
+                                     as.Date(analysis$month) <= tsteps[i+twindow-1]),])
+    
+    # Extract coefficients and R^2 value
+    dmw[i,] <- c(as.numeric(coef(temp)), summary(temp)$r.squared)
+  }
+  
+  # Change type to data.frame and name columns
+  drillModelWindow <- data.frame(a =  dmw[,2],
+                                 b =  dmw[,3],
+                                 c =  dmw[,4],
+                                 d =  dmw[,1],
+                                 R2 = dmw[,5])
   
   
   # Export fitted model -----------------------------------------------------
@@ -124,5 +140,6 @@ drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp) 
   save(file = file.path(path$data,
                         paste("drillModel_", ver, ".rda", sep = "")),
        list = c("drillModel",
+                "drillModelWindow",
                 "drillModelData"))
 }

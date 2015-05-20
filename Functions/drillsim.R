@@ -27,6 +27,14 @@
 
 # tstop - stop date of simulation period
 
+# simtype - character switch indicating which model to choose for the simulated
+# drilling schedule. Valid options are "global", for the full data fit in
+# drillModel, or "window" for a randomly selected time window fit contained in
+# dmWindow.
+
+# dmWindow - data frame with rows containing fits of the drilling
+# schedule model using a rolling time window
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -42,7 +50,7 @@
 
 # Function ---------------------------------------------------------------- 
 drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel,
-                     type, p, tstart, tstop) {
+                     type, p, tstart, tstop, simtype, dmWindow) {
   
   # Check - simulate drilling schedule or use actual drilling schedule
   switch(type,
@@ -69,6 +77,34 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel,
            }
            
            
+           # Get drilling model coefficients ------------------------------
+           
+           # Predefine drill model coefficient (DMC) matrix
+           DMC <- matrix(0, nrow = nrun, ncol = 4)
+           
+           switch(simtype,
+                  
+                  # If using single global fit
+                  global = {
+                    
+                    # Extract coefficients from drillModel lm() object
+                    DMC[,1] <- drillModel$coefficients["OP"]
+                    DMC[,2] <- drillModel$coefficients["GP"]
+                    DMC[,3] <- drillModel$coefficients["prior"]
+                    DMC[,4] <- drillModel$coefficients["(Intercept)"]
+                  },
+                  
+                  # If using randomly selected window fit
+                  window = {
+                    
+                    # Pick random rows from dmWindow
+                    DMC <- dmWindow[round(runif(nrun, 1, nrow(dmWindow))),1:4]
+                  })
+           
+           # Rename and convert to data.frame
+           DMC <- data.frame(a = DMC[,1], b = DMC[,2], c = DMC[,3], d = DMC[,4])
+           
+           
            # Calculate drilling schedule ----------------------------------
            
            # Predefine matrix for drilling schedule results. Rows = simulation
@@ -84,10 +120,10 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel,
              Drilled[,(i+1)] <- round(drillsched(OP = GBMsim.OP[,i],
                                                  GP = GBMsim.GP[,i],
                                                  Wo = Drilled[,i],
-                                                 a = drillModel$coefficients["OP"],
-                                                 b = drillModel$coefficients["GP"],
-                                                 c = drillModel$coefficients["prior"],
-                                                 d = drillModel$coefficients["(Intercept)"]))
+                                                 a = DMC$a,
+                                                 b = DMC$b,
+                                                 c = DMC$c,
+                                                 d = DMC$d))
              
              # Check - has drilling schedule gone negative? If so, overwrite as 0
              Drilled[,(i+1)] <- ifelse(test = Drilled[,(i+1)] < 0,

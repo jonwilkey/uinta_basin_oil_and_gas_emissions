@@ -15,3 +15,8 @@
 # Define "uopt" list object - this must exist in order to set any other options
 uopt <- NULL
 
+
+# Parameter space ---------------------------------------------------------
+
+uopt$simInfo <- data.frame(sim = 1,
+                           nwell = 133)

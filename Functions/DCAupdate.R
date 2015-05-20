@@ -202,7 +202,8 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                    c1 =        rep(0, times = temp),
                    QfitFirst = rep(0, times = temp),
                    QfitLast =  rep(0, times = temp),
-                   Qfailed =   rep(0, times = temp))
+                   Qfailed =   rep(0, times = temp),
+                   rework =    rep(0, times = temp))
   
   # Set initial value for row counters "row1" and "row2"
   row1 <- 1; row2 <- 2
@@ -367,7 +368,8 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                    c1 =        rep(0, times = temp),
                    QfitFirst = rep(0, times = temp),
                    QfitLast =  rep(0, times = temp),
-                   Qfailed =   rep(0, times = temp))
+                   Qfailed =   rep(0, times = temp),
+                   rework =    rep(0, times = temp))
   
   # Set initial value for row counters "row1" and "row2"
   row1 <- 1; row2 <- 2
@@ -520,15 +522,15 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   rg.last  <- rg[seq(from = 2, to = nrow(ro), by = 2),]
   
   # Drop repeat columns (fitLast and QfitLast for *.first, and tdelay, fitFirst,
-  # and QfitFirst for *.last)
+  # QfitFirst, and rework for *.last)
   ro.first <- ro.first[,c(-7, -13)]
   rg.first <- rg.first[,c(-7, -13)]
-  ro.last  <- ro.last[,c(-5, -6, -12)]
-  rg.last  <- rg.last[,c(-5, -6, -12)]
+  ro.last  <- ro.last[,c(-5, -6, -12, -14)]
+  rg.last  <- rg.last[,c(-5, -6, -12, -14)]
   
   # Change names
-  names(ro.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1", "Cp.1", "c1.1", "Qfit.1", "Qfailed.1")
-  names(rg.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1", "Cp.1", "c1.1", "Qfit.1", "Qfailed.1")
+  names(ro.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1", "Cp.1", "c1.1", "Qfit.1", "Qfailed.1", "rework")
+  names(rg.first) <- c("api", "qo.1", "b.1", "Di.1", "tdelay", "fit.1", "skip.1", "fail.1", "Cp.1", "c1.1", "Qfit.1", "Qfailed.1", "rework")
   names(ro.last)  <- c("api", "qo.2", "b.2", "Di.2", "fit.2", "skip.2", "fail.2", "Cp.2", "c1.2", "Qfit.2", "Qfailed.2")
   names(rg.last)  <- c("api", "qo.2", "b.2", "Di.2", "fit.2", "skip.2", "fail.2", "Cp.2", "c1.2", "Qfit.2", "Qfailed.2")
   

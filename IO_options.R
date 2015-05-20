@@ -16,15 +16,15 @@
 opt <- NULL
 
 # Enter number of overall simulation iterations
-opt$nrun <- 1e2
+opt$nrun <- 1e3
 
 # Time Options
-opt$tstart <-    as.Date("2010-01-01")                                 # Start date of simulation period
-opt$tstop  <-    as.Date("2014-12-01")                                 # Stop date of simulation period
-opt$train.start <- as.Date("2000-01-01")
-opt$train.stop  <- as.Date("2009-12-01")
-opt$tsteps <-    seq(from = opt$tstart, to = opt$tstop, by = "months")
-opt$MC.tsteps <- length(opt$tsteps)
+opt$tstart <-      as.Date("2010-01-01")                                 # Start date of simulation period
+opt$tstop  <-      as.Date("2014-12-01")                                 # Stop date of simulation period
+opt$train.start <- as.Date("1984-01-01")
+opt$train.stop  <- as.Date("2014-12-01")
+opt$tsteps <-      seq(from = opt$tstart, to = opt$tstop, by = "months")
+opt$MC.tsteps <-   length(opt$tsteps)
 
 # CPI value for inflation adjustment and it's associated date (as character
 # string). Current value is for average 2014 USD.
@@ -46,7 +46,7 @@ opt$cf.MCF.to.MMBtu <- (1081)*(1e3)*(1/1e6)
 
 # Minimum well depth in feet. Used in scheduleUpdate and drillingModelUpdate for
 # subsetting.
-opt$min.well.depth <- 5e3
+opt$min.well.depth <- 0
 
 # Initial prices for EIA/GBM price path simulation (from last recorded EIA FPP). 
 #
@@ -59,9 +59,9 @@ opt$min.well.depth <- 5e3
 # gas prices are only recorded by EIA on annual basis; nation gas FPPs are 
 # recorded on monthly basis). Values are in 'basis' inflation adjusted $ per bbl
 # or MCF (for gas). Values below are for December in the year indicated.
-#                         |-2012-|-2011-|-2010-|-2009-|-1999-|
-opt$oil.fpp.init <- 72.10 # 79.05| 90.60| 81.89| 72.10| 34.73|
-opt$gas.fpp.init <-  4.90 #  3.26|  3.11|  4.77|  4.90|  2.97|
+#                         |-2012-|-2011-|-2010-|-2009-|-2004-|-1999-|
+opt$oil.fpp.init <- 72.10 # 79.05| 90.60| 81.89| 72.10| 51.88| 34.73|
+opt$gas.fpp.init <-  4.90 #  3.26|  3.11|  4.77|  4.90|  7.06|  2.97|
 
 # FPP date - enter month here associated with FPPs above
 opt$FPPdate <- as.Date("2009-12-01")
@@ -280,14 +280,19 @@ opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
 
 # Time step options
 opt$DMU.tstart <- as.Date("1977-07-01")
-opt$DMU.tstop  <- as.Date("2014-12-01")
+opt$DMU.tstop  <- opt$train.stop
+
+# For rolling time frame model fit, specify number of months to use for rolling
+# time window. By default, set to the same number of months in simulation time
+# period.
+opt$twindow <- 6*length(opt$tsteps)
 
 
 # 2.8 GBMfitUpdate Options ------------------------------------------------
 
 # Time step options
 opt$GBM.tstart <- as.Date("1977-07-01")
-opt$GBM.tstop  <- as.Date("2014-12-01")
+opt$GBM.tstop  <- opt$train.stop
 
 
 # 2.9 EIAforecastUpdate Options -------------------------------------------
@@ -320,6 +325,11 @@ year <- seq(as.Date("2010-06-01"), as.Date("2014-06-01"), by = "year") # Year (t
 oil  <- c(73.90, 74.13, 81.39, 87.98, 93.26) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
 gas  <- c( 4.16,  5.33,  5.65,  5.48,  5.44) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
 
+# # AEO 2005 Forecast
+# year <- seq(as.Date("2005-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
+# oil  <- c(33.36, 27.70, 26.36, 25.12, 24.32, 24.02, 24.26, 24.67, 24.98, 25.33) # Rocky Mountain wellhead oil price forecast in 2003 $/bbl from Table 101
+# gas  <- c( 5.04,  4.73,  4.41,  3.96,  3.62,  3.41,  3.36,  3.48,  3.61,  3.74) # Rocky Mountain wellhead gas price forecast in 2003 $/MCF from Table 102
+
 # # AEO 2000 Forecast
 # year <- seq(as.Date("2000-06-01"), as.Date("2012-06-01"), by = "year") # Year (time step for EIA price forecasts)
 # oil  <- c(19.98,19.69,19.82,19.95,20.07,20.21,20.27,20.38,20.54,20.60,20.69,21.18,21.04) # Rocky Mountain wellhead oil price forecast in 1998 $/bbl from Table 101
@@ -344,13 +354,13 @@ opt$EEU.tsteps <- nrow(opt$forecast) # Number of years into the future for which
 # 2.11 DCAupdate Options --------------------------------------------------
 
 # General DCA Fitting Options
-opt$minProdRec      <- 12         # Minimum number of non-zero production records
-opt$minDayProd      <- 28         # Minimum number of days of a well produced in a given month required to include production data point
-opt$diff.bin.cutoff <- 0.15       # Minimum production differential on normalized scale required to consider a well as being restarted
-opt$bin             <- 12         # Bin size
-opt$DCAplot         <- F          # True/False flag indicating whether or not to print
-opt$n.stopB.min     <- 4          # Any stop points identified that are lower than this value will be ignored
-opt$n.startT.search <- 3          # Look at the top "n" number of production points and pick the one with the lowest time value
+opt$minProdRec      <- 12   # Minimum number of non-zero production records
+opt$minDayProd      <- 28   # Minimum number of days of a well produced in a given month required to include production data point
+opt$diff.bin.cutoff <- 0.15 # Minimum production differential on normalized scale required to consider a well as being restarted
+opt$bin             <- 12   # Bin size
+opt$DCAplot         <- F    # True/False flag indicating whether or not to print
+opt$n.stopB.min     <- 4    # Any stop points identified that are lower than this value will be ignored
+opt$n.startT.search <- 3    # Look at the top "n" number of production points and pick the one with the lowest time value
 
 # Time step options - these tsteps need to cover all time prior to start of sim
 opt$DCA.tstart <- as.Date("1984-01-01") # Start cutoff date, only p_rpt_period values >= this date will be included in DCA
@@ -433,6 +443,10 @@ opt$WU.tstop  <- opt$train.stop
 opt$RWU.tstart <- opt$train.start
 opt$RWU.tstop  <- opt$train.stop
 
+# Minimum number of wells left in well count population in order to include data
+# in calculation of rework CDF
+opt$wc.min <- 100
+
 
 # 3.1 Energy Price Path Simulation Options --------------------------------
 
@@ -453,10 +467,20 @@ opt$drilled.init <- 43
 # Select drilling simulation type. Valid options are:
 #  sim - for simulated drilling schedule based on economic drilling model
 #  actual - for actual drilling schedule
-opt$DStype <- "actual"
+opt$DStype <- "sim"
+
+# Pick method for simulated drilling schedule, valid options are:
+opt$DSsimtype <- "window"
 
 
 # 3.3 priorProd Options ---------------------------------------------------
+
+# Cutoff threshold for how old a well can be and still be included as
+# a prior well. For example, if tend.cut == 50, then any well that doesn't have 
+# a last decline curve fit (either because it had too few production records or 
+# because the solver failed to converge) and is > 50 months old would dropped
+# from population of prior wells
+opt$tend.cut <- 60
 
 
 # 3.3.1-2 welldata and productionsim Options ------------------------------
@@ -563,42 +587,42 @@ opt$edcut <- c(as.Date("2012-11-01"), as.Date("2015-01-01"))
 # 4.1 postProcess Options -------------------------------------------------
 
 # Export options
-opt$exportFlag <- F                  # If true, will plot to PDF located in path$plot directory
-opt$prefix <-     "pp "              # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e3run -EIA -0acut.pdf" # Any text here will be added to the end " " " "...
+opt$exportFlag <- T                           # If true, will plot to PDF located in path$plot directory
+opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
+opt$affix  <-     " -1e3run -EIA -10to15.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
-opt$plist <- rbind(c("Oil Price",                  F), # Oil prices simulated vs actual
-                   c("Gas Price",                  F), # Gas prices simulated vs actual
-                   c("Drilling Schedule",          F), # Drilling schedule simulated vs actual
-                   c("Drilling Model Fit",         F), # Drilling fit vs actual
-                   c("DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
-                   c("DCA Coefficients - CDF",     F), # CDF DCA coefficients
-                   c("Total Oil Production",       F), # Total oil production simulated vs actual
-                   c("Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
-                   c("Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
-                   c("Total Gas Production",       F), # Total gas production simulated vs actual
-                   c("Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
-                   c("Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
-                   c("CO2e Emissions",             F), # CO2 emissions
-                   c("CH4 Emissions",              F), # CH4 emissions
-                   c("VOC Emissions",              F), # VOC emissions
-                   c("Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
-                   c("Field Fractions -OW",        F), # Same but just oil wells
-                   c("Field Fractions -GW",        F), # Same but just gas wells
-                   c("Well Capital Cost",          F), # Drilling and completion capital cost data and fit
-                   c("Surface Lease Ownership",    F), # Surface lease ownership by field
-                   c("CDFs for Well Depth",        F), # CDFs for well depth by well type
-                   c("LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
-                   c("Enery Price History",        F), # FPP history for oil and gas from EIA data
-                   c("NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
-                   c("Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
-                   c("EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
-                   c("Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
-                   c("Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
-                   c("CDF for Well Reworks",       F) # CDFs for well reworks
+opt$plist <- rbind(c("01 Oil Price",                  T), # Oil prices simulated vs actual
+                   c("02 Gas Price",                  T), # Gas prices simulated vs actual
+                   c("03 Drilling Schedule",          T), # Drilling schedule simulated vs actual
+                   c("04 Drilling Model Fit",         T), # Drilling fit vs actual
+                   c("05 DCA Coefficients - Boxplot", T), # Boxplot of DCA coefficients
+                   c("06 DCA Coefficients - CDF",     T), # CDF DCA coefficients
+                   c("07 Total Oil Production",       T), # Total oil production simulated vs actual
+                   c("08 Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
+                   c("09 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
+                   c("10 Total Gas Production",       T), # Total gas production simulated vs actual
+                   c("11 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
+                   c("12 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
+                   c("13 CO2e Emissions",             T), # CO2 emissions
+                   c("14 CH4 Emissions",              T), # CH4 emissions
+                   c("15 VOC Emissions",              T), # VOC emissions
+                   c("16 Field Fractions",            T), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
+                   c("17 Field Fractions -OW",        T), # Same but just oil wells
+                   c("18 Field Fractions -GW",        T), # Same but just gas wells
+                   c("19 Well Capital Cost",          T), # Drilling and completion capital cost data and fit
+                   c("20 Surface Lease Ownership",    T), # Surface lease ownership by field
+                   c("21 CDFs for Well Depth",        T), # CDFs for well depth by well type
+                   c("22 LOC Model Fit",              T), # Lease operating costs model fit for oil wells and gas wells
+                   c("23 Enery Price History",        T), # FPP history for oil and gas from EIA data
+                   c("24 NTI CDF",                    T), # CDF for net taxable income as fraction of revenue
+                   c("25 Property Taxes CDF",         T), # CDF for property taxes as fraction of revenue
+                   c("26 EIA AEO Error CDFs",         T), # CDFs for error % in EIA AEO forecasts for oil and gas
+                   c("27 Models for Water Terms",     T), # CDFs and linear regression models for water balance terms
+                   c("28 Water Balance Results",      T), # Results of water balance calculations for each term in WB eq.
+                   c("29 CDF for Well Reworks",       T) # CDFs for well reworks
 )
                    #c("?", 1),    # stack area plot or something v taxes and royalties
 

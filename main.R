@@ -98,6 +98,7 @@ library(data.table)
 library(sqldf)
 library(minpack.lm)
 library(scatterplot3d)
+library(beepr)
 
 
 # 1.4 Options -------------------------------------------------------------
@@ -262,7 +263,8 @@ if(opt$drillmodel.update == TRUE) {
                       tstart =    opt$DMU.tstart,
                       tstop =     opt$DMU.tstop,
                       ver =       opt$file_ver,
-                      eia.hp =    eia.hp)
+                      eia.hp =    eia.hp,
+                      twindow =   opt$twindow)
 }
 
 # Load economic drilling model fit (drillModel) and data (drillModelData)
@@ -536,7 +538,8 @@ if(opt$rework.update == TRUE) {
                p =      p,
                tstart = opt$RWU.tstart,
                tstop =  opt$RWU.tstop,
-               ver =    opt$file_ver)
+               ver =    opt$file_ver,
+               wc.min = opt$wc.min)
 }
 
 # Load rework CDF (cdf.rework)
@@ -599,7 +602,9 @@ Drilled <- drillsim(path =         path,
                     type =         opt$DStype,
                     p =            p,
                     tstart =       opt$tstart,
-                    tstop =        opt$tstop)
+                    tstop =        opt$tstop,
+                    simtype =      opt$DSsimtype,
+                    dmWindow =     drillModelWindow)
 
 
 # 3.3 Prior production calculation ----------------------------------------
@@ -609,7 +614,8 @@ ppri <- priorProd(hypFF =     hypFF,
                   mo =        mo,
                   mg =        mg,
                   MC.tsteps = opt$MC.tsteps,
-                  acut =      opt$acut)
+                  acut =      opt$acut,
+                  tend.cut =  opt$tend.cut)
 
 # Get prior well info
 prior.Info <- priorInfo(apilist = ppri$apilist,
@@ -697,7 +703,7 @@ for (i in 1:opt$nrun) {
                                                 wellType =   prior.Info$wellType,
                                                 cdf.rework = cdf.rework,
                                                 timesteps =  opt$MC.tsteps,
-                                                firstprod =  mo$firstprod[mo$tend > 0],
+                                                firstprod =  ppri$firstprod,
                                                 tstart =     opt$tstart))
   
   # Duplicate reworked wells
@@ -883,18 +889,18 @@ for (i in 1:opt$nrun) {
   
   # 3.3.x Cleanup -------------------------------------------------------
   
-#   # Remove temporary results
-#   remove(wsim,
-#          psim,
-#          t.roy.oil,
-#          t.roy.gas,
-#          t.st.oil,
-#          t.st.gas,
-#          t.PT,
-#          CT,
-#          ETsim,
-#          ETpri,
-#          WB)
+  # Remove temporary results
+  remove(wsim,
+         psim,
+         t.roy.oil,
+         t.roy.gas,
+         t.st.oil,
+         t.st.gas,
+         t.PT,
+         CT,
+         ETsim,
+         ETpri,
+         WB)
   
   # Update progress bar
   Sys.sleep(1e-3)
@@ -931,3 +937,6 @@ close(pb)
 
 # Run processing script to generate plots of results
 source(file.path(path$fun, "postProcess.R"))
+
+# Print finished message and play sound
+beep(3, message("Script Finished"))
