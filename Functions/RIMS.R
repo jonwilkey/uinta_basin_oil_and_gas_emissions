@@ -33,7 +33,7 @@
 RIMS <- function (multiplier, wsim, LOC, nrun) {
     
   # Preallocate investment schedule space
-  invest <- matrix(0, nrow = nrun, floor(ncol(LOC)/12))
+  invest <- matrix(0, nrow = nrun, ncol = floor(ncol(LOC)/12))
   
   # Determine spending schedule on annual basis
   for (i in 1:nrun) {
