@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-pwd.drop <- "D:/"                                  # Windows
-pwd.git  <- "C:/Users/Jon/Documents/R/"
-# pwd.drop <- "/Users/john/"                         # Mac
-# pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
+# pwd.drop <- "D:/"                                  # Windows
+# pwd.git  <- "C:/Users/Jon/Documents/R/"
+pwd.drop <- "/Users/john/"                         # Mac
+pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
 # pwd.drop <- "/home/slyleaf/"                       # Linux
 # pwd.git  <- "/home/slyleaf/Documents/"
   
@@ -109,6 +109,9 @@ options(stringsAsFactors=FALSE)
 # Run script "IO_options.R" to load user defined input/output options
 source("IO_options.R")
 
+# Set seed for random number generation (for reproducibility)
+set.seed(1)
+
 
 # 2.1 DOGM *.dbf database file processing ---------------------------------
 
@@ -164,30 +167,7 @@ load(file.path(path$data, paste("well_actual_", opt$file_ver, ".rda", sep = ""))
 load(file.path(path$data, paste("cdf_schedule_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.3 Lease operating cost lm() fit update --------------------------------
-
-# Run function if opt$lease.update flag is set to "TRUE"
-if(opt$lease.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "leaseOpCostUpdate.R"))
-  
-  # Function call
-  leaseOpCostUpdate(path =     path,
-                    ver =      opt$file_ver,
-                    tstart =   opt$LU.tstart,
-                    tstop =    opt$LU.tstop,
-                    basis =    opt$cpi,
-                    LOCbasis = opt$LOCbasis)
-}
-
-# Load data.frames from leaseOpCost function:
-# - fit.LOC.oil/gas: lm() object with fit for oil/gas lease operating costs
-# - LOC.oil/gas:     lease operating cost data for oil/gas wells
-load(file.path(path$data, paste("leaseOpCost_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.4 EIA energy price history --------------------------------------------
+# 2.3 EIA energy price history --------------------------------------------
 
 # Run function if opt$EIAprice.update is set to "TRUE"
 if(opt$EIAprice.update == TRUE) {
@@ -204,6 +184,30 @@ if(opt$EIAprice.update == TRUE) {
 
 # Load EIAprices_v*.rda to load eia.hp (EIA historical energy prices) data.frame
 load(file.path(path$data, paste("EIAprices_", opt$file_ver, ".rda", sep = "")))
+
+
+# 2.4 Lease operating cost lm() fit update --------------------------------
+
+# Run function if opt$lease.update flag is set to "TRUE"
+if(opt$lease.update == TRUE) {
+  
+  # Source function to load
+  source(file.path(path$fun, "leaseCostUpdate.R"))
+  
+  # Function call
+  leaseCostUpdate(path =     path,
+                  ver =      opt$file_ver,
+                  tstart =   opt$LU.tstart,
+                  tstop =    opt$LU.tstop,
+                  basis =    opt$cpi,
+                  LOCbasis = opt$LOCbasis,
+                  eia.ep =   eia.hp)
+}
+
+# Load data.frames from leaseCostUpdate function:
+# - LOC.oil/gas.equip/op: lm() object with fit for oil/gas lease capital/operating costs
+# - LOC.data:             lease capital/operating cost data for oil/gas wells
+load(file.path(path$data, paste("leaseCost_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.5 Corporate income tax conversion factor CDF generation ---------------
@@ -267,7 +271,8 @@ if(opt$drillmodel.update == TRUE) {
                       twindow =   opt$twindow)
 }
 
-# Load economic drilling model fit (drillModel) and data (drillModelData)
+# Load economic drilling model fit (global - drillModel, rolling -
+# drillModelWindow) data (drillModelData), and drilling change (diffWell)
 load(file.path(path$data, paste("drillModel_", opt$file_ver, ".rda", sep = "")))
 
 
@@ -587,24 +592,38 @@ switch(opt$ep.type,
          
          # Remove list
          remove(epsim)
+       },
+       
+       # If using actual energy price paths, ep.type == "c"
+       c = {
+         
+         # Get prices from eia.hp data.frame
+         op <- matrix(rep(eia.hp$OP[(nrow(eia.hp)-opt$MC.tsteps+1):nrow(eia.hp)],
+                          times = opt$nrun),
+                      nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
+         gp <- matrix(rep(eia.hp$GP[(nrow(eia.hp)-opt$MC.tsteps+1):nrow(eia.hp)],
+                          times = opt$nrun),
+                      nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
        })
 
 
 # 3.2 Well drilling simulation --------------------------------------------
 
 # Run well drilling simulation given price paths opsim and gpsim
-Drilled <- drillsim(path =         path,
-                    GBMsim.OP =    op,
-                    GBMsim.GP =    gp,
-                    nrun =         opt$nrun,
-                    drilled.init = opt$drilled.init,
-                    drillModel =   drillModel,
-                    type =         opt$DStype,
-                    p =            p,
-                    tstart =       opt$tstart,
-                    tstop =        opt$tstop,
-                    simtype =      opt$DSsimtype,
-                    dmWindow =     drillModelWindow)
+Drilled <- drillsim(path =            path,
+                    GBMsim.OP =       op,
+                    GBMsim.GP =       gp,
+                    nrun =            opt$nrun,
+                    drilled.init =    opt$drilled.init,
+                    drillModel =      drillModel,
+                    type =            opt$DStype,
+                    p =               p,
+                    tstart =          opt$tstart,
+                    tstop =           opt$tstop,
+                    simtype =         opt$DSsimtype,
+                    dmWindow =        drillModelWindow,
+                    drilledInitType = opt$drilledInitType,
+                    diffWell =        diffWell)
 
 
 # 3.3 Prior production calculation ----------------------------------------
@@ -914,7 +933,7 @@ close(pb)
 # # 3.7 Employment ----------------------------------------------------------
 # 
 # # RIMS II model employment estimate
-# jobs.RIMS <- RIMS(multiplier = 2.2370,
+# jobs.RIMS <- RIMS(multiplier = opt$RIMSmultiplier,
 #                   wsim = wsim,
 #                   LOC = LOC,
 #                   nrun = nrun)
