@@ -35,6 +35,11 @@
 # dmWindow - data frame with rows containing fits of the drilling
 # schedule model using a rolling time window
 
+# drilledInitType - character switch for specifying which method to use for
+# picking the # of wells drilled initially in each MC iteration
+
+# diffWell - CDF for change in number of wells from one time step to the next
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -50,7 +55,8 @@
 
 # Function ---------------------------------------------------------------- 
 drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel,
-                     type, p, tstart, tstop, simtype, dmWindow) {
+                     type, p, tstart, tstop, simtype, dmWindow, drilledInitType,
+                     diffWell) {
   
   # Check - simulate drilling schedule or use actual drilling schedule
   switch(type,
@@ -113,7 +119,25 @@ drillsim <- function(path, GBMsim.OP, GBMsim.GP, nrun, drilled.init, drillModel,
            
            # Set initial "prior" drilling value (number of wells drilled in
            # timestep immediately proceeding start of simulation period)
-           Drilled[,1] <- drilled.init
+           switch(drilledInitType,
+                  
+                  # If the # of wells drilled initially is always the value specified
+                  # in drilled.init
+                  a = {Drilled[,1] <- drilled.init},
+                  
+                  # If the # of wells drilled initially is picked from well prior CDF
+                  b = {
+                    
+                    # Perform random draw
+                    Drilled[,1] <- drilled.init+round(diffWell$PDF.x[findInterval(runif(nrow(Drilled)),
+                                                                                  c(0,diffWell$CDF),
+                                                                                  all.inside = T)])
+                    
+                    # Correct for any negative #'s by overwriting as zeroes
+                    Drilled[,1] <- ifelse(test = Drilled[,1] < 0,
+                                          yes =  0,
+                                          no =   Drilled[,1])
+                  })
            
            # For each timestep in simulation period, calculate wells drilled
            for (i in 1:ncol(GBMsim.OP)) {
