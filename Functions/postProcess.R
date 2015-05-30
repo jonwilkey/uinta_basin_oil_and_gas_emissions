@@ -783,47 +783,103 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Lease Operating Costs Fit -------------------------------------------------
+# Lease Capital & Operating Costs Fit ---------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
-  # Oil LOC plot
-  temp <-scatterplot3d(x = LOC.oil$real.price,
-                       y = LOC.oil$depth/1e3,
-                       z = LOC.oil$cost/1e3,
+  # Oil LOC equip plot
+  ind <- which(LOC.data$wellType == "OW" & LOC.data$LOCtype == "equip")
+  temp <-scatterplot3d(x = LOC.data$op[ind],
+                       y = LOC.data$depth[ind]/1e3,
+                       z = LOC.data$cost[ind]/1e3,
                        highlight.3d=TRUE,
+                       xlim = c(0, 100),
+                       ylim = c(0, 12),
+                       zlim = c(0, 300),
                        xlab = paste("Oil price in", opt$cpiDate, "$/bbl"),
                        ylab = "Well Depth (1e3 ft)",
-                       zlab = paste("Operating Cost in", opt$cpiDate, "$1e3/year"),
+                       zlab = paste("Capital Cost in thousands of", opt$cpiDate, "USD"),
+                       main="Lease Capital Cost Fit for Oil Wells")
+  
+  # Plane fit for oil LOC
+  fitdata <- LOC.data[ind,]
+  fitdata$cost <- fitdata$cost/1e3
+  fitdata$depth <- fitdata$depth/1e3
+  fitdata <- lm(cost~op+depth-1, data = fitdata)
+  temp$plane3d(Intercept = 0,
+               x.coef = coefficients(fitdata)[1],
+               y.coef = coefficients(fitdata)[2])
+  
+  # Gas LOC equip plot - 250 MCFD gas production rate
+  ind <- which(LOC.data$wellType == "GW" & LOC.data$LOCtype == "equip" & LOC.data$gasRate == 250)
+  temp <-scatterplot3d(x = LOC.data$gp[ind],
+                       y = LOC.data$depth[ind]/1e3,
+                       z = LOC.data$cost[ind]/1e3,
+                       highlight.3d=TRUE,
+                       xlim = c(0, 10),
+                       ylim = c(0, 12),
+                       zlim = c(0, 150),
+                       xlab = paste("Gas price in", opt$cpiDate, "$/MCF"),
+                       ylab = "Well Depth (1e3 ft)",
+                       zlab = paste("Capital Cost in thousands of", opt$cpiDate, "USD"),
+                       main="Lease Capital Cost Fit for Gas Wells - Gas Production 250 MCFD")
+  
+  # Plane fit for oil LOC
+  fitdata <- LOC.data[ind,]
+  fitdata$cost <- fitdata$cost/1e3
+  fitdata$depth <- fitdata$depth/1e3
+  fitdata <- lm(cost~op+depth-1, data = fitdata)
+  temp$plane3d(Intercept = 0,
+               x.coef = coefficients(fitdata)[1],
+               y.coef = coefficients(fitdata)[2])
+  
+  # Oil LOC op plot
+  ind <- which(LOC.data$wellType == "OW" & LOC.data$LOCtype == "op")
+  temp <-scatterplot3d(x = LOC.data$op[ind],
+                       y = LOC.data$depth[ind]/1e3,
+                       z = LOC.data$cost[ind]/1e3,
+                       highlight.3d=TRUE,
+                       xlim = c(0, 100),
+                       ylim = c(0, 12),
+                       zlim = c(0, 6),
+                       xlab = paste("Oil price in", opt$cpiDate, "$/bbl"),
+                       ylab = "Well Depth (1e3 ft)",
+                       zlab = paste("Operating Cost in thousands of", opt$cpiDate, "USD per month"),
                        main="Lease Operating Cost Fit for Oil Wells")
   
   # Plane fit for oil LOC
-  fitdata <- LOC.oil
+  fitdata <- LOC.data[ind,]
   fitdata$cost <- fitdata$cost/1e3
   fitdata$depth <- fitdata$depth/1e3
-  temp$plane3d(lm(cost ~ real.price + depth, data = fitdata))
+  fitdata <- lm(cost~op+depth-1, data = fitdata)
+  temp$plane3d(Intercept = 0,
+               x.coef = coefficients(fitdata)[1],
+               y.coef = coefficients(fitdata)[2])
   
-  # Select only the data points which have a production rate == 250 MCF/day
-  # (production rate with the largest number of data points)
-  tdata <- LOC.gas[which(LOC.gas$prodrate == 250),]
-  
-  # Gas LOC plot
-  temp <-scatterplot3d(x = tdata$real.price,
-                       y = tdata$depth/1e3,
-                       z = tdata$cost/1e3,
+  # Gas LOC op plot
+  ind <- which(LOC.data$wellType == "GW" & LOC.data$LOCtype == "op" & LOC.data$gasRate == 250)
+  temp <-scatterplot3d(x = LOC.data$gp[ind],
+                       y = LOC.data$depth[ind]/1e3,
+                       z = LOC.data$cost[ind]/1e3,
                        highlight.3d=TRUE,
-                       xlab = paste("Gas price in", opt$cpiDate, "$/MCF"),
+                       xlim = c(0, 10),
+                       ylim = c(0, 12),
+                       zlim = c(0, 8),
+                       xlab = paste("Gas price in", opt$cpiDate, "$/bbl"),
                        ylab = "Well Depth (1e3 ft)",
-                       zlab = paste("Operating Cost in", opt$cpiDate, "$1e3/year"),
-                       main="Lease Operating Cost Fit for Gas Wells - Prod. Rate 250 MCFD")
+                       zlab = paste("Operating Cost in thousands of", opt$cpiDate, "USD per month"),
+                       main="Lease Operating Cost Fit for Gas Wells - Gas Production 250 MCFD")
   
-  # Plane fit for gas LOC
-  fitdata <- tdata
+  # Plane fit for oil LOC
+  fitdata <- LOC.data[ind,]
   fitdata$cost <- fitdata$cost/1e3
   fitdata$depth <- fitdata$depth/1e3
-  temp$plane3d(lm(cost ~ real.price + depth, data = fitdata))
+  fitdata <- lm(cost~op+depth-1, data = fitdata)
+  temp$plane3d(Intercept = 0,
+               x.coef = coefficients(fitdata)[1],
+               y.coef = coefficients(fitdata)[2])
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
