@@ -135,11 +135,21 @@ drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp,
                                  R2 = dmw[,5])
   
   
+  # Change in # of wells drilled between each time step ---------------------
+  
+  # Get CDF of change in # of wells drilled during from time step to time step
+  # to support option of adding additional randomness to initial drilling rate
+  # input
+  diffWell <- CDFq(diff(drillModelData$wells), opt$xq)
+  
+  
   # Export fitted model -----------------------------------------------------
   
   save(file = file.path(path$data,
                         paste("drillModel_", ver, ".rda", sep = "")),
        list = c("drillModel",
                 "drillModelWindow",
-                "drillModelData"))
+                "drillModelData",
+                "diffWell"))
 }
+
