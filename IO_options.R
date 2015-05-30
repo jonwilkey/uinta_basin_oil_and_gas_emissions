@@ -16,7 +16,7 @@
 opt <- NULL
 
 # Enter number of overall simulation iterations
-opt$nrun <- 1e3
+opt$nrun <- 1e2
 
 # Time Options
 opt$tstart <-      as.Date("2010-01-01")                                 # Start date of simulation period
@@ -84,21 +84,21 @@ opt$acut <- 2000/51.72
 #  Flag Name           Value                          Notes
 #...............................................................................
 opt$DOGM.update         <- F # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
-opt$schedule.update     <- F # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
-opt$lease.update        <- F # Fits lease operating cost model to EIA lease operating cost data.
-opt$EIAprice.update     <- F # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
-opt$corptax.update      <- F # Generates corporate income tax coversion factor CDFs
-opt$ptax.update         <- F # Updates property tax statistics
-opt$drillmodel.update   <- F # Fits drilling schedule model to energy prices
-opt$GBMfit.update       <- F # Fits GBM parameters "v" and "mu" to energy prices
-opt$EIAforecast.update  <- F # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
-opt$EIAerror.update     <- F # Generates CDFs for error in EIA AEO forecasts
-opt$DCA.update          <- F # Fits decline curves
-opt$field.DCA.update    <- F # Fits field level decline curves
-opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
-opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
-opt$water.update        <- F # Generates all CDFs and linear regression models for water balance terms
-opt$rework.update       <- F # Generates CDF for well reworks
+opt$schedule.update     <- T # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
+opt$EIAprice.update     <- T # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
+opt$lease.update        <- T # Fits lease operating cost model to EIA lease operating cost data.
+opt$corptax.update      <- T # Generates corporate income tax coversion factor CDFs
+opt$ptax.update         <- T # Updates property tax statistics
+opt$drillmodel.update   <- T # Fits drilling schedule model to energy prices
+opt$GBMfit.update       <- T # Fits GBM parameters "v" and "mu" to energy prices
+opt$EIAforecast.update  <- T # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
+opt$EIAerror.update     <- T # Generates CDFs for error in EIA AEO forecasts
+opt$DCA.update          <- T # Fits decline curves
+opt$field.DCA.update    <- T # Fits field level decline curves
+opt$DCA.CDF.update      <- T # Generates CDFs from decline curve fits
+opt$drillCapCost.update <- T # Runs regression fit on drilling and completion capital cost data
+opt$water.update        <- T # Generates all CDFs and linear regression models for water balance terms
+opt$rework.update       <- T # Generates CDF for well reworks
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
@@ -223,22 +223,22 @@ opt$max.well.depth <-  20e3
 opt$well.depth.step <- 10
 
 
-# 2.3 leaseOpCostUpdate Options -------------------------------------------
-
-# Time step options
-opt$LU.tstart <- as.Date("1994-01-01") # Beginning of LOC data range (annual data)
-opt$LU.tstop  <- as.Date("2009-01-01") # End of LOC data range (annual data)
-
-# CPI basis for LOC cost values (2009 USD)
-opt$LOCbasis <- 214.537
-
-
-# 2.4 EIApriceUpdate Options ----------------------------------------------
+# 2.3 EIApriceUpdate Options ----------------------------------------------
 
 # EIA Historical Energy Prices CPI Basis (i.e. the CPI index value for the year
 # to which all oil/gas prices in the EIA_HistPrice.csv file have been adjusted
 # to for use in drillingModel.R function). Value below is for 2014 annual avg.
 opt$EP.CPI.basis <- 236.736
+
+
+# 2.4 leaseOpCostUpdate Options -------------------------------------------
+
+# Time step options
+opt$LU.tstart <- as.Date("1994-01-01") # Beginning of LOC data range (annual data)
+opt$LU.tstop  <- as.Date("2009-12-01") # End of LOC data range (annual data)
+
+# CPI basis for LOC cost values (2009 USD)
+opt$LOCbasis <- 214.537
 
 
 # 2.5 corpIncomeUpdate Options --------------------------------------------
@@ -453,7 +453,8 @@ opt$wc.min <- 100
 # Energy price path simulation method. Valid options are:
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
-opt$ep.type <- "b"
+#  c - Actual price path
+opt$ep.type <- "c"
 
 
 # 3.2 drillSim Options ----------------------------------------------------
@@ -470,7 +471,14 @@ opt$drilled.init <- 43
 opt$DStype <- "sim"
 
 # Pick method for simulated drilling schedule, valid options are:
-opt$DSsimtype <- "window"
+#  global - for single fit to all drilling schedule data
+#  window - for rolling fit to specified time window in drillingModel
+opt$DSsimtype <- "global"
+
+# Pick method for choosing initial # of wells drilled, valid options are:
+#  a - all runs of simulation will use value specified in drilled.init
+#  b - value is drilled.init + random draw from diffWell CDF
+opt$drilledInitType <- "a"
 
 
 # 3.3 priorProd Options ---------------------------------------------------
@@ -583,13 +591,16 @@ opt$EFred.pneum <- data.frame(ch4 = c(-0.5, -0.27),
 # Effective date of emissions reductions
 opt$edcut <- c(as.Date("2012-11-01"), as.Date("2015-01-01"))
 
+# 3.3.X Employment Options ------------------------------------------------
+
+opt$RIMSmultiplier <- 2.2370
 
 # 4.1 postProcess Options -------------------------------------------------
 
 # Export options
 opt$exportFlag <- T                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e3run -EIA -10to15.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e2run -Actual DS -sim10to15 -train84to15.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
