@@ -84,21 +84,21 @@ opt$acut <- 2000/51.72
 #  Flag Name           Value                          Notes
 #...............................................................................
 opt$DOGM.update         <- F # Turns *.dbf files from DOGM () into single file (production.rda) used for all subsequent analysis
-opt$schedule.update     <- T # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
-opt$EIAprice.update     <- T # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
-opt$lease.update        <- T # Fits lease operating cost model to EIA lease operating cost data.
-opt$corptax.update      <- T # Generates corporate income tax coversion factor CDFs
-opt$ptax.update         <- T # Updates property tax statistics
-opt$drillmodel.update   <- T # Fits drilling schedule model to energy prices
-opt$GBMfit.update       <- T # Fits GBM parameters "v" and "mu" to energy prices
-opt$EIAforecast.update  <- T # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
-opt$EIAerror.update     <- T # Generates CDFs for error in EIA AEO forecasts
-opt$DCA.update          <- T # Fits decline curves
-opt$field.DCA.update    <- T # Fits field level decline curves
-opt$DCA.CDF.update      <- T # Generates CDFs from decline curve fits
-opt$drillCapCost.update <- T # Runs regression fit on drilling and completion capital cost data
-opt$water.update        <- T # Generates all CDFs and linear regression models for water balance terms
-opt$rework.update       <- T # Generates CDF for well reworks
+opt$schedule.update     <- F # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
+opt$EIAprice.update     <- F # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
+opt$lease.update        <- F # Fits lease operating cost model to EIA lease operating cost data.
+opt$corptax.update      <- F # Generates corporate income tax coversion factor CDFs
+opt$ptax.update         <- F # Updates property tax statistics
+opt$drillmodel.update   <- F # Fits drilling schedule model to energy prices
+opt$GBMfit.update       <- F # Fits GBM parameters "v" and "mu" to energy prices
+opt$EIAforecast.update  <- F # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
+opt$EIAerror.update     <- F # Generates CDFs for error in EIA AEO forecasts
+opt$DCA.update          <- F # Fits decline curves
+opt$field.DCA.update    <- F # Fits field level decline curves
+opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
+opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
+opt$water.update        <- F # Generates all CDFs and linear regression models for water balance terms
+opt$rework.update       <- F # Generates CDF for well reworks
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
