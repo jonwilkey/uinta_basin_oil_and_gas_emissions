@@ -87,15 +87,18 @@ drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp,
   prior <- m[(1:(nrow(m)-1)),4]
   wells <- m[(2:nrow(m)),4]
   
+  # Any values in prior or well that are "NA" are because the # of wells drilled
+  # in that particular time step were == 0 and the SQL query omitted them.
+  # Rewrite those values as being 0 to correct them.
+  prior[is.na(prior)] <- 0
+  wells[is.na(wells)] <- 0
+  
   
   # Fit drilling model ------------------------------------------------------
   
   # Create data.frame with all the data need to run lm()
   analysis <- data.frame(as.Date(eia.hp[,1]), wells, prior, eia.hp[,c(2,3)])
   names(analysis) <- c("month", "wells", "prior", "OP", "GP")
-  
-  # Drop NA values
-  analysis <- na.omit(analysis)
   
   # Make copy for export
   drillModelData <- analysis
