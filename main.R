@@ -100,6 +100,7 @@ library(minpack.lm)
 library(scatterplot3d)
 library(beepr)
 library(lhs)
+library(fitdistrplus)
 
 
 # 1.4 Options -------------------------------------------------------------
@@ -552,6 +553,33 @@ if(opt$rework.update == TRUE) {
 load(file.path(path$data, paste("rework_", opt$file_ver, ".rda", sep = "")))
 
 
+# 2.17 DCA Coefficient Distribution Fitting -------------------------------
+
+# Run function if opt$rework.update flag is set to "TRUE"
+if(opt$DCAlnorm.update == TRUE) {
+  
+  # Load function
+  source(file.path(path$fun, "DCAlnormUpdate.R"))
+  
+  # Function call
+  DCAlnormUpdate(min.rec.count =  opt$DFmin.rec.count,
+                 plot.flag =      opt$DFplot.flag,
+                 mo =             mo,
+                 mg =             mg,
+                 Q.cdf.oil.to =   opt$Q.cdf.oil.to,
+                 Q.cdf.oil.from = opt$Q.cdf.oil.from,
+                 Q.cdf.gas.to =   opt$Q.cdf.gas.to,
+                 Q.cdf.gas.from = opt$Q.cdf.gas.from,
+                 tstart =         opt$DF.tstart,
+                 tstop =          opt$DF.tstop,
+                 path =           path,
+                 ver =            opt$file_ver)
+}
+
+# Load fitted distribution data.frame (DCAlnormFit)
+load(file.path(path$data, paste("DCAlnormFit_", opt$file_ver, ".rda", sep = "")))
+
+
 # 3.1 Energy price path simulation ----------------------------------------
 
 # Switch for price path simulation method.
@@ -730,14 +758,17 @@ for (i in 1:opt$nrun) {
   wsim <- sim_dupRework(wsim = wsim)
   
   # Pick decline curve coefficients
-  wsim <- cbind(wsim, sim_DCC(decline.type =       opt$mc.decline.type,
+  wsim <- cbind(wsim, sim_DCC(decline.type =       opt$mc.DCCpick.type,
                               times =              nrow(wsim),
                               field =              field,
                               fieldnum =           wsim$fieldnum,
                               DCA.cdf.coef.oil =   DCA.cdf.coef.oil,
                               DCA.cdf.coef.gas =   DCA.cdf.coef.gas,
                               Q.DCA.cdf.coef.oil = Q.DCA.cdf.coef.oil,
-                              Q.DCA.cdf.coef.gas = Q.DCA.cdf.coef.gas))
+                              Q.DCA.cdf.coef.gas = Q.DCA.cdf.coef.gas,
+                              tsteps =             opt$tsteps,
+                              tDrill =             wsim$tDrill,
+                              DCAlnormFit =        DCAlnormFit))
   
   # Pick net taxable income fraction
   wsim$NTIfrac <- sim_NTIfrac(times = nrow(wsim), corpNTIfrac = corpNTIfrac)
@@ -776,7 +807,7 @@ for (i in 1:opt$nrun) {
   psim <- productionsim(wsim =            wsim,
                         timesteps =       opt$MC.tsteps,
                         production.type = opt$prod.type,
-                        decline.type =    opt$mc.decline.type,
+                        decline.type =    opt$mc.DCeq.type,
                         osim.actual =     osim.actual,
                         gsim.actual =     gsim.actual,
                         acut =            opt$acut)

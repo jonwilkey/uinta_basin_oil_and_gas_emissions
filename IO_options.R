@@ -22,7 +22,7 @@ opt$nrun <- 1e2
 opt$tstart <-      as.Date("2010-01-01")                                 # Start date of simulation period
 opt$tstop  <-      as.Date("2014-12-01")                                 # Stop date of simulation period
 opt$train.start <- as.Date("1984-01-01")
-opt$train.stop  <- as.Date("2014-12-01")
+opt$train.stop  <- as.Date("2009-12-01")
 opt$tsteps <-      seq(from = opt$tstart, to = opt$tstop, by = "months")
 opt$MC.tsteps <-   length(opt$tsteps)
 
@@ -33,7 +33,7 @@ opt$cpiDate <- "2014"
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
-opt$file_ver <- "v5"
+opt$file_ver <- "v7"
 
 # Quantiles vector (sequence of quantile values at which to estimate CDF). Used
 # everywhere quantile() or qnorm() is used to generate CDF.
@@ -99,6 +99,7 @@ opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
 opt$water.update        <- F # Generates all CDFs and linear regression models for water balance terms
 opt$rework.update       <- F # Generates CDF for well reworks
+opt$DCAlnorm.update     <- F # Fits log-normal/normal distributions to DCA coefficients and then finds trendlines in those distribution parameters
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
@@ -212,7 +213,7 @@ opt$SU.tsteps <- seq(from = opt$train.start, to = opt$train.stop, by = "months")
 # in the Uinta Basin that is required for a field to be analyzed individually.
 # If a field's well count fraction is lower than this threshold, all of its
 # wells will be accounted for in the catch-all "Field 999."
-opt$field.cutoff <- 0.01
+opt$field.cutoff <- 0.05
 
 # Well depth criteria (minimum, maximum, and resolution of well depth CDF) in 
 # feet. Minimum well depth is set in global options (Section 1.0). Note that one
@@ -448,6 +449,22 @@ opt$RWU.tstop  <- opt$train.stop
 opt$wc.min <- 100
 
 
+# 2.17 DCA Coefficient Distribution Fitting -------------------------------
+
+# Minimum number of fits required in a given year in order to attempt to fit
+# distribution
+opt$DFmin.rec.count <- 10
+
+# Plot results? T/F
+opt$DFplot.flag <- T
+
+# Set start/stop years for trendline analysis. For example, tstart = 2000 and
+# tstop = 2009 would be equivalent to using 2000-2009 as a trendline training
+# period
+opt$DF.tstart <- 1999
+opt$DF.tstop <-  2009
+
+
 # 3.1 Energy Price Path Simulation Options --------------------------------
 
 # Energy price path simulation method. Valid options are:
@@ -468,7 +485,7 @@ opt$drilled.init <- 43
 # Select drilling simulation type. Valid options are:
 #  sim - for simulated drilling schedule based on economic drilling model
 #  actual - for actual drilling schedule
-opt$DStype <- "sim"
+opt$DStype <- "actual"
 
 # Pick method for simulated drilling schedule, valid options are:
 #  global - for single fit to all drilling schedule data
@@ -491,7 +508,17 @@ opt$drilledInitType <- "a"
 opt$tend.cut <- 60
 
 
-# 3.3.1-2 welldata and productionsim Options ------------------------------
+# 3.3.1-2 welldata Options ------------------------------
+
+# Decline curve coefficient selection type. Valid options are:
+#  a - Hyperbolic decline curve coefficients (qo, Di, b)
+#  b - Cumulative production curve coefficients (Cp, c1)
+#  c - Cumulative production curve, but selected from Basin distribution fits
+#  d - Cumulative production curve, but selected from field distribution fits
+opt$mc.DCCpick.type <- "c"
+
+
+# 3.3.2 productionsim Options ---------------------------------------------
 
 # Select production type. Valid options are:
 #  a - Simulated production from decline curve coefficients
@@ -499,10 +526,10 @@ opt$tend.cut <- 60
 #      schedule)
 opt$prod.type <- "a"
 
-# Decline curve type. Valid options are:
+# Decline curve equation type. Valid options are:
 #  a - Hyperbolic decline curve q(t) = qo * (1 + b * Di * t) ^ (-1 / b)
 #  b - Cumulative production curve Q(t) = Cp * t ^ 0.5 + c1
-opt$mc.decline.type <- "b"
+opt$mc.DCeq.type <- "b"
 
 
 # 3.3.3 royalty Options ---------------------------------------------------
@@ -598,42 +625,42 @@ opt$RIMSmultiplier <- 2.2370
 # 4.1 postProcess Options -------------------------------------------------
 
 # Export options
-opt$exportFlag <- T                           # If true, will plot to PDF located in path$plot directory
+opt$exportFlag <- F                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e2run -Actual DS -sim10to15 -train84to15.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e2run -Actual DS -sim10to15 -train84to15 -v6.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
-opt$plist <- rbind(c("01 Oil Price",                  T), # Oil prices simulated vs actual
-                   c("02 Gas Price",                  T), # Gas prices simulated vs actual
-                   c("03 Drilling Schedule",          T), # Drilling schedule simulated vs actual
-                   c("04 Drilling Model Fit",         T), # Drilling fit vs actual
-                   c("05 DCA Coefficients - Boxplot", T), # Boxplot of DCA coefficients
-                   c("06 DCA Coefficients - CDF",     T), # CDF DCA coefficients
-                   c("07 Total Oil Production",       T), # Total oil production simulated vs actual
+opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated vs actual
+                   c("02 Gas Price",                  F), # Gas prices simulated vs actual
+                   c("03 Drilling Schedule",          F), # Drilling schedule simulated vs actual
+                   c("04 Drilling Model Fit",         F), # Drilling fit vs actual
+                   c("05 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
+                   c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
+                   c("07 Total Oil Production",       F), # Total oil production simulated vs actual
                    c("08 Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
-                   c("09 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
-                   c("10 Total Gas Production",       T), # Total gas production simulated vs actual
+                   c("09 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
+                   c("10 Total Gas Production",       F), # Total gas production simulated vs actual
                    c("11 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
-                   c("12 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
-                   c("13 CO2e Emissions",             T), # CO2 emissions
-                   c("14 CH4 Emissions",              T), # CH4 emissions
-                   c("15 VOC Emissions",              T), # VOC emissions
-                   c("16 Field Fractions",            T), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
-                   c("17 Field Fractions -OW",        T), # Same but just oil wells
-                   c("18 Field Fractions -GW",        T), # Same but just gas wells
-                   c("19 Well Capital Cost",          T), # Drilling and completion capital cost data and fit
-                   c("20 Surface Lease Ownership",    T), # Surface lease ownership by field
-                   c("21 CDFs for Well Depth",        T), # CDFs for well depth by well type
-                   c("22 LOC Model Fit",              T), # Lease operating costs model fit for oil wells and gas wells
-                   c("23 Enery Price History",        T), # FPP history for oil and gas from EIA data
-                   c("24 NTI CDF",                    T), # CDF for net taxable income as fraction of revenue
-                   c("25 Property Taxes CDF",         T), # CDF for property taxes as fraction of revenue
-                   c("26 EIA AEO Error CDFs",         T), # CDFs for error % in EIA AEO forecasts for oil and gas
-                   c("27 Models for Water Terms",     T), # CDFs and linear regression models for water balance terms
-                   c("28 Water Balance Results",      T), # Results of water balance calculations for each term in WB eq.
-                   c("29 CDF for Well Reworks",       T) # CDFs for well reworks
+                   c("12 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
+                   c("13 CO2e Emissions",             F), # CO2 emissions
+                   c("14 CH4 Emissions",              F), # CH4 emissions
+                   c("15 VOC Emissions",              F), # VOC emissions
+                   c("16 Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
+                   c("17 Field Fractions -OW",        F), # Same but just oil wells
+                   c("18 Field Fractions -GW",        F), # Same but just gas wells
+                   c("19 Well Capital Cost",          F), # Drilling and completion capital cost data and fit
+                   c("20 Surface Lease Ownership",    F), # Surface lease ownership by field
+                   c("21 CDFs for Well Depth",        F), # CDFs for well depth by well type
+                   c("22 LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
+                   c("23 Enery Price History",        F), # FPP history for oil and gas from EIA data
+                   c("24 NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
+                   c("25 Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
+                   c("26 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
+                   c("27 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
+                   c("28 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
+                   c("29 CDF for Well Reworks",       F) # CDFs for well reworks
 )
                    #c("?", 1),    # stack area plot or something v taxes and royalties
 
