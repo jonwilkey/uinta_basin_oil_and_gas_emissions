@@ -24,8 +24,8 @@ pwd.drop <- "D:/"                                  # Windows
 pwd.git  <- "C:/Users/Jon/Documents/R/"
 # pwd.drop <- "/Users/john/"                         # Mac
 # pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
-# pwd.drop <- "/home/slyleaf/"                       # Linux
-# pwd.git  <- "/home/slyleaf/Documents/"
+# pwd.drop <- "~/"                                   # Linux
+# pwd.git  <- "~/Documents/R Projects/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
