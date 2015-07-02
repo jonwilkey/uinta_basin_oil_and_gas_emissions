@@ -232,3 +232,198 @@ for (i in 1:(ncol(aow)-1)) {
   taw[i] <- summary(aow[,i+1]/aow[,i])[4]
 }
 
+library(MASS)
+test <- vow$Cp.1[vow$dt == 30]
+
+plot(CDFq(vow$Cp.1[vow$dt == 30], opt$xq),
+     type = "l",
+     xlab = "Cp Value",
+     ylab = "Cumulative Probability",
+     main = "2013 Oil Cp Values - Normal Distribution")
+
+# Normal
+lines(qnorm(opt$xq, mean = mean(test), sd = sd(test)), opt$xq, col = "red")
+
+plot(CDFq(vow$Cp.1[vow$dt == 30], opt$xq),
+     type = "l",
+     xlab = "Cp Value",
+     ylab = "Cumulative Probability",
+     main = "2013 Oil Cp Values - Gamma Distribution")
+
+# Gamma
+lines(qgamma(opt$xq, shape = 2.426513e1, rate = 1e-2), opt$xq, col = "red")
+
+plot(CDFq(vow$Cp.1[vow$dt == 30], opt$xq),
+     type = "l",
+     xlab = "Cp Value",
+     ylab = "Cumulative Probability",
+     main = "2013 Oil Cp Values - Log-Normal Distribution")
+
+# log-normal
+lines(qlnorm(opt$xq, meanlog = 7.77346347, sdlog = 1.29761665), opt$xq, col = "red")
+
+plot(CDFq(vow$Cp.1[vow$dt == 30], opt$xq),
+     type = "l",
+     xlab = "Cp Value",
+     ylab = "Cumulative Probability",
+     main = "2013 Oil Cp Values - Geometric/Exponential Distribution")
+
+# Geometric/Exponential
+lines(qgeom(opt$xq, 2.126881e-4), opt$xq, col = "red")
+#lines(qexp(opt$xq, 2.127333e-4), opt$xq, col = "brown")
+
+
+# Fitdist package tests ---------------------------------------------------
+
+# Plot Settings
+plot.legend <- c("Log-Normal", "Weibull")
+op <- par()
+pdf(file.path(path$plot, "Cp Distribution Fitting.pdf"), width = 14, height = 7)
+par(mfcol = c(1, 2))
+
+# Predefine GOF AIC matrix
+tgof <- matrix(0, nrow = max(vow$dt), ncol = 2)
+tparm <- matrix(0, nrow = max(vow$dt), ncol = 4)
+year <- 1984:2013
+
+for (i in 1:max(vow$dt)) {
+  
+  # Get data subset
+  temp <- vow$Cp.1[vow$dt == i]
+  
+  # Fit each canidate distribution
+  tlnm <- fitdist(temp, "lnorm")
+  twei <- fitdist(temp, "weibull")
+  
+  # Save parameter estimates
+  tparm[i,] <- c(tlnm$estimate, twei$estimate)
+  
+  # Goodness of fit AIC values
+  tgof[i,] <- gofstat(list(tlnm, twei))$aic
+  
+#   # Plot results
+#   denscomp(list(tlnm, twei), legendtext = plot.legend, xlab = paste("Oil Cp Values - for year", year[i]))
+#   cdfcomp(list(tlnm, twei), legendtext = plot.legend, xlab = paste("Oil Cp Values - for year", year[i]))
+#   mtext(paste("AIC: lnorm = ", round(tgof[i,1]),
+#               ", weibull = ", round(tgof[i,2]), sep = ""))
+}
+
+dev.off()
+par(op)
+
+
+tparm <- data.frame(year =    year,
+                    meanlog = tparm[,1],
+                    sdlog =   tparm[,2],
+                    shape =   tparm[,3],
+                    scale =   tparm[,4])
+
+pdf(file.path(path$plot, "Cp dist param values.pdf"))
+par(mfrow = c(2,2))
+
+plot(year, tparm$meanlog,
+     xlab = "Year",
+     ylab = "Distribution Parameter Value",
+     main = "Log-Mean")
+plot(year, tparm$sdlog,
+     xlab = "Year",
+     ylab = "Distribution Parameter Value",
+     main = "Log-Standard Deviation")
+plot(year, tparm$shape,
+     xlab = "Year",
+     ylab = "Distribution Parameter Value",
+     main = "Weibull Shape")
+plot(year, tparm$scale,
+     xlab = "Year",
+     ylab = "Distribution Parameter Value",
+     main = "Weibull Scale")
+dev.off()
+
+# Fitting
+pdf(file.path(path$plot, "Cp dist param fit and project.pdf"))
+par(mfrow = c(2,2))
+
+test <- tparm[which(tparm$year >= 2000 & tparm$year < 2010),]
+plot(meanlog~year, tparm[tparm$year >= 2000,], main = "Log-Mean Test Fit")
+test1 <- lm(meanlog~year, test)
+fparm <- coefficients(test1)
+lines(test$year, fitted(test1), col = "red")
+lines(2009:2013, fparm[2]*2009:2013+fparm[1], col = "blue")
+mtext(paste("m = ", round(coefficients(test1)[2], 3),
+            ", b = ", round(coefficients(test1)[1], 3),
+            ", R^2 = ", round(summary(test1)$r.squared, 3), sep = ""))
+
+plot(sdlog~year, tparm[tparm$year >= 2000,], ylim = c(1,2), main = "Log-SD Test Fit")
+test1 <- lm(sdlog~year, test)
+fparm <- coefficients(test1)
+lines(test$year, fitted(test1), col = "red")
+lines(2009:2013, fparm[2]*2009:2013+fparm[1], col = "blue")
+mtext(paste("m = ", round(coefficients(test1)[2], 3),
+            ", b = ", round(coefficients(test1)[1], 3),
+            ", R^2 = ", round(summary(test1)$r.squared, 3), sep = ""))
+
+plot(shape~year, tparm[tparm$year >= 2000,], ylim = c(0.55, 1.05), main = "Weibull Shape Test Fit")
+test1 <- lm(shape~year, test)
+fparm <- coefficients(test1)
+lines(test$year, fitted(test1), col = "red")
+lines(2009:2013, fparm[2]*2009:2013+fparm[1], col = "blue")
+mtext(paste("m = ", round(coefficients(test1)[2], 3),
+            ", b = ", round(coefficients(test1)[1], 3),
+            ", R^2 = ", round(summary(test1)$r.squared, 3), sep = ""))
+
+plot(scale~year, tparm[tparm$year >= 2000,], main = "Weibull Scale Test Fit")
+test1 <- lm(scale~year, test)
+fparm <- coefficients(test1)
+lines(test$year, fitted(test1), col = "red")
+lines(2009:2013, fparm[2]*2009:2013+fparm[1], col = "blue")
+mtext(paste("m = ", round(coefficients(test1)[2], 3),
+            ", b = ", round(coefficients(test1)[1], 3),
+            ", R^2 = ", round(summary(test1)$r.squared, 3), sep = ""))
+dev.off()
+
+pdf(file.path(path$plot, "Cp projection test.pdf"))
+plot(CDFq(vow$Cp.1[vow$dt == 30], opt$xq),
+     type = "l",
+     xlab = "Oil Cp Values for 2013",
+     ylab = "Cumulative Probability",
+     main = "Project Test for 2013")
+lines(qlnorm(opt$xq, meanlog = 7.506718, sdlog = 1.052844), opt$xq, col = "red")
+lines(qweibull(opt$xq, shape = 1.0326571, scale = 2194.837), opt$xq, col = "green")
+legend("bottomright",
+       c("Actual", "Log-Normal", "Weibull"),
+       col = c("black", "red", "green"),
+       lty = 1)
+dev.off()
+
+
+
+# Exponential decay fit for sd --------------------------------------------
+
+min.expRSS <- function(time, obs, par) {
+  
+  # Initial wells drilled
+  y <- par[1]*exp(-par[2]*time)+1
+  
+  # RSS
+  RSS <- sum((y-obs)^2)
+  
+  # Return RSS
+  return(RSS)
+}
+
+expf <- function(parR, time) {
+  y <- parR[1]*exp(-parR[2]*time)+1
+  return(y)
+}
+
+test <- tparm[which(tparm$year >=1990 & tparm$year <= 2009),]
+parR <- optim(par = c(1,0.02), fn = min.expRSS, time = test$year-1983, obs = test$sdlog)$par
+
+plot(year, tparm$sdlog,
+     xlab = "Year",
+     ylab = "Distribution Parameter Value",
+     main = "Log-Standard Deviation")
+lines(year, expf(parR, year-1983), col = "red")
+
+plot(CDFq(vector = vow$Cp.1[vow$dt == 30], opt$xq), type = "l")
+lines(qlnorm(opt$xq, meanlog = 7.243, sdlog = expf(parR, 2013-1983)), opt$xq, col = "red")

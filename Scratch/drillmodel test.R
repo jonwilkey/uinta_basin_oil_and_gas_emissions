@@ -44,6 +44,11 @@ rsquared <- function(obs, pred) {
   return(rsq)
 }
 
+RSS <- function(obs, pred) {
+  RSS <- sum((obs-pred)^2)
+  return(RSS)
+}
+
 as.year <- function(x) as.numeric(floor(as.yearmon(x)))
 
 d <- drillModelData
@@ -56,12 +61,12 @@ d <- drillModelData
 #                 prior = c(0,coredata(w.z)[1:(length(w.z)-1)]),
 #                 OP =    coredata(op.z),
 #                 GP =    coredata(gp.z))
-dr <- which(d$month == as.Date("1990-01-01")):which(d$month == as.Date("2009-12-01"))
+dr <- which(d$month == as.Date("2010-01-01")):which(d$month == as.Date("2014-12-01"))
 #dr <- which(d$month == 2010):which(d$month == 2014)
 init <- d$prior[dr[1]]
 
 # Get LHS sample points
-spLHS <- optimumLHS(n = 4*(2^4), k = 4, maxSweeps = 5, eps = 0.05)
+spLHS <- optimumLHS(n = 128, k = 4)
 
 parLHS <- matrix(c(qunif(spLHS[,1],-1,1),
                    qunif(spLHS[,2],-5,5),
@@ -96,9 +101,69 @@ lines(d$month[dr], test, col = "red")
 mtext(paste("W = (",
             round(parR[1],3), ")*OP + (",
             round(parR[2],3), ")*GP + (",
-            #round(parR[3],3), ")*PriorW + (",
+            round(parR[3],3), ")*PriorW + (",
             round(parR[3],3), ")",
-            "  R^2 = ", round(rsquared(obs = d$wells[dr], pred = test),3),
+            #"  R^2 = ", round(rsquared(obs = d$wells[dr], pred = test),3),
+            "   RSS = ", round(RSS(obs = d$wells[dr], pred = test)),
+            sep = ""))
+
+# Legend
+legend("topleft", c("Actual", "Fit"), lty = c(1,1), col = c("black","red"))
+
+
+# Just prior OP work ------------------------------------------------------
+
+test <- lm(d$wells[151:390]~d$OP[150:389]+d$GP[150:389])
+
+subd <- d[150:390,]
+
+plot(wells~month, subd[2:nrow(subd),],
+     type = "l",
+     xlab = "Date (monthly time steps)",
+     ylab = "Total wells Drilled (oil, gas or dry)",
+     main = "Drilling Schedule Model")
+
+lines(subd$month[2:nrow(subd)], fitted(test), col = "red")
+
+mtext(paste("W(t) = (",
+            round(coefficients(test)[2],3), ")*OP(t-1) + (",
+            round(coefficients(test)[3],3), ")*GP(t-1) + (",
+            round(coefficients(test)[1],3), "),  ",
+            "  R^2 = ", round(summary(test)$r.squared, 3),
+            sep = ""))
+
+# Legend
+legend("topleft", c("Actual", "Fit"), lty = c(1,1), col = c("black","red"))
+
+# Test Period
+w <- rep(0, times = length(391:nrow(d)))
+for (i in 391:(nrow(d))) {
+  w[i-390] <- coefficients(test)[2]*d$OP[i-1]+coefficients(test)[3]*d$GP[i-1]+coefficients(test)[1]
+}
+
+rsquared <- function(obs, pred) {
+  rsq <- 1-sum((obs-pred)^2)/sum((obs-mean(obs))^2)
+  return(rsq)
+}
+
+RSS <- function(obs, pred) {
+  RSS <- sum((obs-pred)^2)
+  return(RSS)
+}
+
+plot(wells~month, d[391:nrow(d),],
+     type = "l",
+     xlab = "Date (monthly time steps)",
+     ylab = "Total wells Drilled (oil, gas or dry)",
+     main = "Drilling Schedule Model")
+
+lines(d$month[391:nrow(d)], w, col = "red")
+
+mtext(paste("W(t) = (",
+            round(coefficients(test)[2],3), ")*OP(t-1) + (",
+            round(coefficients(test)[3],3), ")*GP(t-1) + (",
+            round(coefficients(test)[1],3), "),  ",
+            "  RSS = ", round(RSS(obs = d$wells[391:nrow(d)], pred = w)),
             sep = ""))
 
 # Legend
