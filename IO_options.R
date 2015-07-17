@@ -33,7 +33,7 @@ opt$cpiDate <- "2014"
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
-opt$file_ver <- "v7"
+opt$file_ver <- "v8"
 
 # Quantiles vector (sequence of quantile values at which to estimate CDF). Used
 # everywhere quantile() or qnorm() is used to generate CDF.
@@ -67,9 +67,8 @@ opt$gas.fpp.init <-  4.90 #  3.26|  3.11|  4.77|  4.90|  7.06|  2.97|
 opt$FPPdate <- as.Date("2009-12-01")
 
 # Threshold oil production rate (bbl per month) below which a well is consider 
-# to be abandoned. Used in both priorProd and productionsim functions.
-# Calculated here as minimum revenue ($2000 in oil sales)/(Dec. 2014 FPP for
-# oil)
+# to be abandoned. Used in both priorProd and productionsim functions. 
+# Calculated here as minimum revenue ($2e3 in oil sales)/(Dec. 2014 FPP for oil)
 opt$acut <- 2000/51.72
 
 
@@ -279,14 +278,10 @@ opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
 
 # Note - uses opt$min.well.depth option set in Section 1.0
 
-# Time step options
-opt$DMU.tstart <- as.Date("1977-07-01")
-opt$DMU.tstop  <- opt$train.stop
-
-# For rolling time frame model fit, specify number of months to use for rolling
-# time window. By default, set to the same number of months in simulation time
-# period.
-opt$twindow <- 6*length(opt$tsteps)
+# Time step options - for purposes of cross-validating against 2010-2014 data,
+# best window appears to be 1995-2009
+opt$DMU.tstart <- as.Date("1995-01-01")
+opt$DMU.tstop  <- as.Date("2009-12-01")
 
 
 # 2.8 GBMfitUpdate Options ------------------------------------------------
@@ -456,7 +451,7 @@ opt$wc.min <- 100
 opt$DFmin.rec.count <- 10
 
 # Plot results? T/F
-opt$DFplot.flag <- T
+opt$DFplot.flag <- F
 
 # Set start/stop years for trendline analysis. For example, tstart = 2000 and
 # tstop = 2009 would be equivalent to using 2000-2009 as a trendline training
@@ -471,7 +466,7 @@ opt$DF.tstop <-  2009
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
 #  c - Actual price path
-opt$ep.type <- "c"
+opt$ep.type <- "b"
 
 
 # 3.2 drillSim Options ----------------------------------------------------
@@ -485,17 +480,14 @@ opt$drilled.init <- 43
 # Select drilling simulation type. Valid options are:
 #  sim - for simulated drilling schedule based on economic drilling model
 #  actual - for actual drilling schedule
-opt$DStype <- "actual"
+opt$DStype <- "sim"
 
 # Pick method for simulated drilling schedule, valid options are:
-#  global - for single fit to all drilling schedule data
-#  window - for rolling fit to specified time window in drillingModel
-opt$DSsimtype <- "global"
-
-# Pick method for choosing initial # of wells drilled, valid options are:
-#  a - all runs of simulation will use value specified in drilled.init
-#  b - value is drilled.init + random draw from diffWell CDF
-opt$drilledInitType <- "a"
+#  a - Prior well model:   W_n = a * OP_n   + b * GP_n   + c * W_n-1 + d
+#  b - Energy price model: W_n = a * OP_n-1 + b * GP_n-1 + c
+#  c - Oil price model:    W_n = a * OP_n-1 + b
+#  d - Gas price model:    W_n = a * GP_n-1 + b
+opt$DSsimtype <- "b"
 
 
 # 3.3 priorProd Options ---------------------------------------------------
@@ -510,12 +502,16 @@ opt$tend.cut <- 60
 
 # 3.3.1-2 welldata Options ------------------------------
 
-# Decline curve coefficient selection type. Valid options are:
+# Decline curve coefficient selection type. Make one for each product type (oil
+# and gas). Valid options are:
+
 #  a - Hyperbolic decline curve coefficients (qo, Di, b)
 #  b - Cumulative production curve coefficients (Cp, c1)
 #  c - Cumulative production curve, but selected from Basin distribution fits
 #  d - Cumulative production curve, but selected from field distribution fits
-opt$mc.DCCpick.type <- "c"
+
+opt$mc.DCCpick.type.oil <- "c"
+opt$mc.DCCpick.type.gas <- "b"
 
 
 # 3.3.2 productionsim Options ---------------------------------------------
@@ -627,14 +623,14 @@ opt$RIMSmultiplier <- 2.2370
 # Export options
 opt$exportFlag <- F                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e2run -Actual DS -sim10to15 -train84to15 -v6.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e2run -Sim DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
 opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated vs actual
                    c("02 Gas Price",                  F), # Gas prices simulated vs actual
-                   c("03 Drilling Schedule",          F), # Drilling schedule simulated vs actual
+                   c("03 Drilling Schedule",          T), # Drilling schedule simulated vs actual
                    c("04 Drilling Model Fit",         F), # Drilling fit vs actual
                    c("05 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
