@@ -6,8 +6,9 @@
 
 # Inputs ------------------------------------------------------------------
 
-# decline.type - character string switch for determining what decline/production
-# curve equation to use (hyperbolic DC or cumulative production)
+# decline.type.oil/gas - character string switch for determining what 
+# decline/production curve equation to use (hyperbolic DC or cumulative 
+# production)
 
 # times - number of wells for which to generate DCC
 
@@ -49,15 +50,18 @@
 
 # Function ----------------------------------------------------------------
 
-sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
-                    DCA.cdf.coef.gas, Q.DCA.cdf.coef.oil, Q.DCA.cdf.coef.gas,
-                    tsteps, tDrill, DCAlnormFit) {
+sim_DCC <- function(decline.type.oil, decline.type.gas, times, field, fieldnum,
+                    DCA.cdf.coef.oil, DCA.cdf.coef.gas, Q.DCA.cdf.coef.oil,
+                    Q.DCA.cdf.coef.gas, tsteps, tDrill, DCAlnormFit) {
   
   # Predefine DCC object
   DCC <- NULL
   
+  
+  # Oil DCCs --------------------------------------------------------------
+  
   # Check - which decline curve method is being used?
-  switch(decline.type,
+  switch(decline.type.oil,
          
          # Hyperbolic DC
          a = {
@@ -66,9 +70,6 @@ sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
            DCC$qo.oil <- rep(0, times)
            DCC$b.oil  <- DCC$qo.oil
            DCC$Di.oil <- DCC$qo.oil
-           DCC$qo.gas <- DCC$qo.oil
-           DCC$b.gas  <- DCC$qo.oil
-           DCC$Di.gas <- DCC$qo.oil
            
            # For each field
            for (i in 1:length(field)) {
@@ -80,17 +81,11 @@ sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
              cdf.qo.oil <- DCA.cdf.coef.oil[[(i-1)*4+1]]
              cdf.b.oil  <- DCA.cdf.coef.oil[[(i-1)*4+2]]
              cdf.Di.oil <- DCA.cdf.coef.oil[[(i-1)*4+3]]
-             cdf.qo.gas <- DCA.cdf.coef.gas[[(i-1)*4+1]]
-             cdf.b.gas  <- DCA.cdf.coef.gas[[(i-1)*4+2]]
-             cdf.Di.gas <- DCA.cdf.coef.gas[[(i-1)*4+3]]
              
              # Pick values for each coefficient
              DCC$qo.oil[ind] <- cdf.qo.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.oil$CDF), all.inside = T)]
              DCC$b.oil[ind]  <- cdf.b.oil$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.oil$CDF ), all.inside = T)]
              DCC$Di.oil[ind] <- cdf.Di.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.oil$CDF), all.inside = T)]
-             DCC$qo.gas[ind] <- cdf.qo.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.gas$CDF), all.inside = T)]
-             DCC$b.gas[ind]  <- cdf.b.gas$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.gas$CDF ), all.inside = T)]
-             DCC$Di.gas[ind] <- cdf.Di.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.gas$CDF), all.inside = T)]
            }
          },
          
@@ -100,8 +95,6 @@ sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
            # Define DCA coefficient vectors
            DCC$Cp.oil <- rep(0, times)
            DCC$c1.oil <- DCC$Cp.oil
-           DCC$Cp.gas <- DCC$Cp.oil
-           DCC$c1.gas <- DCC$Cp.oil
            
            # For each field
            for (i in 1:length(field)) {
@@ -112,14 +105,10 @@ sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
              # Pull coefficient CDFs for field i
              cdf.Cp.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+1]]
              cdf.c1.oil <- Q.DCA.cdf.coef.oil[[(i-1)*2+2]]
-             cdf.Cp.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+1]]
-             cdf.c1.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+2]]
              
              # Pick values for each coefficient
              DCC$Cp.oil[ind] <- cdf.Cp.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.oil$CDF), all.inside = T)]
              DCC$c1.oil[ind] <- cdf.c1.oil$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.oil$CDF), all.inside = T)]
-             DCC$Cp.gas[ind] <- cdf.Cp.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.gas$CDF), all.inside = T)]
-             DCC$c1.gas[ind] <- cdf.c1.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.gas$CDF), all.inside = T)]
            }
          },
          
@@ -137,7 +126,97 @@ sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
            DCC$c1.oil <- qnorm(p =        runif(length(td)),
                                mean =     with(DCAlnormFit, p1[5]*td+p2[5]),
                                sd =       with(DCAlnormFit, p1[6]*td+p2[6]))
+         },
+         
+         # Field Level Distribution Fit
+         d = {
            
+           # Calculate time difference vector (years since 1983)
+           td <- floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25))
+           
+           # Define DCA coefficient vectors
+           DCC$Cp.oil <- rep(0, times)
+           DCC$c1.oil <- DCC$Cp.oil
+           
+           # For each field
+           for (i in 1:length(field)) {
+             
+             # Get indices of wells located in field i
+             ind <- which(fieldnum == field[i])
+             
+             # Pick values for each coefficient in field i
+             DCC$Cp.oil[ind] <- qlnorm(p =       runif(length(ind)),
+                                       meanlog = with(DCAlnormFit, p1[i+8]*td+p2[i+8]),
+                                       sdlog =   with(DCAlnormFit, p1[i+12]*exp(-p2[i+12]*td)))
+             
+             DCC$c1.oil[ind] <- qnorm(p =        runif(length(ind)),
+                                      mean =     with(DCAlnormFit, p1[i+24]*td+p2[i+24]),
+                                      sd =       with(DCAlnormFit, p1[i+28]*td+p2[i+28]))
+           }
+         })
+  
+  
+  # Gas DCCs --------------------------------------------------------------
+  
+  # Check - which decline curve method is being used?
+  switch(decline.type.gas,
+         
+         # Hyperbolic DC
+         a = {
+           
+           # Define DCA coefficient vectors
+           DCC$qo.gas <- rep(0, times)
+           DCC$b.gas  <- DCC$qo.gas
+           DCC$Di.gas <- DCC$qo.gas
+           
+           # For each field
+           for (i in 1:length(field)) {
+             
+             # Get indices of wells located in field i
+             ind <- which(fieldnum == field[i])
+             
+             # Pull coefficient CDFs for field i
+             cdf.qo.gas <- DCA.cdf.coef.gas[[(i-1)*4+1]]
+             cdf.b.gas  <- DCA.cdf.coef.gas[[(i-1)*4+2]]
+             cdf.Di.gas <- DCA.cdf.coef.gas[[(i-1)*4+3]]
+             
+             # Pick values for each coefficient
+             DCC$qo.gas[ind] <- cdf.qo.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.qo.gas$CDF), all.inside = T)]
+             DCC$b.gas[ind]  <- cdf.b.gas$PDF.x[ findInterval(runif(length(ind)),c(0,cdf.b.gas$CDF ), all.inside = T)]
+             DCC$Di.gas[ind] <- cdf.Di.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Di.gas$CDF), all.inside = T)]
+           }
+         },
+         
+         # Cumulative DC
+         b = {
+           
+           # Define DCA coefficient vectors
+           DCC$Cp.gas <- rep(0, times)
+           DCC$c1.gas <- DCC$Cp.gas
+           
+           # For each field
+           for (i in 1:length(field)) {
+             
+             # Get indices of wells located in field i
+             ind <- which(fieldnum == field[i])
+             
+             # Pull coefficient CDFs for field i
+             cdf.Cp.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+1]]
+             cdf.c1.gas <- Q.DCA.cdf.coef.gas[[(i-1)*2+2]]
+             
+             # Pick values for each coefficient
+             DCC$Cp.gas[ind] <- cdf.Cp.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.Cp.gas$CDF), all.inside = T)]
+             DCC$c1.gas[ind] <- cdf.c1.gas$PDF.x[findInterval(runif(length(ind)),c(0,cdf.c1.gas$CDF), all.inside = T)]
+           }
+         },
+         
+         # Basin Level Distribution Fit
+         c = {
+           
+           # Calculate time difference vector (years since 1983)
+           td <- floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25))
+           
+           # Pick coefficients from defined distributions using "q----" functions
            DCC$Cp.gas <- qlnorm(p =       runif(length(td)),
                                 meanlog = with(DCAlnormFit, p1[3]*td+p2[3]),
                                 sdlog =   with(DCAlnormFit, p1[4]*exp(-p2[4]*td)))
@@ -154,10 +233,8 @@ sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
            td <- floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25))
            
            # Define DCA coefficient vectors
-           DCC$Cp.oil <- rep(0, times)
-           DCC$c1.oil <- DCC$Cp.oil
-           DCC$Cp.gas <- DCC$Cp.oil
-           DCC$c1.gas <- DCC$Cp.oil
+           DCC$Cp.gas <- rep(0, times)
+           DCC$c1.gas <- DCC$Cp.gas
            
            # For each field
            for (i in 1:length(field)) {
@@ -166,14 +243,6 @@ sim_DCC <- function(decline.type, times, field, fieldnum, DCA.cdf.coef.oil,
              ind <- which(fieldnum == field[i])
              
              # Pick values for each coefficient in field i
-             DCC$Cp.oil[ind] <- qlnorm(p =       runif(length(ind)),
-                                       meanlog = with(DCAlnormFit, p1[i+8]*td+p2[i+8]),
-                                       sdlog =   with(DCAlnormFit, p1[i+12]*exp(-p2[i+12]*td)))
-             
-             DCC$c1.oil[ind] <- qnorm(p =        runif(length(ind)),
-                                      mean =     with(DCAlnormFit, p1[i+24]*td+p2[i+24]),
-                                      sd =       with(DCAlnormFit, p1[i+28]*td+p2[i+28]))
-             
              DCC$Cp.gas[ind] <- qlnorm(p =       runif(length(ind)),
                                        meanlog = with(DCAlnormFit, p1[i+16]*td+p2[i+16]),
                                        sdlog =   with(DCAlnormFit, p1[i+20]*exp(-p2[i+20]*td)))
