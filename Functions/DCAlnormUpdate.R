@@ -26,6 +26,8 @@
 
 # ver - file version number
 
+# field - vector of field numbers to be analyzed individually
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -43,7 +45,7 @@
 
 DCAlnormUpdate <- function(min.rec.count, plot.flag, mo, mg, Q.cdf.oil.to,
                            Q.cdf.oil.from, Q.cdf.gas.to, Q.cdf.gas.from, tstart,
-                           tstop, path, ver) {
+                           tstop, path, ver, field) {
   
   # Data prep ---------------------------------------------------------------
   
@@ -60,7 +62,7 @@ DCAlnormUpdate <- function(min.rec.count, plot.flag, mo, mg, Q.cdf.oil.to,
   # Aggregate to annual basis
   vow <- v1.ow
   vgw <- v1.gw
-  for(i in 1:ceiling(max(v1.ow$dt)/12)) {
+  for(i in 1:ceiling(c(max(v1.ow$dt),max(v1.gw$dt))/12)) {
     ind.ow <- which(vow$dt >= (12*(i-1)+1) & vow$dt <= (12*i))
     ind.gw <- which(vgw$dt >= (12*(i-1)+1) & vgw$dt <= (12*i))
     vow$dt[ind.ow] <- i
@@ -71,7 +73,7 @@ DCAlnormUpdate <- function(min.rec.count, plot.flag, mo, mg, Q.cdf.oil.to,
   # Fit DCA coefficients distribution parameters ----------------------------
   
   # Predefine objects inside loop
-  year <- 1984:(1984+max(vow$dt)-1)
+  year <- 1984:(1984+max(c(max(vow$dt), max(vgw$dt)))-1)
   
   # Fit function
   fitf <- function(data, plot.flag, type) {
