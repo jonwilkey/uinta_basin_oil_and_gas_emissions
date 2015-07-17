@@ -87,7 +87,7 @@ scheduleUpdate <- function(path, p, tsteps, min.depth, max.depth,
   # storage, water source wells, etc.)
   well <- subset(well, subset = c(prod_date >= min(tsteps) &
                                   prod_date <= max(tsteps) &
-                                  h_td_md > min.depth &
+                                  h_td_md >= min.depth &
                                   (h_well_type == "OW" |
                                    h_well_type == "GW" |
                                    h_well_type == "D")))
