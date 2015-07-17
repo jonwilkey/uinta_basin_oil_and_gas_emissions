@@ -42,14 +42,20 @@ sim_EF <- function(times, EF) {
     # For each EF category
     for (j in 1:nrow(EF)) {
       
-      # If mean of EF for species i in category j is nonzero
-      if(EF[j,i] != 0) {
+      # Pick EFs using rnorm()
+      temp.EF[,j] <- rnorm(n = times, mean = EF[j,i], sd = EF[j,(i+3)])
+      
+      # Check - which EFs are negative?
+      neg.ind <- which(temp.EF < 0)
+      
+      # Reroll any such negative numbers until all EFs are >= 0
+      while (length(neg.ind) > 0) {
         
-        # Pick EFs using rnorm()
-        temp.EF[,j] <- rnorm(n = times, mean = EF[j,i], sd = EF[j,(i+3)])
+        # Reroll
+        temp.EF[neg.ind] <- rnorm(n = length(neg.ind), mean = EF[j,i], sd = EF[j,(i+3)])
         
-        # Rewrite negative EF values as zero
-        temp.EF[,j] <- ifelse(temp.EF[,j] < 0, 0, temp.EF[,j])
+        # Check - which EFs are negative?
+        neg.ind <- which(temp.EF < 0)
       }
     }
     
