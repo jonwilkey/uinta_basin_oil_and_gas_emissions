@@ -59,6 +59,10 @@
 # tend - the date at which the simulation starts, used to calculate how far
 # along each well is in its production history
 
+# full.fit - flag indicating whether or not to fully fit to all production data.
+# If true, selects all production records, regardless of tstart/tstop values. If
+# false, excludes any records not within tstart/tstop limits.
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -94,7 +98,7 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                       Di.start.gas, lower.gas, upper.gas, field, ver, path, p,
                       Cp.start.oil, c1.start.oil, Qlower.oil, Qupper.oil,
                       Cp.start.gas, c1.start.gas, Qlower.gas, Qupper.gas,
-                      tstart, tstop, tend) {
+                      tstart, tstop, tend, full.fit) {
   
   # Internal Debug Variables  -----------------------------------------------
   
@@ -138,15 +142,14 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   
   # Subset data -------------------------------------------------------------
   
+  # Subset - note that there is still a time cutoff even w/o the tstart/tstop
+  # constraints to exclude wells drilled prior to 1984.
   ps <- subset(p,
                subset = (time != 0 &
                            (h_well_type == "OW" |
                               h_well_type == "GW") &
-                           p_days_prod >= minDayProd &
-                           p_rpt_period >= tstart &
-                           p_rpt_period < tstop &
                            h_first_prod >= tstart &
-                           h_first_prod < tstop),
+                           p_days_prod >= minDayProd),
                select = c("p_api",
                           "p_rpt_period",
                           "p_oil_prod",
@@ -159,6 +162,15 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
                           "w_totcum_oil",
                           "w_totcum_gas",
                           "nrec"))
+  
+  # If using tstart/tstop limits (i.e. full.fit == FALSE)
+  if (full.fit == FALSE) {
+    
+    # Then add additional subsetting for tstart/tstop time limits
+    ps <- subset(ps, subset = (p_rpt_period >= tstart &
+                               p_rpt_period <= tstop &
+                               h_first_prod <= tstop))
+  }
   
   # Get list of unique wells and order by cumulative oil and gas production
   well <- sqldf("select distinct p_api, w_field_num, h_well_type, w_totcum_oil, w_totcum_gas, nrec
@@ -543,9 +555,24 @@ DCAupdate <- function(minProdRec, minDayProd, diff.bin.cutoff, bin,
   
   # Export Results ----------------------------------------------------------
   
-  # Save fit results
-  save(file=file.path(path$data,
-                      paste("DCA_fits_", ver, ".rda", sep = "")),
-       list=c("mo",
-              "mg"))
+  # Save fit results based on value of full.fit flag
+  if (full.fit == TRUE) {
+    
+    # Change names of mo/mg
+    mof <- mo
+    mgf <- mg
+    
+    # Change file name to reflect full fit
+    save(file=file.path(path$data,
+                        paste("DCA_fits_full_", ver, ".rda", sep = "")),
+         list=c("mof",
+                "mgf"))
+  } else {
+    
+    # Fitted to tstart/tstop, no change to file names
+    save(file=file.path(path$data,
+                        paste("DCA_fits_", ver, ".rda", sep = "")),
+         list=c("mo",
+                "mg"))
+  }
 }
