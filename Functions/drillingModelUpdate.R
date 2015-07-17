@@ -20,9 +20,6 @@
 
 # eia.hp - EIA historical energy prices
 
-# twindow - length of time window (i.e. number of months) for rolling drill
-# model fit
-
 
 # Outputs -----------------------------------------------------------------
 
@@ -34,9 +31,12 @@
 
 # This function fits the drilling history in the Basin within the specified time
 # period to the EIA historical oil and gas prices according to the following
-# function:
+# functions over a specified time window (between tstart and tstop):
 
-# W_n = a * OP_n + b * GP_n + c * W_n-1 + d
+# (a) W_n = a * OP_n + b * GP_n + c * W_n-1 + d
+# (b) W_n = a * OP_n-1 + b * GP_n-1 + c
+# (c) W_n = a * OP_n-1 + b
+# (d) W_n = a * GP_n-1 + b
 
 # where W is the wells drilled (oil, gas, or dry), n is the timestep (in 
 # months), OP is first purchase price (FFP) of oil in Utah ($/bbl, inflation 
@@ -47,8 +47,39 @@
 
 # Function ----------------------------------------------------------------
 
-drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp,
-                                twindow) {
+drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp) {
+  
+  # Internal functions ------------------------------------------------------
+  
+  # Model "a" (prior model) RSS minimization function
+  min.RSS <- function(d, init, par) {
+    
+    # Initial wells drilled
+    w <- round(par[1]*d$OP[1]+par[2]*d$GP[1]+par[3]*init+par[4])
+    
+    # Set to zero if negative
+    w <- ifelse(w < 0, 0, w)
+    
+    # Calculate initial RSS
+    RSS <- (w-d$wells[1])^2
+    
+    # For each subsequent time step
+    for(i in 2:nrow(d)) {
+      
+      # Wells drilled
+      w <- round(par[1]*d$OP[i]+par[2]*d$GP[i]+par[3]*w+par[4])
+      
+      # Set to zero if negative
+      w <- ifelse(w < 0, 0, w)
+      
+      # Calculate RSS
+      RSS <- (w-d$wells[i])^2+RSS
+    }
+    
+    # Return RSS value
+    return(RSS)
+  }
+  
   
   # Determine number of wells drilled each month ------------------------------
   
@@ -66,9 +97,9 @@ drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp,
   # Only wells (1) inside price history timeframe (and prior month), (2) with
   # depths > 0, and (3) that were drilled with the intention of being producing
   # wells (i.e. oil wells, gas wells, or dry wells).
-  well <- subset(well, subset = (drill_month >= (as.yearmon(tstart)-1/12) &
-                                 drill_month <= as.yearmon(tstop) &
-                                 h_td_md > min.depth &
+  well <- subset(well, subset = (drill_month >= (as.yearmon(min(eia.hp$month))-1/12) &
+                                   drill_month <= as.yearmon(max(eia.hp$month)) &
+                                   h_td_md >= min.depth &
                                  (h_well_type == "OW" |
                                   h_well_type == "GW" |
                                   h_well_type == "D")))
@@ -85,7 +116,7 @@ drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp,
   # Save two vectors for (1) wells drilled in prior year (prior) and (2) wells
   # drilled in current year (wells)
   prior <- m[(1:(nrow(m)-1)),4]
-  wells <- m[(2:nrow(m)),4]
+  wells <- m[(2:(nrow(m))),4]
   
   # Any values in prior or well that are "NA" are because the # of wells drilled
   # in that particular time step were == 0 and the SQL query omitted them.
@@ -93,66 +124,71 @@ drillingModelUpdate <- function(path, p, min.depth, tstart, tstop, ver, eia.hp,
   prior[is.na(prior)] <- 0
   wells[is.na(wells)] <- 0
   
-  
-  # Fit drilling model ------------------------------------------------------
-  
   # Create data.frame with all the data need to run lm()
-  analysis <- data.frame(as.Date(eia.hp[,1]), wells, prior, eia.hp[,c(2,3)])
-  names(analysis) <- c("month", "wells", "prior", "OP", "GP")
+  d <- data.frame(as.Date(eia.hp[,1]), wells, prior, eia.hp[,c(2,3)])
+  names(d) <- c("month", "wells", "prior", "OP", "GP")
   
   # Make copy for export
-  drillModelData <- analysis
+  drillModelData <- d
   
-  # Run lm()
-  drillModel <- lm(formula = (wells ~ OP + GP + prior),
-                   data = analysis)
   
-  # Fit rolling drilling model ----------------------------------------------
+  # Fit model "a" -----------------------------------------------------------
   
-  # Make monthly time sequence tsteps
-  tsteps <- seq(from = tstart, to = tstop, by = "months")
+  # Get LHS sample points
+  spLHS <- optimumLHS(n = 128, k = 4)
   
-  # Calculate number of windows in time sequence
-  nwin <- (length(tsteps)-twindow+1)
+  # use sample points to pick initial guesses for optim function
+  parLHS <- matrix(c(qunif(spLHS[,1],-1,1),
+                     qunif(spLHS[,2],-5,5),
+                     qunif(spLHS[,3],-1,2),
+                     qunif(spLHS[,4],-25,25)),
+                   nrow = nrow(spLHS), ncol = ncol(spLHS))
   
-  # Make data.frame for storing coefficients
-  dmw <- matrix(0, nrow = nwin, ncol = 5)
+  # Get index of dates within fitting time window
+  dr <- which(d$month == tstart):which(d$month == tstop)
   
-  # For each nwin period
-  for (i in 1:nwin) {
+  # Get initial well drilling value
+  init <- d$prior[dr[1]]
+  
+  # Define parR (optim coefficients results from each set of initial guesses)
+  # and RSSr (the RSS value result with those parameters)
+  parR <- matrix(0, nrow = nrow(parLHS), ncol = ncol(parLHS))
+  RSSr <- rep(0,nrow(parR))
+  
+  # For each set of initial guesses
+  for (j in 1:nrow(spLHS)) {
     
-    # Fit model to time subset
-    temp <- lm(formula = (wells ~ OP + GP + prior),
-               data = analysis[which(as.Date(analysis$month) >= tsteps[i] &
-                                     as.Date(analysis$month) <= tsteps[i+twindow-1]),])
+    # Use optim to minimize min.RSS function
+    temp <-     optim(par = parLHS[j,], fn = min.RSS, d = d[dr,], init = init)
     
-    # Extract coefficients and R^2 value
-    dmw[i,] <- c(as.numeric(coef(temp)), summary(temp)$r.squared)
+    # Pull parameter values and RSS results
+    parR[j,] <- temp$par
+    RSSr[j] <-  temp$value
   }
   
-  # Change type to data.frame and name columns
-  drillModelWindow <- data.frame(a =  dmw[,2],
-                                 b =  dmw[,3],
-                                 c =  dmw[,4],
-                                 d =  dmw[,1],
-                                 R2 = dmw[,5])
+  # Only keep fit with the lowest RSSr value
+  pwm <- parR[which.min(RSSr),]
   
   
-  # Change in # of wells drilled between each time step ---------------------
+  # Fit models "b", "c", and "d" --------------------------------------------
   
-  # Get CDF of change in # of wells drilled during from time step to time step
-  # to support option of adding additional randomness to initial drilling rate
-  # input
-  diffWell <- CDFq(diff(drillModelData$wells), opt$xq)
+  # Fit other price models
+  epm <- lm(d$wells[dr]~d$OP[dr-1]+d$GP[dr-1])
+  opm <- lm(d$wells[dr]~d$OP[dr-1])
+  gpm <- lm(d$wells[dr]~d$GP[dr-1])
   
   
   # Export fitted model -----------------------------------------------------
   
+  # Create list for export of various models
+  drillModel <- list(pwm = pwm,
+                     epm = epm,
+                     opm = opm,
+                     gpm = gpm)
+  
+  # Save results
   save(file = file.path(path$data,
                         paste("drillModel_", ver, ".rda", sep = "")),
        list = c("drillModel",
-                "drillModelWindow",
-                "drillModelData",
-                "diffWell"))
+                "drillModelData"))
 }
-
