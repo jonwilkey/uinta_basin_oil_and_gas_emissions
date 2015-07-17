@@ -269,12 +269,10 @@ if(opt$drillmodel.update == TRUE) {
                       tstart =    opt$DMU.tstart,
                       tstop =     opt$DMU.tstop,
                       ver =       opt$file_ver,
-                      eia.hp =    eia.hp,
-                      twindow =   opt$twindow)
+                      eia.hp =    eia.hp)
 }
 
-# Load economic drilling model fit (global - drillModel, rolling -
-# drillModelWindow) data (drillModelData), and drilling change (diffWell)
+# Load economic drilling model fits (drillModel) and data (drillModelData)
 load(file.path(path$data, paste("drillModel_", opt$file_ver, ".rda", sep = "")))
 
 
@@ -349,7 +347,7 @@ if(opt$DCA.update == TRUE) {
   # Source function to load
   source(file.path(path$fun, "DCAupdate.R"))
   
-  # Function call
+  # Function call - with tstart/tstop limits
   DCAupdate(minProdRec =      opt$minProdRec,
             minDayProd =      opt$minDayProd,
             diff.bin.cutoff = opt$diff.bin.cutoff,
@@ -379,11 +377,46 @@ if(opt$DCA.update == TRUE) {
             Qupper.gas =      opt$Qupper.gas,
             tstart =          opt$DCA.tstart,
             tstop =           opt$DCA.tstop,
-            tend =            opt$tstart)
+            tend =            opt$tstart,
+            full.fit =        FALSE)
+  
+  # Function call - without tstart/tstop limits
+  DCAupdate(minProdRec =      opt$minProdRec,
+            minDayProd =      opt$minDayProd,
+            diff.bin.cutoff = opt$diff.bin.cutoff,
+            bin =             opt$bin,
+            DCAplot =         opt$DCAplot,
+            n.stopB.min =     opt$n.stopB.min,
+            n.startT.search = opt$n.startT.search,
+            b.start.oil =     opt$b.start.oil,
+            Di.start.oil =    opt$Di.start.oil,
+            lower.oil =       opt$lower.oil,
+            upper.oil =       opt$upper.oil,
+            b.start.gas =     opt$b.start.gas,
+            Di.start.gas =    opt$Di.start.gas,
+            lower.gas =       opt$lower.gas,
+            upper.gas =       opt$upper.gas,
+            field =           field,
+            ver =             opt$file_ver,
+            path =            path,
+            p =               p,
+            Cp.start.oil =    opt$Cp.start.oil,
+            c1.start.oil =    opt$c1.start.oil,
+            Qlower.oil =      opt$Qlower.oil,
+            Qupper.oil =      opt$Qupper.oil,
+            Cp.start.gas =    opt$Cp.start.gas,
+            c1.start.gas =    opt$c1.start.gas,
+            Qlower.gas =      opt$Qlower.gas,
+            Qupper.gas =      opt$Qupper.gas,
+            tstart =          opt$DCA.tstart,
+            tstop =           opt$DCA.tstop,
+            tend =            opt$tstart,
+            full.fit =        TRUE)
 }
 
-# Load DCA fits mo (oil) and mg (gas)
+# Load DCA fits mo (oil) and mg (gas) as well as full fits (mof and mgf)
 load(file.path(path$data, paste("DCA_fits_", opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("DCA_fits_full_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.12 Field DCA Update ---------------------------------------------------
@@ -564,8 +597,8 @@ if(opt$DCAlnorm.update == TRUE) {
   # Function call
   DCAlnormUpdate(min.rec.count =  opt$DFmin.rec.count,
                  plot.flag =      opt$DFplot.flag,
-                 mo =             mo,
-                 mg =             mg,
+                 mo =             mof,
+                 mg =             mgf,
                  Q.cdf.oil.to =   opt$Q.cdf.oil.to,
                  Q.cdf.oil.from = opt$Q.cdf.oil.from,
                  Q.cdf.gas.to =   opt$Q.cdf.gas.to,
@@ -573,7 +606,8 @@ if(opt$DCAlnorm.update == TRUE) {
                  tstart =         opt$DF.tstart,
                  tstop =          opt$DF.tstop,
                  path =           path,
-                 ver =            opt$file_ver)
+                 ver =            opt$file_ver,
+                 field =          field)
 }
 
 # Load fitted distribution data.frame (DCAlnormFit)
@@ -650,12 +684,11 @@ Drilled <- drillsim(path =            path,
                     tstart =          opt$tstart,
                     tstop =           opt$tstop,
                     simtype =         opt$DSsimtype,
-                    dmWindow =        drillModelWindow,
-                    drilledInitType = opt$drilledInitType,
-                    diffWell =        diffWell)
+                    op.init =         opt$oil.fpp.init,
+                    gp.init =         opt$gas.fpp.init)
 
 
-# 3.3 Prior production calculation ----------------------------------------
+# 3.3 Prior production calculations ---------------------------------------
 
 # Run prior oil and gas production calculation
 ppri <- priorProd(hypFF =     hypFF,
@@ -758,7 +791,8 @@ for (i in 1:opt$nrun) {
   wsim <- sim_dupRework(wsim = wsim)
   
   # Pick decline curve coefficients
-  wsim <- cbind(wsim, sim_DCC(decline.type =       opt$mc.DCCpick.type,
+  wsim <- cbind(wsim, sim_DCC(decline.type.oil =   opt$mc.DCCpick.type.oil,
+                              decline.type.gas =   opt$mc.DCCpick.type.gas,
                               times =              nrow(wsim),
                               field =              field,
                               fieldnum =           wsim$fieldnum,
