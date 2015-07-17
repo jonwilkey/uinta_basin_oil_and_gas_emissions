@@ -49,6 +49,11 @@ RSS <- function(obs, pred) {
   return(RSS)
 }
 
+err <- function(obs, pred) {
+  err <- 1-pred/obs
+  return(err)
+}
+
 as.year <- function(x) as.numeric(floor(as.yearmon(x)))
 
 d <- drillModelData
@@ -61,9 +66,6 @@ d <- drillModelData
 #                 prior = c(0,coredata(w.z)[1:(length(w.z)-1)]),
 #                 OP =    coredata(op.z),
 #                 GP =    coredata(gp.z))
-dr <- which(d$month == as.Date("2010-01-01")):which(d$month == as.Date("2014-12-01"))
-#dr <- which(d$month == 2010):which(d$month == 2014)
-init <- d$prior[dr[1]]
 
 # Get LHS sample points
 spLHS <- optimumLHS(n = 128, k = 4)
@@ -74,41 +76,174 @@ parLHS <- matrix(c(qunif(spLHS[,1],-1,1),
                    qunif(spLHS[,4],-25,25)),
                  nrow = nrow(spLHS), ncol = ncol(spLHS))
 
-parR <- matrix(0, nrow = nrow(parLHS), ncol = ncol(parLHS))
-RSSr <- rep(0,nrow(parR))
-for (i in 1:nrow(spLHS)) {
-  temp <-     optim(par = parLHS[i,], fn = min.RSS, d = d[dr,], init = init)
-  parR[i,] <- temp$par
-  RSSr[i] <-  temp$value
+# Start/stop data.frame
+tss <- data.frame(start = seq.Date(from = as.Date("1978-01-01"), to = as.Date("2000-01-01"), by = "year"),
+                  tstop = seq.Date(from = as.Date("1987-12-01"), to = as.Date("2009-12-01"), by = "year"))
+
+# Define results data.frame
+rm1 <- matrix(0, nrow = nrow(tss), ncol = 60)
+rm2 <- rm1
+rm3 <- rm1
+rcoef <- matrix(0, nrow = nrow(tss), ncol = 9)
+
+# Start PDF plot
+pdf(file.path(path$plot, "Drilling model fit tests.pdf -10yr train -all data.pdf"), width = 14, height = 7)
+par(mfcol = c(1, 2))
+
+# For loop
+for (i in 1:nrow(tss)) {
+  
+  # Get index of dates
+  dr <- which(d$month == tss$start[i]):which(d$month == tss$tstop[i])
+  
+  # Get initial well drilling value
+  init <- d$prior[dr[1]]
+  
+  # Run standard model fit
+  parR <- matrix(0, nrow = nrow(parLHS), ncol = ncol(parLHS))
+  RSSr <- rep(0,nrow(parR))
+  for (j in 1:nrow(spLHS)) {
+    temp <-     optim(par = parLHS[j,], fn = min.RSS, d = d[dr,], init = init)
+    parR[j,] <- temp$par
+    RSSr[j] <-  temp$value
+  }
+  parR <- parR[which.min(RSSr),]
+  
+  # Calculate standard model result
+  test <- EDM(OP = d$OP[dr], GP = d$GP[dr], par = parR, init = init)
+  
+  # Fit other price models
+  opm <- lm(d$wells[dr]~d$OP[dr-1])
+  gpm <- lm(d$wells[dr]~d$OP[dr-1]+d$GP[dr-1])
+  
+  # Main plot with Training drilling schedule
+  plot(d$month[dr], d$wells[dr],
+       ylim = c(0,110),
+       type = "l",
+       xlab = "Date (monthly time steps)",
+       #xlab = "Year",
+       ylab = "Total Wells Drilled (oil, gas, or dry)")
+  title(main = "Training Fit", line = 3)
+  
+  # Add line for model fit results
+  lines(d$month[dr], test, col = "red", lty = 2)
+  lines(d$month[dr], fitted(opm), col = "blue", lty = 2)
+  lines(d$month[dr], fitted(gpm), col = "green", lty = 2)
+  
+  # Add text line with equation
+  mtext(paste("W = (",
+              round(parR[1],3), ")*OP + (",
+              round(parR[2],3), ")*GP + (",
+              round(parR[3],3), ")*PriorW + (",
+              round(parR[3],3), ")",
+              "  R^2 = ", round(rsquared(obs = d$wells[dr], pred = test),3),
+              "  RSS = ", round(RSS(obs = d$wells[dr], pred = test)),
+              sep = ""),
+        line = 2)
+  
+  mtext(paste("W(t) = (",
+              round(coefficients(opm)[2],3), ")*OP(t-1) + (",
+              round(coefficients(opm)[1],3), ")",
+              "   R^2 = ", round(summary(opm)$r.squared, 3),
+              "   RSS = ", round(RSS(obs = d$wells[dr], pred = fitted(opm))),
+              sep = ""),
+        line = 0)
+  
+  mtext(paste("W(t) = (",
+              round(coefficients(gpm)[2],3), ")*OP(t-1) + (",
+              round(coefficients(gpm)[3],3), ")*GP(t-1) + (",
+              round(coefficients(gpm)[1],3), ")",
+              "   R^2 = ", round(summary(gpm)$r.squared, 3),
+              "   RSS = ", round(RSS(obs = d$wells[dr], pred = fitted(gpm))),
+              sep = ""),
+        line = 1)
+  
+  # Legend
+  legend("topleft", c("Actual", "Prior", "EP", "OP Only"), lty = c(1,2,2,2), col = c("black","red","green","blue"))
+  
+  # Main plot with Test drilling schedule
+  tdr <- max(dr)+1:60
+  test <- EDM(OP = d$OP[tdr], GP = d$GP[tdr], par = parR, init = d$wells[max(dr)])
+  test1 <- coefficients(opm)[2]*d$OP[tdr-1]+coefficients(opm)[1]
+  test2 <- coefficients(gpm)[2]*d$OP[tdr-1]+coefficients(gpm)[3]*d$GP[tdr-1]+coefficients(gpm)[1]
+  plot(d$month[tdr], d$wells[tdr],
+       ylim = c(0,110),
+       type = "l",
+       xlab = "Date (monthly time steps)",
+       #xlab = "Year",
+       ylab = "Total Wells Drilled (oil, gas, or dry)")
+  title(main = "Test Validation", line = 3)
+  
+  # Add line for model fit results
+  lines(d$month[tdr], test, col = "red", lty = 2)
+  lines(d$month[tdr], test1, col = "blue", lty = 2)
+  lines(d$month[tdr], test2, col = "green", lty = 2)
+  
+  # Add text line with equation
+  mtext(paste("W = (",
+              round(parR[1],3), ")*OP + (",
+              round(parR[2],3), ")*GP + (",
+              round(parR[3],3), ")*PriorW + (",
+              round(parR[3],3), ")",
+              "  rE = ", round(mean(err(obs = d$wells[tdr], pred = test)),3),
+              "  RSS = ", round(RSS(obs = d$wells[tdr], pred = test)),
+              sep = ""),
+        line = 2)
+  
+  mtext(paste("W(t) = (",
+              round(coefficients(opm)[2],3), ")*OP(t-1) + (",
+              round(coefficients(opm)[1],3), ")",
+              "   rE = ", round(mean(err(obs = d$wells[tdr], pred = test1)),3),
+              "   RSS = ", round(RSS(obs = d$wells[tdr], pred = test1)),
+              sep = ""),
+        line = 0)
+  
+  mtext(paste("W(t) = (",
+              round(coefficients(gpm)[2],3), ")*OP(t-1) + (",
+              round(coefficients(gpm)[3],3), ")*GP(t-1) + (",
+              round(coefficients(gpm)[1],3), ")",
+              "   rE = ", round(mean(err(obs = d$wells[tdr], pred = test2)),3),
+              "   RSS = ", round(RSS(obs = d$wells[tdr], pred = test2)),
+              sep = ""),
+        line = 1)
+  
+  # Legend
+  legend("topleft", c("Actual", "Prior", "EP", "OP Only"), lty = c(1,2,2,2), col = c("black","red","green","blue"))
+  
+  # Extract results
+  rm1[i,] <- err(obs = d$wells[tdr], pred = test)
+  rm2[i,] <- err(obs = d$wells[tdr], pred = test1)
+  rm3[i,] <- err(obs = d$wells[tdr], pred = test2)
+  rcoef[i,] <- c(parR, coefficients(opm), coefficients(gpm))
 }
 
-parR <- parR[which.min(RSSr),]
-test <- EDM(OP = d$OP[dr], GP = d$GP[dr], par = parR, init = init)
+# Close PDF
+dev.off()
 
-# Main plot with actual drilling schedule
-plot(d$month[dr], d$wells[dr],
-     #ylim = c(0,1e3),
+# Plot rE trends
+pdf(file.path(path$plot, "Drilling model fit tests -RE trends -10yr train -all data.pdf"))
+
+plot(1:60, apply(rm1, 2, mean)*100,
      type = "l",
-     xlab = "Date (monthly time steps)",
-     #xlab = "Year",
-     ylab = "Total Wells Drilled (oil, gas, or dry)",
-     main = "Drilling Schedule Model")
+     col = "red",
+     xlab = "Prediction Time Step (months into future)",
+     ylab = "Relative Error (%)",
+     main = "Mean of Relative Error of Predictions for 10yr Training Period")
+lines(1:60, apply(rm2, 2, mean)*100, col = "blue")
+lines(1:60, apply(rm3, 2, mean)*100, col = "green")
+legend("topleft", c("Prior", "EP", "OP Only"), lty = 1, col = c("red","green","blue"))
 
-# Add line for model fit results
-lines(d$month[dr], test, col = "red")
+plot(1:60, apply(rm1, 2, sd)*100,
+     type = "l",
+     col = "red",
+     xlab = "Prediction Time Step (months into future)",
+     ylab = "Relative Error (%)",
+     main = "SD of Relative Error of Predictions for 10yr Training Period")
+lines(1:60, apply(rm2, 2, sd)*100, col = "blue")
+lines(1:60, apply(rm3, 2, sd)*100, col = "green")
+legend("topleft", c("Prior", "EP", "OP Only"), lty = 1, col = c("red","green","blue"))
 
-# Add text line with equation
-mtext(paste("W = (",
-            round(parR[1],3), ")*OP + (",
-            round(parR[2],3), ")*GP + (",
-            round(parR[3],3), ")*PriorW + (",
-            round(parR[3],3), ")",
-            #"  R^2 = ", round(rsquared(obs = d$wells[dr], pred = test),3),
-            "   RSS = ", round(RSS(obs = d$wells[dr], pred = test)),
-            sep = ""))
-
-# Legend
-legend("topleft", c("Actual", "Fit"), lty = c(1,1), col = c("black","red"))
+dev.off()
 
 
 # Just prior OP work ------------------------------------------------------
