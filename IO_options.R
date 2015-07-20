@@ -623,22 +623,22 @@ opt$RIMSmultiplier <- 2.2370
 # Export options
 opt$exportFlag <- F                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e2run -Sim DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e3run -Sim DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
 opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated vs actual
                    c("02 Gas Price",                  F), # Gas prices simulated vs actual
-                   c("03 Drilling Schedule",          T), # Drilling schedule simulated vs actual
+                   c("03 Drilling Schedule",          F), # Drilling schedule simulated vs actual
                    c("04 Drilling Model Fit",         F), # Drilling fit vs actual
                    c("05 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
                    c("07 Total Oil Production",       F), # Total oil production simulated vs actual
-                   c("08 Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
+                   c("08 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
                    c("09 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
                    c("10 Total Gas Production",       F), # Total gas production simulated vs actual
-                   c("11 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
+                   c("11 Gas from New Wells",         F), # Total gas production simulated vs actual from new wells
                    c("12 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
                    c("13 CO2e Emissions",             F), # CO2 emissions
                    c("14 CH4 Emissions",              F), # CH4 emissions

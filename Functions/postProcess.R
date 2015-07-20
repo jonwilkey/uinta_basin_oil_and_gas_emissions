@@ -19,18 +19,8 @@ ep.act <- subset(eia.hp,
 
 # Actual number of wells drilled as timeseries. sqldf returns result as a
 # data.frame, so brackets extract numerical results as a vector.
-Drilled.act <- subset(p,
-                      subset = ((h_well_type == "OW" |
-                                   h_well_type == "GW") &
-                                  h_first_prod >= opt$tstart &
-                                  h_first_prod <= opt$tstop),
-                      select = c("p_api", "h_first_prod"))
-
-Drilled.act$h_first_prod <- as.Date(as.yearmon(Drilled.act$h_first_prod))
-
-Drilled.act <- sqldf("select count(distinct(p_api))
-                     from 'Drilled.act'
-                     group by h_first_prod")[[1]]
+Drilled.act <- drillModelData$wells[which(drillModelData$month >= opt$tstart &
+                                            drillModelData$month <= opt$tstop)]
 
 # Actual total oil/gas production as timeseries...
 all.p <- sqldf("select p_rpt_period, sum(p_oil_prod), sum(p_gas_prod)
@@ -140,11 +130,11 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, op.FC, lty = 2)
   
   # Add legend
-  legend("topright",
-         c("90%", "70%", "50%", "30%", "10%", "Actual", "Forecast"),
+  legend("topleft",
+         c("Actual", "Forecast", "90%", "70%", "50%", "30%", "10%"),
          ncol = 2,
-         col = c(linecolor,"black", "black"),
-         lty = c(rep(1, times = 6), 2))
+         col = c("black", "black", linecolor),
+         lty = c(1, 2, rep(1, times = 5)))
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -179,11 +169,11 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, gp.FC, lty = 2)
   
   # Add legend
-  legend("topright",
-         c("90%", "70%", "50%", "30%", "10%", "Actual", "Forecast"),
+  legend("topleft",
+         c("Actual", "Forecast", "90%", "70%", "50%", "30%", "10%"),
          ncol = 2,
-         col = c(linecolor,"black", "black"),
-         lty = c(rep(1, times = 6), 2))
+         col = c("black", "black", linecolor),
+         lty = c(1, 2, rep(1, times = 5)))
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -202,8 +192,7 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, Drilled.q[1,],
        type = "l",
-       ylim = c(0.9*min(c(min(Drilled.q),min(Drilled.act))),
-                1.1*max(c(max(Drilled.q),max(Drilled.act)))),
+       ylim = c(0, 1.1*max(c(max(Drilled.q),max(Drilled.act)))),
        col = linecolor[1],
        xlab = "Time",
        ylab = "Wells Drilled",
@@ -216,7 +205,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, Drilled.act)
   
   # Add legend
-  legend("topright", c("90%", "70%", "50%", "30%", "10%", "Actual"), ncol = 2, col = c(linecolor,"black"), lty = 1)
+  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -232,21 +221,88 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
-  # Main plot with actual drilling schedule
-  plot(drillModelData$month, drillModelData$wells,
+  # Prior well model function
+  PWM <- function(OP, GP, par, init) {
+    
+    # Initial wells drilled
+    w <- round(par[1]*OP[1]+par[2]*GP[1]+par[3]*init+par[4])
+    w <- ifelse(w < 0, 0, w)
+    
+    for(i in 2:length(OP)) {
+      
+      # Wells drilled
+      w <- c(w, round(par[1]*OP[i]+par[2]*GP[i]+par[3]*w[length(w)]+par[4]))
+      w <- ifelse(w < 0, 0, w)
+    }
+    
+    return(w)
+  }
+  
+  # Other models
+  EPM <- function(fit, OP, GP) {temp <- round(fit[2]*OP+fit[3]*GP+fit[1]); ifelse(temp > 0, temp, 0)} # Energy price model
+  OPM <- function(fit, OP)     {temp <- round(fit[2]*OP+fit[1]); ifelse(temp > 0, temp, 0)}           # Oil price model
+  GPM <- function(fit, GP)     {temp <- round(fit[2]*GP+fit[1]); ifelse(temp > 0, temp, 0)}
+  
+  # For simplicity, make copy of drillModelData just labeled as "d"
+  d <- drillModelData
+  
+  # Temporary time index
+  ind <- which(d$month >= opt$DMU.tstart &
+               d$month <= opt$DMU.tstop)
+  
+  # Main plot for training fit
+  plot(d$month[ind], d$wells[ind],
+       lwd = 2,
        type = "l",
-       xlab = "Year",
+       xlab = "Date",
        ylab = "Total Wells Drilled (oil, gas, or dry)",
-       main = "Drilling Schedule Model")
+       main = "Drilling Schedule Models")
   
   # Add line for model fit results
-  lines(drillModelData$month, fitted(drillModel), col = "red")
-  
-  # Add text line with equation
-  mtext(expression(W==a%.%OP+b%.%GP+c%.%W[n-1]+d))
+  lines(d$month[ind],
+        PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
+        col = "red", lty = 1)
+  lines(d$month[ind], fitted(drillModel$epm), col = "blue", lty = 1)
+  lines(d$month[ind], fitted(drillModel$opm), col = "green", lty = 1)
+  lines(d$month[ind], fitted(drillModel$gpm), col = "purple", lty = 1)
   
   # Legend
-  legend("topleft", c("Actual", "Fit"), lty = c(1,1), col = c("black","red"))
+  legend("topleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
+         lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"))
+  
+  # Temporary time index
+  ind <- which(d$month >= opt$tstart &
+               d$month <= opt$tstop)
+  
+  # Main plot for cross-validation
+  plot(d$month[ind], d$wells[ind],
+       ylim = c(0, 100),
+       lwd = 2,
+       type = "l",
+       xlab = "Date",
+       ylab = "Total Wells Drilled (oil, gas, or dry)",
+       main = "Cross-Validation of Drilling Schedule Models")
+  
+  # Add line for model predictions
+  lines(d$month[ind],
+        PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
+        col = "red", lty = 1)
+  lines(d$month[ind],
+        EPM(fit = coefficients(drillModel$epm), OP = d$OP[ind-1], GP = d$GP[ind-1]),
+        col = "blue", lty = 1)
+  lines(d$month[ind],
+        OPM(fit = coefficients(drillModel$opm), OP = d$OP[ind-1]),
+        col = "green", lty = 1)
+  lines(d$month[ind],
+        GPM(fit = coefficients(drillModel$gpm), GP = d$GP[ind-1]),
+        col = "purple", lty = 1)
+  
+  # Legend
+  legend("bottomleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
+         lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"))
+  
+  # Remove everything
+  remove(PWM, EPM, OPM, GPM, d, ind)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -322,7 +378,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, all.p$oil)
   
   # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%", "Actual"), ncol = 2, col = c(linecolor,"black"), lty = 1)
+  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -355,7 +411,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, new.p$oil)
   
   # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%", "Actual"), ncol = 2, col = c(linecolor,"black"), lty = 1)
+  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -385,7 +441,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, prior.p$oil)
   
   # Legend
-  legend("topright", c("Predicted", "Actual"), col = c(linecolor[1],"black"), lty = 1)
+  legend("topright", c("Actual", "Predicted"), col = c("black", linecolor[1]), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -418,7 +474,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, all.p$gas)
   
   # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%", "Actual"), ncol = 2, col = c(linecolor,"black"), lty = 1)
+  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -451,7 +507,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, new.p$gas)
   
   # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%", "Actual"), ncol = 2, col = c(linecolor,"black"), lty = 1)
+  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -481,7 +537,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(opt$tsteps, prior.p$gas)
   
   # Legend
-  legend("topright", c("Predicted", "Actual"), col = c(linecolor[1],"black"), lty = 1)
+  legend("topright", c("Actual", "Predicted"), col = c("black", linecolor[1]), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
