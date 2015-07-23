@@ -72,6 +72,7 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "sim_wcost.R",
                               "sim_wellType.R",
                               "productionsim.R",
+                              "priorProdReworkAdjust.R",
                               "royalty.R",
                               "stax.R",
                               "ctax.R",
@@ -691,16 +692,26 @@ Drilled <- drillsim(path =            path,
 # 3.3 Prior production calculations ---------------------------------------
 
 # Run prior oil and gas production calculation
-ppri <- priorProd(hypFF =     hypFF,
-                  mo =        mo,
+ppri <- priorProd(mo =        mo,
                   mg =        mg,
                   MC.tsteps = opt$MC.tsteps,
                   acut =      opt$acut,
                   tend.cut =  opt$tend.cut)
 
-# Get prior well info
+# Get prior well info for wells with fits
 prior.Info <- priorInfo(apilist = ppri$apilist,
-                        p =       p)
+                        p =       p,
+                        field =   field)
+
+# Get prior well info for wells w/o fits
+pi.skip <- priorInfo(apilist = ppri$skip$api,
+                     p =       p,
+                     field =   field)
+
+# Add in data from ppri function call to pi.skip
+pi.skip <- cbind(pi.skip,
+                 tend =      ppri$skip$tend,
+                 firstprod = ppri$skip$firstprod)
 
 
 # 3.3 Monte-Carlo Loop ----------------------------------------------------
@@ -712,6 +723,8 @@ prior.Info <- priorInfo(apilist = ppri$apilist,
 # Preallocate results matrices
 osim <-    matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
 gsim <-    osim # osim/gsim total oil/gas production (bbl or MCF)
+posim <-   osim # total oil production (bbl) from prior wells
+pgsim <-   osim # total gas production (MCF) from prior wells
 roy.oil <- osim # royalty totals from oil production
 roy.gas <- osim # royalty totals from gas production
 st.oil <-  osim # severance tax totals from oil production
@@ -743,8 +756,11 @@ for (i in 1:opt$nrun) {
   
   # 3.3.1 Well data simulation -------------------------------------------
   
-  # Get time step that each well is drilled
-  wsim <- data.frame(tDrill = sim_tdrill(Drilled = Drilled[i,]))
+  # Get time step that each well is drilled and flag as being a new well (i.e.
+  # prior = FALSE)
+  wsim <- data.frame(tDrill = sim_tdrill(Drilled = Drilled[i,]),
+                     prior =  FALSE,
+                     tend =   0)
   
   # Get field numbers
   wsim$fieldnum <- sim_fieldnum(cdf.ff = cdf.ff,
@@ -779,7 +795,7 @@ for (i in 1:opt$nrun) {
                             cdf.rework = cdf.rework,
                             timesteps =  opt$MC.tsteps)
   
-  # Pick well rework time steps for existing wells
+  # Pick well rework time steps for existing wells with fits
   wpri <- cbind(prior.Info, rework = sim_rework(type =       "prior",
                                                 wellType =   prior.Info$wellType,
                                                 cdf.rework = cdf.rework,
@@ -787,8 +803,30 @@ for (i in 1:opt$nrun) {
                                                 firstprod =  ppri$firstprod,
                                                 tstart =     opt$tstart))
   
-  # Duplicate reworked wells
-  wsim <- sim_dupRework(wsim = wsim)
+  # Pick well rework time steps for existing wells w/o fits
+  pi.skip$rework <- sim_rework(type =       "prior",
+                               wellType =   pi.skip$wellType,
+                               cdf.rework = cdf.rework,
+                               timesteps =  opt$MC.tsteps,
+                               firstprod =  pi.skip$firstprod,
+                               tstart =     opt$tstart)
+  
+  # Combine wsim and pi.skip data.frames (note - assuming zero time delay for
+  # prior wells)
+  wsim <- rbind(wsim, data.frame(tDrill =   0,
+                                 prior =    TRUE,
+                                 tend =     pi.skip$tend,
+                                 fieldnum = pi.skip$fieldnum,
+                                 wellType = pi.skip$wellType,
+                                 td.oil =   0,
+                                 td.gas =   0,
+                                 depth =    pi.skip$depth,
+                                 lease =    pi.skip$lease,
+                                 rework =   pi.skip$rework))
+  
+  # Duplicate reworked wells. Reworks from wpri are tracked through wsim
+  wsim <- sim_dupRework(wsim =    wsim,
+                        wpri =    wpri)
   
   # Pick decline curve coefficients
   wsim <- cbind(wsim, sim_DCC(decline.type.oil =   opt$mc.DCCpick.type.oil,
@@ -802,6 +840,7 @@ for (i in 1:opt$nrun) {
                               Q.DCA.cdf.coef.gas = Q.DCA.cdf.coef.gas,
                               tsteps =             opt$tsteps,
                               tDrill =             wsim$tDrill,
+                              tend =               wsim$tend,
                               DCAlnormFit =        DCAlnormFit))
   
   # Pick net taxable income fraction
@@ -817,14 +856,16 @@ for (i in 1:opt$nrun) {
                                 depth =         wsim$depth,
                                 drillCost.fit = drillCost.fit,
                                 complCR =       complCR,
-                                rework =        wsim$rework))
+                                rework =        wsim$rework,
+                                prior =         wsim$prior))
   
   # Calculate well drilling and completion capital cost for existing wells
   wpri <- cbind(wpri, sim_wcost(type =          "prior",
                                 depth =         wpri$depth,
                                 drillCost.fit = drillCost.fit,
                                 complCR =       complCR,
-                                rework =        wpri$rework))
+                                rework =        wpri$rework,
+                                prior =         TRUE))
   
   # Pick emission factors
   wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
@@ -846,6 +887,12 @@ for (i in 1:opt$nrun) {
                         gsim.actual =     gsim.actual,
                         acut =            opt$acut)
   
+  # Calculate adjusted prior production volumes by removing production from
+  # reworked wells.
+  apri <- priorProdReworkAdjust(wpri =      wpri,
+                                timesteps = opt$MC.tsteps,
+                                ppri =      ppri)
+  
   
   # 3.3.3 Royalties -----------------------------------------------------
   
@@ -853,13 +900,13 @@ for (i in 1:opt$nrun) {
   t.roy.oil <- royalty(royaltyRate = opt$royaltyRate,
                        ep =          op[i,],
                        lease =       c(wsim$lease, wpri$lease),
-                       psim =        rbind(psim$osim, ppri$oil))
+                       psim =        rbind(psim$osim, apri$oil))
   
   # Calculate royalty for gas production
   t.roy.gas <- royalty(royaltyRate = opt$royaltyRate,
                        ep =          gp[i,],
                        lease =       c(wsim$lease, wpri$lease),
-                       psim =        rbind(psim$gsim, ppri$gas))
+                       psim =        rbind(psim$gsim, apri$gas))
   
   
   # 3.3.4 Severance Taxes ----------------------------------------------
@@ -867,7 +914,7 @@ for (i in 1:opt$nrun) {
   # Calculate ST for oil production
   t.st.oil <- stax(type =    "oil",
                    tDrill =  c(wsim$tDrill, wpri$tDrill),
-                   psim =    rbind(psim$osim, ppri$oil),
+                   psim =    rbind(psim$osim, apri$oil),
                    rsim =    t.roy.oil,
                    ep =      op[i,],
                    st.low =  opt$st.low,
@@ -880,7 +927,7 @@ for (i in 1:opt$nrun) {
   # Calculate ST for gas production
   t.st.gas <- stax(type =    "gas",
                    tDrill =  c(wsim$tDrill, wpri$tDrill),
-                   psim =    rbind(psim$gsim, ppri$gas),
+                   psim =    rbind(psim$gsim, apri$gas),
                    rsim =    t.roy.gas,
                    ep =      gp[i,],
                    st.low =  opt$st.low,
@@ -896,8 +943,8 @@ for (i in 1:opt$nrun) {
   # Calculate property taxes
   t.PT <- ptax(OP =       op[i,],
                GP =       gp[i,],
-               osim =     rbind(psim$osim, ppri$oil),
-               gsim =     rbind(psim$gsim, ppri$gas),
+               osim =     rbind(psim$osim, apri$oil),
+               gsim =     rbind(psim$gsim, apri$gas),
                pTaxfrac = c(wsim$pTaxfrac, wpri$pTaxfrac))
   
   
@@ -906,8 +953,8 @@ for (i in 1:opt$nrun) {
   # Run corporate income tax calculation
   CT <- ctax(OP =           op[i,],
              GP =           gp[i,],
-             osim =         rbind(psim$osim, ppri$oil),
-             gsim =         rbind(psim$gsim, ppri$gas),
+             osim =         rbind(psim$osim, apri$oil),
+             gsim =         rbind(psim$gsim, apri$gas),
              NTIfrac =      c(wsim$NTIfrac, wpri$NTIfrac),
              CIrate.state = opt$CIrate.state,
              CIrate.fed =   opt$CIrate.fed)
@@ -924,8 +971,8 @@ for (i in 1:opt$nrun) {
                  EFred.Nov12 = opt$EFred.Nov12)
   
   # Calculate emissions from existing wells
-  ETpri <- Ecalc(osim =        ppri$oil,
-                 gsim =        ppri$gas,
+  ETpri <- Ecalc(osim =        apri$oil,
+                 gsim =        apri$gas,
                  wsim =        wpri,
                  tstart =      opt$tstart,
                  edcut =       opt$edcut,
@@ -935,9 +982,10 @@ for (i in 1:opt$nrun) {
   # 3.3.8 Water Balance -------------------------------------------------
   
   # Calculate water balance
-  WB <- water(wsim =     rbind(wsim[,41:45], wpri[,36:40]),
-              osim =     rbind(psim$osim, ppri$oil),
-              gsim =     rbind(psim$gsim, ppri$gas),
+  WB <- water(wsim =     rbind(wsim[,c("pw","disp","evap","frack","inj")],
+                               wpri[,c("pw","disp","evap","frack","inj")]),
+              osim =     rbind(psim$osim, apri$oil),
+              gsim =     rbind(psim$gsim, apri$gas),
               wellType = c(wsim$wellType, wpri$wellType),
               depth =    c(wsim$depth, wpri$depth),
               dw.lm =    water.lm$dw.lm)
@@ -946,8 +994,10 @@ for (i in 1:opt$nrun) {
   # 3.3.x Get totals for MC run i ---------------------------------------
   
   # Calculate column sums for each results matrix generated to get totals
-  osim[i,] <-    colSums(psim$osim)
-  gsim[i,] <-    colSums(psim$gsim)
+  osim[i,] <-    colSums(psim$osim[which(wsim$prior == F),])
+  gsim[i,] <-    colSums(psim$gsim[which(wsim$prior == F),])
+  posim[i,] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
+  pgsim[i,] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
   roy.oil[i,] <- colSums(t.roy.oil)
   roy.gas[i,] <- colSums(t.roy.gas)
   st.oil[i,] <-  colSums(t.st.oil)
@@ -970,22 +1020,6 @@ for (i in 1:opt$nrun) {
   w.inj[i,] <-   WB$inj
   w.in[i,] <-    WB$wtr.in
   w.r[i,] <-     WB$wtr.r
-  
-  
-  # 3.3.x Cleanup -------------------------------------------------------
-  
-  # Remove temporary results
-  remove(wsim,
-         psim,
-         t.roy.oil,
-         t.roy.gas,
-         t.st.oil,
-         t.st.gas,
-         t.PT,
-         CT,
-         ETsim,
-         ETpri,
-         WB)
   
   # Update progress bar
   Sys.sleep(1e-3)

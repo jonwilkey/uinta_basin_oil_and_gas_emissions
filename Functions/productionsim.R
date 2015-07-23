@@ -76,14 +76,14 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
                   
                   # For hyperbolic decline curve
                   a = {
-                    coef.oil <- with(wsim, matrix(c(tDrill, td.oil, qo.oil, b.oil, Di.oil), ncol = 5))
-                    coef.gas <- with(wsim, matrix(c(tDrill, td.gas, qo.gas, b.gas, Di.gas), ncol = 5))
+                    coef.oil <- with(wsim, matrix(c(tDrill, td.oil, qo.oil, b.oil, Di.oil, tend), ncol = 6))
+                    coef.gas <- with(wsim, matrix(c(tDrill, td.gas, qo.gas, b.gas, Di.gas, tend), ncol = 6))
                   },
                   
                   # For cumulative production curve
                   b = {
-                    coef.oil <- with(wsim, matrix(c(tDrill, td.oil, Cp.oil, c1.oil), ncol = 4))
-                    coef.gas <- with(wsim, matrix(c(tDrill, td.gas, Cp.gas, c1.gas), ncol = 4))
+                    coef.oil <- with(wsim, matrix(c(tDrill, td.oil, Cp.oil, c1.oil, tend), ncol = 5))
+                    coef.gas <- with(wsim, matrix(c(tDrill, td.gas, Cp.gas, c1.gas, tend), ncol = 5))
                   })
            
            # Function for calculating production schedule for individual well
@@ -93,7 +93,9 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
              # Get number of zeros to include (from months before well was
              # drilled and from delay between well drilling and start of first
              # decline curve)
-             TDzeros <- (x[1]-1)+x[2]
+             TDzeros <- ifelse(test = (x[1]-1)+x[2] >= 0,
+                               yes =  (x[1]-1)+x[2],
+                               no =   0)
              
              # If equal to or greater than timesteps
              if (TDzeros >= timesteps) {
@@ -109,8 +111,10 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
                # The number of zero values is equal to TDzeros
                TD <- rep(0, times = TDzeros)
                
-               # Create vector of months for which production will be calculated
-               tvec <- c(1:(timesteps-TDzeros))
+               # Create vector of months for which production will be
+               # calculated. Note that time vector is increased by value of tend
+               # to account for how old a prior well might be.
+               tvec <- c(1:(timesteps-TDzeros))+x[6]
                
                # Calculate production in each month by Eq.[1]
                Q <- x[3]*(1+x[4]*x[5]*tvec)^(-1/x[4])
@@ -127,7 +131,9 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
              # Get number of zeros to include (from months before well was
              # drilled and from delay between well drilling and start of first
              # decline curve)
-             TDzeros <- (x[1]-1)+x[2]
+             TDzeros <- ifelse(test = (x[1]-1)+x[2] >= 0,
+                               yes =  (x[1]-1)+x[2],
+                               no =   0)
              
              # If equal to or greater than timesteps
              if (TDzeros >= timesteps) {
@@ -143,16 +149,33 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
                # The number of zero values is equal to TDzeros
                TD <- rep(0, times = TDzeros)
                
-               # Create vector of months for which production will be calculated
-               tvec <- c(1:(timesteps-TDzeros))
+               # Create vector of months for which production will be
+               # calculated. Note that time vector is increased by value of tend
+               # to account for how old a prior well might be.
+               tvec <- c(1:(timesteps-TDzeros))+x[5]
+               
+               # If tvec[1] > 1, then well is a prior well and production during
+               # the first time step of the simulation also requires knowing 
+               # production at time step prior to start of simulation, so add 
+               # addition time vector value
+               if (tvec[1] != 1) {tvec <- c(tvec[1]-1, tvec)}
                
                # Calculate cumulative production in each month by Eq.[2]
                Q <- x[3]*sqrt(tvec)+x[4]
                
-               # Production in first timestep is simply Q[1], after
-               # first timestep production is differnce between the
-               # each timestep as calculated by diff()
-               Q <- c(Q[1], diff(Q))
+               # If well is a prior well, then the length of Q will be 1 greater
+               # than timesteps value
+               if (length(Q) > timesteps) {
+                 
+                 # Find monthly production solely by successive differences
+                 Q <- diff(Q)
+               } else {
+                 
+                 # The well is a new well and the production is the value of 
+                 # Q[1] plus the successive differences between each timestep as
+                 # calculated by diff()
+                 Q <- c(Q[1], diff(Q))
+               }
              }
              
              # Return concatonated result
@@ -194,9 +217,6 @@ productionsim <- function(wsim, timesteps, production.type, decline.type,
     
     # If nonzero and not NA rework value
     if (wsim$rework[i] > 0 & !is.na(wsim$rework[i])) {
-      
-      # Vector of values to replace
-      temp <- wsim$rework[i]:timesteps
       
       # Zero out production after rework
       osim[i,wsim$rework[i]:timesteps] <- 0

@@ -6,9 +6,6 @@
 
 # Inputs ------------------------------------------------------------------
 
-# hypFF - data frame with hyperbolic decline curve coefficients fitted to
-# field-level production records
-
 # mo/mg - data frame with DCA records for each individual well in the Basin, 
 # used here for the column 'tend' which lists the difference (in months) between
 # the starting date of the simulation period and the date that the well was 
@@ -51,66 +48,41 @@
 
 
 # Function ----------------------------------------------------------------
-priorProd <- function(hypFF, mo, mg, MC.tsteps, acut, tend.cut) {
+priorProd <- function(mo, mg, MC.tsteps, acut, tend.cut) {
   
   # Get DCCs from wells with fits -----------------------------------------
   
   # Create subset of DCAfit that contains only those wells drilled prior to
   # start of simulation period and that have a last decline curve fit
   ind <- which(mo$tend > 0 & mo$fit.2 == 1 & mg$fit.2 == 1)
-  fit.ow <- subset(mo[ind,], select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod", "qo.2", "b.2", "Di.2"))
-  fit.gw <- subset(mg[ind,], select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod", "qo.2", "b.2", "Di.2"))
+  ow <- subset(mo[ind,], select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod", "qo.2", "b.2", "Di.2"))
+  gw <- subset(mg[ind,], select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod", "qo.2", "b.2", "Di.2"))
   
   # Rename columns
-  names(fit.ow) <- c("api", "field", "tend", "wellType", "firstprod", "qo", "b", "Di")
-  names(fit.gw) <- c("api", "field", "tend", "wellType", "firstprod", "qo", "b", "Di")
+  names(ow) <- c("api", "field", "tend", "wellType", "firstprod", "qo", "b", "Di")
+  names(gw) <- c("api", "field", "tend", "wellType", "firstprod", "qo", "b", "Di")
   
   
-  # Get Field Level DCCs for wells w/o fits -------------------------------
+  # Get list of prior wells w/o fits --------------------------------------
   
   # Drop wells that had fits and select only those wells within tend constraints
-  ow <- subset(mo[-ind,], subset = (tend > 0 & tend <= tend.cut), select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod"))
-  gw <- subset(mg[-ind,], subset = (tend > 0 & tend <= tend.cut), select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod"))
+  skip <- subset(mo[-ind,],
+                 subset = (tend > 0 & tend <= tend.cut),
+                 select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod"))
+  
+  skip <- rbind(skip,
+                subset(mg[-ind,],
+                       subset = (tend > 0 & tend <= tend.cut),
+                       select = c("p_api", "w_field_num", "tend", "h_well_type", "firstprod")))
   
   # Rename columns
-  names(ow) <- c("api", "field", "tend", "wellType", "firstprod")
-  names(gw) <- c("api", "field", "tend", "wellType", "firstprod")
+  names(skip) <- c("api", "field", "tend", "wellType", "firstprod")
   
-  # Add hypFF DCA coefficients to ow/gw matrices
-  
-  # Step 1: add columns for coefficients
-  ow <- data.frame(ow, qo = rep(NA, nrow(ow)), b = rep(NA, nrow(ow)), Di = rep(NA, nrow(ow)))
-  gw <- data.frame(gw, qo = rep(NA, nrow(gw)), b = rep(NA, nrow(gw)), Di = rep(NA, nrow(gw)))
-  
-  # Step 2: For each individual field, replace NAs with DCCs, starting with oil
-  for (i in 1:(nrow(hypFF$oil)-1)) {
-    ow$qo[which(ow$field == hypFF$oil$ffo[i])] <- hypFF$oil$qo.oil[i]
-    ow$b[ which(ow$field == hypFF$oil$ffo[i])] <- hypFF$oil$b.oil[i]
-    ow$Di[which(ow$field == hypFF$oil$ffo[i])] <- hypFF$oil$Di.oil[i]
-  }
-  
-  # Next for gas
-  for (i in 1:(nrow(hypFF$gas)-1)) {
-    gw$qo[which(gw$field == hypFF$gas$ffg[i])] <- hypFF$gas$qo.gas[i]
-    gw$b[ which(gw$field == hypFF$gas$ffg[i])] <- hypFF$gas$b.gas[i]
-    gw$Di[which(gw$field == hypFF$gas$ffg[i])] <- hypFF$gas$Di.gas[i]
-  }
-  
-  # Step 3: Replace any remaining NAs with DCCs for Field 999
-  ow$qo[which(is.na(ow$qo))] <- hypFF$oil$qo.oil[nrow(hypFF$oil)]
-  ow$b[ which(is.na(ow$b))] <-  hypFF$oil$b.oil[nrow(hypFF$oil)]
-  ow$Di[which(is.na(ow$Di))] <- hypFF$oil$Di.oil[nrow(hypFF$oil)]
-  
-  gw$qo[which(is.na(gw$qo))] <- hypFF$gas$qo.gas[nrow(hypFF$gas)]
-  gw$b[ which(is.na(gw$b))] <-  hypFF$gas$b.gas[nrow(hypFF$gas)]
-  gw$Di[which(is.na(gw$Di))] <- hypFF$gas$Di.gas[nrow(hypFF$gas)]
+  # Remove any duplicates
+  skip <- unique(skip)
   
   
-  # Combine and calculate production --------------------------------------
-  
-  # Combine
-  ow <- rbind(fit.ow, ow)
-  gw <- rbind(fit.gw, gw)
+  # Calculate production for wells with fits ------------------------------
   
   # Predefine production matrix
   oil <- matrix(0, nrow = nrow(ow), ncol = MC.tsteps)
@@ -146,5 +118,9 @@ priorProd <- function(hypFF, mo, mg, MC.tsteps, acut, tend.cut) {
   }
   
   # Return result
-  return(list(oil = oil, gas = gas, apilist = ow$api, firstprod = ow$firstprod))
+  return(list(oil =       oil,
+              gas =       gas,
+              apilist =   ow$api,
+              firstprod = ow$firstprod,
+              skip =      skip))
 }

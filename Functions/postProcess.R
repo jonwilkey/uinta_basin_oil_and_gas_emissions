@@ -51,6 +51,8 @@ prior.p <- data.frame(date = all.p$date,
 Drilled.q <- matrix(0, nrow = length(opt$quant), ncol = length(opt$tsteps))
 oil.q <-     Drilled.q
 gas.q <-     Drilled.q
+poil.q <-    Drilled.q
+pgas.q <-    Drilled.q
 op.q <-      Drilled.q
 gp.q <-      Drilled.q
 CO2.q <-     Drilled.q
@@ -74,6 +76,8 @@ for (i in 1:ncol(Drilled.q)) {
   Drilled.q[,i] <- quantile(Drilled[,i], opt$quant)
   oil.q[,i] <-     quantile(osim[,i],    opt$quant)
   gas.q[,i] <-     quantile(gsim[,i],    opt$quant)
+  poil.q[,i] <-    quantile(posim[,i],   opt$quant)
+  pgas.q[,i] <-    quantile(pgsim[,i],   opt$quant)
   op.q[,i] <-      quantile(op[,i],      opt$quant)
   gp.q[,i] <-      quantile(gp[,i],      opt$quant)
   CO2.q[,i] <-     quantile(CO2[,i],     opt$quant)
@@ -362,17 +366,17 @@ if(opt$plist$plot[j] == TRUE) {
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
   # Main plot with largest quantile result
-  plot(opt$tsteps, oil.q[1,]+colSums(ppri$oil),
+  plot(opt$tsteps, oil.q[1,]+poil.q[1,],
        type = "l",
-       ylim = c(min(c(min(oil.q+colSums(ppri$oil)),min(all.p$oil))),
-                max(c(max(oil.q+colSums(ppri$oil)),max(all.p$oil)))),
+       ylim = c(min(c(min(oil.q+poil.q),min(all.p$oil))),
+                max(c(max(oil.q+poil.q),max(all.p$oil)))),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
        main = "Total Oil Production - Simulated vs. Actual")
   
   # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, oil.q[i,]+colSums(ppri$oil), col = linecolor[i])}
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, oil.q[i,]+poil.q[i,], col = linecolor[i])}
   
   # Actual oil production
   lines(opt$tsteps, all.p$oil)
@@ -428,20 +432,23 @@ if(opt$plist$plot[j] == TRUE) {
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
   # Main plot with largest quantile result
-  plot(opt$tsteps, colSums(ppri$oil),
+  plot(opt$tsteps, poil.q[1,],
        type = "l",
-       ylim = c(min(c(min(colSums(ppri$oil)),min(prior.p$oil))),
-                max(c(max(colSums(ppri$oil)),max(prior.p$oil)))),
+       ylim = c(min(c(min(poil.q),min(prior.p$oil))),
+                max(c(max(poil.q),max(prior.p$oil)))),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
        main = "Total Oil Production from Existing Wells - Simulated vs. Actual")
   
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, poil.q[i,], col = linecolor[i])}
+  
   # Actual oil production
   lines(opt$tsteps, prior.p$oil)
   
   # Legend
-  legend("topright", c("Actual", "Predicted"), col = c("black", linecolor[1]), lty = 1)
+  legend("topright", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -458,17 +465,17 @@ if(opt$plist$plot[j] == TRUE) {
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
   # Main plot with largest quantile result
-  plot(opt$tsteps, gas.q[1,]+colSums(ppri$gas),
+  plot(opt$tsteps, gas.q[1,]+pgas.q[1,],
        type = "l",
-       ylim = c(min(c(min(gas.q+colSums(ppri$gas)),min(all.p$gas))),
-                max(c(max(gas.q+colSums(ppri$gas)),max(all.p$gas)))),
+       ylim = c(min(c(min(gas.q+pgas.q),min(all.p$gas))),
+                max(c(max(gas.q+pgas.q),max(all.p$gas)))),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
        main = "Total Gas Production - Simulated vs. Actual")
   
   # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, gas.q[i,]+colSums(ppri$gas), col = linecolor[i])}
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, gas.q[i,]+pgas.q[i,], col = linecolor[i])}
   
   # Actual gas production
   lines(opt$tsteps, all.p$gas)
@@ -524,20 +531,23 @@ if(opt$plist$plot[j] == TRUE) {
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
   # Main plot with largest quantile result
-  plot(opt$tsteps, colSums(ppri$gas),
+  plot(opt$tsteps, pgas.q[1,],
        type = "l",
-       ylim = c(min(c(min(colSums(ppri$gas)),min(prior.p$gas))),
-                max(c(max(colSums(ppri$gas)),max(prior.p$gas)))),
+       ylim = c(min(c(min(pgas.q),min(prior.p$gas))),
+                max(c(max(pgas.q),max(prior.p$gas)))),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
        main = "Total Gas Production from Existing Wells - Simulated vs. Actual")
   
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, pgas.q[i,], col = linecolor[i])}
+  
   # Actual gas production
   lines(opt$tsteps, prior.p$gas)
   
   # Legend
-  legend("topright", c("Actual", "Predicted"), col = c("black", linecolor[1]), lty = 1)
+  legend("topright", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}

@@ -19,6 +19,8 @@
 
 # rework - vector indicating if well was reworked
 
+# prior - T/F flag indicating whether or not well is from prior category
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -34,7 +36,7 @@
 
 # Function ----------------------------------------------------------------
 
-sim_wcost <- function(type, depth, drillCost.fit, complCR, rework) {
+sim_wcost <- function(type, depth, drillCost.fit, complCR, rework, prior) {
   
   # Calculate directly as cost = exp(a+b*(depth in ft)) where 'a' and 'b' are
   # fitted coefficients from drillCost.fit
@@ -62,13 +64,18 @@ sim_wcost <- function(type, depth, drillCost.fit, complCR, rework) {
          # For new wells
          new = {
            
-           # Just zero out drilling cost if the well is a rework
+           # If well is a rework, only include completion costs
            drill <- ifelse(test = is.na(rework),
                            yes =  0,
                            no =   drill)
+           
+           # If well is a prior and is not being reworked, zero everything
+           ind <- which(!is.na(rework) & prior == TRUE)
+           drill[ind] <- 0
+           compl[ind] <- 0
          },
          
-         # For prior wells
+         # For prior wells with fits
          prior = {
            
            # Drilling costs are always zero

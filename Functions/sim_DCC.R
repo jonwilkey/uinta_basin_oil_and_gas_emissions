@@ -32,6 +32,9 @@
 
 # tDrill - numeric/integer vector of time steps in which each well is drilled
 
+# tend - age of well (in months) at start of simulation period (for prior wells
+# only)
+
 # DCAlnormFit - data.frame with trendline fit parameters for known distributions
 
 
@@ -52,7 +55,7 @@
 
 sim_DCC <- function(decline.type.oil, decline.type.gas, times, field, fieldnum,
                     DCA.cdf.coef.oil, DCA.cdf.coef.gas, Q.DCA.cdf.coef.oil,
-                    Q.DCA.cdf.coef.gas, tsteps, tDrill, DCAlnormFit) {
+                    Q.DCA.cdf.coef.gas, tsteps, tDrill, tend, DCAlnormFit) {
   
   # Predefine DCC object
   DCC <- NULL
@@ -115,8 +118,12 @@ sim_DCC <- function(decline.type.oil, decline.type.gas, times, field, fieldnum,
          # Basin Level Distribution Fit
          c = {
            
-           # Calculate time difference vector (years since 1983)
-           td <- floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25))
+           # Calculate time difference vector (years since 1983). If new well
+           # (i.e. tDrill >= 1) calculate time difference based on tsteps, else
+           # for oil wells use the tend column
+           td <- ifelse(tDrill >= 1,
+                        floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25)),
+                        floor(as.numeric(difftime(as.Date(as.yearmon("2010-01-01")-tend/12), as.Date("1984-01-01"), units = "days"))*(1/365.25)))
            
            # Pick coefficients from defined distributions using "q----" functions
            DCC$Cp.oil <- qlnorm(p =       runif(length(td)),
@@ -131,8 +138,12 @@ sim_DCC <- function(decline.type.oil, decline.type.gas, times, field, fieldnum,
          # Field Level Distribution Fit
          d = {
            
-           # Calculate time difference vector (years since 1983)
-           td <- floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25))
+           # Calculate time difference vector (years since 1983). If new well
+           # (i.e. tDrill >= 1) calculate time difference based on tsteps, else
+           # for oil wells use the tend column
+           td <- ifelse(tDrill >= 1,
+                        floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25)),
+                        floor(as.numeric(difftime(as.Date(as.yearmon("2010-01-01")-tend/12), as.Date("1984-01-01"), units = "days"))*(1/365.25)))
            
            # Define DCA coefficient vectors
            DCC$Cp.oil <- rep(0, times)
@@ -213,8 +224,12 @@ sim_DCC <- function(decline.type.oil, decline.type.gas, times, field, fieldnum,
          # Basin Level Distribution Fit
          c = {
            
-           # Calculate time difference vector (years since 1983)
-           td <- floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25))
+           # Calculate time difference vector (years since 1983). If new well
+           # (i.e. tDrill >= 1) calculate time difference based on tsteps, else
+           # for oil wells use the tend column
+           td <- ifelse(tDrill >= 1,
+                        floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25)),
+                        floor(as.numeric(difftime(as.Date(as.yearmon("2010-01-01")-tend/12), as.Date("1984-01-01"), units = "days"))*(1/365.25)))
            
            # Pick coefficients from defined distributions using "q----" functions
            DCC$Cp.gas <- qlnorm(p =       runif(length(td)),
@@ -229,8 +244,12 @@ sim_DCC <- function(decline.type.oil, decline.type.gas, times, field, fieldnum,
          # Field Level Distribution Fit
          d = {
            
-           # Calculate time difference vector (years since 1983)
-           td <- floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25))
+           # Calculate time difference vector (years since 1983). If new well
+           # (i.e. tDrill >= 1) calculate time difference based on tsteps, else
+           # for oil wells use the tend column
+           td <- ifelse(tDrill >= 1,
+                        floor(as.numeric(difftime(tsteps[tDrill], as.Date("1984-01-01"), units = "days"))*(1/365.25)),
+                        floor(as.numeric(difftime(as.Date(as.yearmon("2010-01-01")-tend/12), as.Date("1984-01-01"), units = "days"))*(1/365.25)))
            
            # Define DCA coefficient vectors
            DCC$Cp.gas <- rep(0, times)

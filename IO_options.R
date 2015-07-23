@@ -493,9 +493,9 @@ opt$DSsimtype <- "b"
 # 3.3 priorProd Options ---------------------------------------------------
 
 # Cutoff threshold for how old a well can be and still be included as
-# a prior well. For example, if tend.cut == 50, then any well that doesn't have 
+# a prior well. For example, if tend.cut == 60, then any well that doesn't have 
 # a last decline curve fit (either because it had too few production records or 
-# because the solver failed to converge) and is > 50 months old would dropped
+# because the solver failed to converge) and is > 60 months old would dropped
 # from population of prior wells
 opt$tend.cut <- 60
 
@@ -636,10 +636,10 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
                    c("07 Total Oil Production",       F), # Total oil production simulated vs actual
                    c("08 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
-                   c("09 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
+                   c("09 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
                    c("10 Total Gas Production",       F), # Total gas production simulated vs actual
                    c("11 Gas from New Wells",         F), # Total gas production simulated vs actual from new wells
-                   c("12 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
+                   c("12 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
                    c("13 CO2e Emissions",             F), # CO2 emissions
                    c("14 CH4 Emissions",              F), # CH4 emissions
                    c("15 VOC Emissions",              F), # VOC emissions

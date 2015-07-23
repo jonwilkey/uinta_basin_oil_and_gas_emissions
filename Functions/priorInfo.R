@@ -10,6 +10,8 @@
 
 # p - DOGM database data frame
 
+# field - vector containing field numbers that will be analyzed individually
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -26,7 +28,7 @@
 
 
 # Function ----------------------------------------------------------------
-priorInfo <- function(apilist, p) {
+priorInfo <- function(apilist, p, field) {
   
   # Get list of all the info needed
   temp <- sqldf("select distinct p_api, w_field_num, h_well_type, h_td_md, w_lease_type
@@ -38,6 +40,17 @@ priorInfo <- function(apilist, p) {
   
   # Rename columns
   names(result) <- c("api", "fieldnum", "wellType", "depth", "lease")
+  
+  # Rewrite field numbers to match simulation field number selection. Start by 
+  # building index of rows in result whose field numbers match those in the
+  # fields being analyzed individually
+  ind <- NULL
+  for (i in 1:(length(field)-1)) {
+    ind <- c(ind, which(result$fieldnum == field[i]))
+  }
+  
+  # Replace all other field numbers with 999
+  result$fieldnum[-ind] <- 999
   
   # Add in tDrill entries for prior wells as zeroes
   result$tDrill <- rep(0, length(apilist))
