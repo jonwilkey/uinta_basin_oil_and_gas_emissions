@@ -115,12 +115,15 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, op.q[1,],
        ylim = c(0.9*min(c(min(op.q), min(ep.act$OP))), 1.1*max(c(max(op.q), max(ep.act$OP)))),
        type = "l",
        col = linecolor[1],
-       xlab = "Time",
+       xlab = "Time (months)",
        ylab = paste("Oil First Purchase Price (", opt$cpiDate, " $/bbl)", sep = ""),
        main = "Oil Price - Simulation vs. Actual")
   
@@ -154,12 +157,15 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, gp.q[1,],
        type = "l",
        ylim = c(0.9*min(c(min(gp.q), min(ep.act$GP))), 1.1*max(c(max(gp.q), max(ep.act$GP)))),
        col = linecolor[1],
-       xlab = "Time",
+       xlab = "Time (months)",
        ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""),
        main = "Gas Price - Simulation vs. Actual")
   
@@ -193,12 +199,15 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, Drilled.q[1,],
        type = "l",
        ylim = c(0, 1.1*max(c(max(Drilled.q),max(Drilled.act)))),
        col = linecolor[1],
-       xlab = "Time",
+       xlab = "Time (months)",
        ylab = "Wells Drilled",
        main = "Drilling Schedule - Simulation vs. Actual")
   
@@ -224,6 +233,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # Prior well model function
   PWM <- function(OP, GP, par, init) {
@@ -258,7 +270,7 @@ if(opt$plist$plot[j] == TRUE) {
   plot(d$month[ind], d$wells[ind],
        lwd = 2,
        type = "l",
-       xlab = "Date",
+       xlab = "Time (months)",
        ylab = "Total Wells Drilled (oil, gas, or dry)",
        main = "Drilling Schedule Models")
   
@@ -283,7 +295,7 @@ if(opt$plist$plot[j] == TRUE) {
        ylim = c(0, 100),
        lwd = 2,
        type = "l",
-       xlab = "Date",
+       xlab = "Time (months)",
        ylab = "Total Wells Drilled (oil, gas, or dry)",
        main = "Cross-Validation of Drilling Schedule Models")
   
@@ -303,7 +315,7 @@ if(opt$plist$plot[j] == TRUE) {
   
   # Legend
   legend("bottomleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
-         lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"))
+         lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"), ncol = 2, cex = 1/opt$defFontSize)
   
   # Remove everything
   remove(PWM, EPM, OPM, GPM, d, ind)
@@ -345,6 +357,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Source hyperbolic and cumulative boxplot functions
   source(file.path(path$plotfun, "cdfDCAcoef.R"))
   
@@ -365,6 +380,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, oil.q[1,]+poil.q[1,],
        type = "l",
@@ -373,7 +391,7 @@ if(opt$plist$plot[j] == TRUE) {
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
-       main = "Total Oil Production - Simulated vs. Actual")
+       main = "Oil Production - Simulated vs. Actual")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, oil.q[i,]+poil.q[i,], col = linecolor[i])}
@@ -398,6 +416,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, oil.q[1,],
        type = "l",
@@ -406,7 +427,7 @@ if(opt$plist$plot[j] == TRUE) {
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
-       main = "Total Oil Production from New Wells - Simulated vs. Actual")
+       main = "Oil Production from New Wells - Simulated vs. Actual")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, oil.q[i,], col = linecolor[i])}
@@ -431,6 +452,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, poil.q[1,],
        type = "l",
@@ -439,7 +463,7 @@ if(opt$plist$plot[j] == TRUE) {
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
-       main = "Total Oil Production from Existing Wells - Simulated vs. Actual")
+       main = "Oil Production from Existing Wells - Simulated vs. Actual")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, poil.q[i,], col = linecolor[i])}
@@ -464,6 +488,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, gas.q[1,]+pgas.q[1,],
        type = "l",
@@ -472,7 +499,7 @@ if(opt$plist$plot[j] == TRUE) {
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
-       main = "Total Gas Production - Simulated vs. Actual")
+       main = "Gas Production - Simulated vs. Actual")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, gas.q[i,]+pgas.q[i,], col = linecolor[i])}
@@ -497,6 +524,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, gas.q[1,],
        type = "l",
@@ -505,7 +535,7 @@ if(opt$plist$plot[j] == TRUE) {
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
-       main = "Total Gas Production from New Wells - Simulated vs. Actual")
+       main = "Gas Production from New Wells - Simulated vs. Actual")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, gas.q[i,], col = linecolor[i])}
@@ -530,6 +560,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, pgas.q[1,],
        type = "l",
@@ -538,7 +571,7 @@ if(opt$plist$plot[j] == TRUE) {
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
-       main = "Total Gas Production from Existing Wells - Simulated vs. Actual")
+       main = "Gas Production from Existing Wells - Simulated vs. Actual")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, pgas.q[i,], col = linecolor[i])}
@@ -562,6 +595,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # Main plot with largest quantile result
   plot(opt$tsteps, CO2.q[1,],
@@ -599,6 +635,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, CH4.q[1,],
        type = "l",
@@ -635,6 +674,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot with largest quantile result
   plot(opt$tsteps, VOC.q[1,],
        type = "l",
@@ -643,7 +685,7 @@ if(opt$plist$plot[j] == TRUE) {
                 1.1*max(VOC.q)),
        col = linecolor[1],
        xlab = "Time (months)",
-       ylab = "VOC Emissions (metric tons)",
+       ylab = "VOC Emissions (metric tons/month)",
        main = "Total VOC Emissions")
   mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
   lines(opt$tsteps, rVOC.q[1,], col = linecolor[1], lty = 1)
@@ -670,6 +712,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # Get well counts by field from well.actual
   fcount <- round(c(cdf.ff$CDF[1], diff(cdf.ff$CDF))*nrow(well.actual))
@@ -700,6 +745,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Get well counts by field from well.actual
   fcount <- round(c(cdf.ff$CDF[1], diff(cdf.ff$CDF))*nrow(well.actual)*(1-prob$gas))
   
@@ -728,6 +776,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # Get well counts by field from well.actual
   fcount <- round(c(cdf.ff$CDF[1], diff(cdf.ff$CDF))*nrow(well.actual)*prob$gas)
@@ -761,6 +812,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot
   plot(cost ~ depth,
        data = drillCost.data,
@@ -792,6 +846,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # Build temporary data.frame with individual (not cumulative) probabilities
   # of each surface lease type by field and then transpose
@@ -827,6 +884,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main Plot
   plot(cdf.depth.ow,
        type = "l",
@@ -854,6 +914,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # Oil LOC equip plot
   ind <- which(LOC.data$wellType == "OW" & LOC.data$LOCtype == "equip")
@@ -961,6 +1024,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Oil FPP
   plot(eia.hp$month, eia.hp$OP,
        type = "l",
@@ -989,6 +1055,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Plot
   plot(x = qnorm(p = opt$xq, mean = corpNTIfrac["mean"], sd = corpNTIfrac["sd"]),
        y = opt$xq,
@@ -1011,6 +1080,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Plot
   plot(x = qnorm(p = opt$xq, mean = pTaxRate["mean"], sd = pTaxRate["sd"]),
        y = opt$xq,
@@ -1032,6 +1104,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # CDF for % error in oil  
   # Line colors
@@ -1088,6 +1163,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # CDF of produced water from oil wells
   plot(cdf ~ pw.oil, data = cdf.water,
@@ -1160,6 +1238,9 @@ if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
   
   # Produced water - Main plot with largest quantile result
   plot(opt$tsteps, w.pw.q[1,],
@@ -1319,6 +1400,9 @@ if(opt$plist$plot[j] == TRUE) {
   # If exporting to PDF
   if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
   
+  # Set font size
+  par(cex = opt$defFontSize)
+  
   # Main plot - CDF for oil
   plot(oil~month, cdf.rework,
        type = "l",
@@ -1333,6 +1417,60 @@ if(opt$plist$plot[j] == TRUE) {
   
   # Legend
   legend("topleft", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue", "red"))
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# EIA AEO Relative Error --------------------------------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  # Get data for plot
+  din <- read.csv(file.path(path$raw, "EIA_op_error_export.csv"))
+  
+  # Restructure
+  din <- rbind(data.frame(year = "Year 1", err = din[,1]),
+               data.frame(year = "Year 2", err = din[,2]),
+               data.frame(year = "Year 3", err = din[,3]),
+               data.frame(year = "Year 4", err = din[,4]),
+               data.frame(year = "Year 5", err = din[,5]))
+  
+  # Main plot - oil
+  boxplot(err~year, din,
+          range = 0,
+          ylim = c(-250, 50),
+          ylab = "Relative Error (%)",
+          main = "Error in EIA Oil Price Forecasts")
+  
+  # Repeat for gas
+  din <- read.csv(file.path(path$raw, "EIA_gp_error_export.csv"))
+  
+  # Restructure
+  din <- rbind(data.frame(year = "Year 1", err = din[,1]),
+               data.frame(year = "Year 2", err = din[,2]),
+               data.frame(year = "Year 3", err = din[,3]),
+               data.frame(year = "Year 4", err = din[,4]),
+               data.frame(year = "Year 5", err = din[,5]))
+  
+  # Main plot - oil
+  boxplot(err~year, din,
+          range = 0,
+          ylim = c(-150, 100),
+          ylab = "Relative Error (%)",
+          main = "Error in EIA Gas Price Forecasts")
+  
+  # Remove data
+  remove(din)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}

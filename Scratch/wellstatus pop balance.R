@@ -75,6 +75,61 @@ aband.gw <- na.omit(merge(x = drill, y = aband.gw, all.y = T))
 re.ow <- na.omit(merge(x = drill, y = re.ow, all.y = T))
 re.gw <- na.omit(merge(x = drill, y = re.gw, all.y = T))
 
+
+# As f(prod) analysis -----------------------------------------------------
+
+# Function to find the percentile of an observation y in a vector x
+ptile <- function(x,y) {
+  max(which(sort(x, na.last = NA) == y), na.rm = T)/(length(x)+1)
+}
+
+# Get unique dates
+td <- unique(re.ow$h_work_compl)
+
+# predefine percentile and probability results vectors
+pres <- NULL
+pbres <- pres
+
+for (i in 1:length(td)) {
+  
+  # Get data about wells to match
+  test <- re.ow[which(re.ow$h_work_compl == td[i]),]
+  
+  # Get production records
+  temp <- subset(p,
+                 subset = c(p_rpt_period == as.Date(as.yearmon(td[i])-1/12) &
+                              w_well_type == "OW" &
+                              p_days_prod >= 28),
+                 select = c("p_api", "p_oil_prod"))
+  
+  if (length(temp$p_api) > 0) {
+    
+    # Sort in terms of production
+    temp <- temp[order(temp$p_oil_prod, na.last = NA),]
+    
+    # Predefine tempP
+    tempP <- NULL
+    
+    # For each well
+    for (j in 1:length(test)) {
+      
+      # Get percentiles
+      tempP <- c(tempP, ptile(temp$p_oil_prod,
+                              p$p_oil_prod[which(p$p_api == test$h_api[j] &
+                                                   p$p_rpt_period == as.Date(as.yearmon(td[i])-1/12))]))
+    }
+    
+    # Save percentile results
+    pres <- c(pres, tempP)
+    
+    # Calculate rework probability
+    pbres <- c(pbres, length(test$h_api)/(nrow(temp)*max(tempP)))
+  }
+}
+
+
+
+
 # As time series ----------------------------------------------------------
 # Calculate time dependence
 aband.ow$diff <- with(aband.ow, round(as.numeric(difftime(h_work_compl, h_compl_date, units = "days"))*(12/365.25)))

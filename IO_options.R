@@ -623,7 +623,7 @@ opt$RIMSmultiplier <- 2.2370
 # Export options
 opt$exportFlag <- F                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e3run -Sim DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e2run -actual DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
@@ -636,10 +636,10 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
                    c("07 Total Oil Production",       F), # Total oil production simulated vs actual
                    c("08 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
-                   c("09 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
+                   c("09 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
                    c("10 Total Gas Production",       F), # Total gas production simulated vs actual
                    c("11 Gas from New Wells",         F), # Total gas production simulated vs actual from new wells
-                   c("12 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
+                   c("12 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
                    c("13 CO2e Emissions",             F), # CO2 emissions
                    c("14 CH4 Emissions",              F), # CH4 emissions
                    c("15 VOC Emissions",              F), # VOC emissions
@@ -656,13 +656,16 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("26 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
                    c("27 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
                    c("28 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
-                   c("29 CDF for Well Reworks",       F) # CDFs for well reworks
+                   c("29 CDF for Well Reworks",       F), # CDFs for well reworks
+                   c("30 EIA AEO Relative Error",     F) # Boxplot of EIA AEO relative errors as f(prediction year)
 )
-                   #c("?", 1),    # stack area plot or something v taxes and royalties
 
 # Convert to data.frame and adjust column names
 opt$plist <- data.frame(opt$plist[,1], as.logical(opt$plist[,2]))
 names(opt$plist) <- c("name", "plot")
+
+# Set font size
+opt$defFontSize <- 1.25
 
 # Quantiles to use to show uncertainty in simulated results
 opt$quant <- c(0.9, 0.7, 0.5, 0.3, 0.1)
