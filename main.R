@@ -20,8 +20,8 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-pwd.drop <- "D:/"                                  # Windows
-pwd.git  <- "C:/Users/Jon/Documents/R/"
+pwd.drop <- "D:/Users/jonwi/"                                  # Windows
+pwd.git  <- "C:/Users/jonwi/Documents/R/"
 # pwd.drop <- "/Users/john/"                         # Mac
 # pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
 # pwd.drop <- "~/"                                   # Linux
