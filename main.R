@@ -20,12 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-pwd.drop <- "D:/Users/jonwi/"                                  # Windows
-pwd.git  <- "C:/Users/jonwi/Documents/R/"
-# pwd.drop <- "/Users/john/"                         # Mac
-# pwd.git  <- "/Users/john/Documents/ub_oilandgas/"
-# pwd.drop <- "~/"                                   # Linux
-# pwd.git  <- "~/Documents/R Projects/"
+# pwd.drop <- "D:/Users/jonwi/"                 # Desktop
+# pwd.git  <- "C:/Users/jonwi/Documents/R/"
+pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
+pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
@@ -100,8 +98,9 @@ library(sqldf)
 library(minpack.lm)
 library(scatterplot3d)
 library(beepr)
-library(lhs)
 library(fitdistrplus)
+library(lhs)
+library(xtable)
 
 
 # 1.4 Options -------------------------------------------------------------
@@ -168,7 +167,7 @@ if(opt$schedule.update == TRUE) {
 # - field:            Vector of field numbers to be considered individually
 load(file.path(path$data, paste("well_actual_", opt$file_ver, ".rda", sep = "")))
 load(file.path(path$data, paste("cdf_schedule_", opt$file_ver, ".rda", sep = "")))
-
+ê
 
 # 2.3 EIA energy price history --------------------------------------------
 
@@ -418,59 +417,6 @@ if(opt$DCA.update == TRUE) {
 # Load DCA fits mo (oil) and mg (gas) as well as full fits (mof and mgf)
 load(file.path(path$data, paste("DCA_fits_", opt$file_ver, ".rda", sep = "")))
 load(file.path(path$data, paste("DCA_fits_full_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.12 Field DCA Update ---------------------------------------------------
-
-# Run function if opt$field.DCA.update flag is set to "TRUE"
-if(opt$field.DCA.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "DCAupdateField.R"))
-  source(file.path(path$fun, "QfitDCAupdateField.R"))
-  
-  # Function call for hyperbolic Field Level DCA fits
-  DCAupdateField(path =         path,
-                 p =            p,
-                 minDayProd =   opt$minDayProd,
-                 field =        field,
-                 DCAplot =      opt$DCAplot,
-                 ver =          opt$file_ver,
-                 b.start.oil =  opt$b.start.oil,
-                 Di.start.oil = opt$Di.start.oil,
-                 lower.oil =    opt$lower.oil,
-                 upper.oil =    opt$upper.oil,
-                 b.start.gas =  opt$b.start.gas,
-                 Di.start.gas = opt$Di.start.gas,
-                 lower.gas =    opt$lower.gas,
-                 upper.gas =    opt$upper.gas,
-                 quant =        opt$quant,
-                 tstart =       opt$FDC.tstart,
-                 tstop =        opt$FDC.tstop)
-  
-  # Function call for cumulative Field Level DCA fits
-  QDCAupdateField(path =         path,
-                  p =            p,
-                  minDayProd =   opt$minDayProd,
-                  field =        field,
-                  DCAplot =      opt$DCAplot,
-                  ver =          opt$file_ver,
-                  Cp.start.oil = opt$Cp.start.oil,
-                  c1.start.oil = opt$c1.start.oil,
-                  Qlower.oil =   opt$Qlower.oil,
-                  Qupper.oil =   opt$Qupper.oil,
-                  Cp.start.gas = opt$Cp.start.gas,
-                  c1.start.gas = opt$c1.start.gas,
-                  Qlower.gas =   opt$Qlower.gas,
-                  Qupper.gas =   opt$Qupper.gas,
-                  quant =        opt$quant,
-                  tstart =       opt$FDC.tstart,
-                  tstop =        opt$FDC.tstop)
-}
-
-# Load field-level hyperbolic (hypFF) and cumulative (QFF) DCA fits
-load(file.path(path$data, paste("DCA_field_fits_", opt$file_ver, ".rda", sep = "")))
-load(file.path(path$data, paste("DCA_field_Qfits_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.13 DCA CDF Update ------------------------------------------------------

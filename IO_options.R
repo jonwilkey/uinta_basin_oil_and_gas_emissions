@@ -93,7 +93,6 @@ opt$GBMfit.update       <- F # Fits GBM parameters "v" and "mu" to energy prices
 opt$EIAforecast.update  <- F # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
 opt$EIAerror.update     <- F # Generates CDFs for error in EIA AEO forecasts
 opt$DCA.update          <- F # Fits decline curves
-opt$field.DCA.update    <- F # Fits field level decline curves
 opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
 opt$water.update        <- F # Generates all CDFs and linear regression models for water balance terms
@@ -381,13 +380,6 @@ opt$Cp.start.gas    <- 1e4         # Same as above but for gas
 opt$c1.start.gas    <- 0           # Same as above but for gas
 opt$Qlower.gas      <- c(0,  -Inf) # Same as above but for gas
 opt$Qupper.gas      <- c(Inf, Inf) # Same as above but for gas
-
-
-# 2.12 DCA Field Update Options -------------------------------------------
-
-# Time step options
-opt$FDC.tstart <- opt$train.start # Start cutoff date, only p_rpt_period values >= this date will be included in DCA
-opt$FDC.tstop  <- opt$train.stop  # Stop cutoff date, only p_rpt_period values <= this date will be included in DCA
 
 
 # 2.13 DCA CDF Update Options ---------------------------------------------
