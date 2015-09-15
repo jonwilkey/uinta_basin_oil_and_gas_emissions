@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-# pwd.drop <- "D:/Users/jonwi/"                 # Desktop
-# pwd.git  <- "C:/Users/jonwi/Documents/R/"
-pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
-pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
+pwd.drop <- "C:/Users/jonwi/"                 # Desktop
+pwd.git  <- "C:/Users/jonwi/Documents/R/"
+# pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
+# pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
@@ -167,7 +167,7 @@ if(opt$schedule.update == TRUE) {
 # - field:            Vector of field numbers to be considered individually
 load(file.path(path$data, paste("well_actual_", opt$file_ver, ".rda", sep = "")))
 load(file.path(path$data, paste("cdf_schedule_", opt$file_ver, ".rda", sep = "")))
-ê
+
 
 # 2.3 EIA energy price history --------------------------------------------
 
@@ -928,8 +928,8 @@ for (i in 1:opt$nrun) {
   # 3.3.8 Water Balance -------------------------------------------------
   
   # Calculate water balance
-  WB <- water(wsim =     rbind(wsim[,c("pw","disp","evap","frack","inj")],
-                               wpri[,c("pw","disp","evap","frack","inj")]),
+  WB <- water(wsim =     rbind(wsim[,c("tDrill", "pw","disp","evap","frack","inj")],
+                               wpri[,c("tDrill", "pw","disp","evap","frack","inj")]),
               osim =     rbind(psim$osim, apri$oil),
               gsim =     rbind(psim$gsim, apri$gas),
               wellType = c(wsim$wellType, wpri$wellType),

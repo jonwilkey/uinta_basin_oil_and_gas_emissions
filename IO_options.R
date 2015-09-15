@@ -647,7 +647,7 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("25 Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
                    c("26 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
                    c("27 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
-                   c("28 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
+                   c("28 Water Balance Results",      T), # Results of water balance calculations for each term in WB eq.
                    c("29 CDF for Well Reworks",       F), # CDFs for well reworks
                    c("30 EIA AEO Relative Error",     F) # Boxplot of EIA AEO relative errors as f(prediction year)
 )

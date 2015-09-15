@@ -58,7 +58,30 @@ water <- function(wsim, osim, gsim, wellType, depth, dw.lm) {
   dw <-   pw
   fw <-   pw
   
-  # For each well (i.e. row) in wsim
+  # For one-time water usage events, calculate by time step
+  for (i in 1:ncol(fw)) {
+    
+    # Get index of wells that were drilled in time step i
+    ind <- which(wsim$tDrill == i)
+    
+    # Fracking water
+    fw[ind,i] <- wsim$frack[ind]
+    
+    # Calculate drilling water usage as function of well depth. Since it's 
+    # possible for a shallow well to be outside the range of the dw.lm 
+    # regression model, assume that any well shallower than the shallowest well 
+    # in the model fit uses the same amount of water as the fitted value of that
+    # shallowest well
+    dw[ind,i] <- ifelse(test = depth[ind] >= min(dw.lm$model$depth),
+                        
+                        # If depth is greater than the shallowest well, just use the fitted model
+                        yes = dw.lm$coef[2]*depth[ind]+dw.lm$coef[1],
+                        
+                        # Else use that fitted estimate for the shallowest well
+                        no = min(fitted(dw.lm)))
+  }
+  
+  # For continuous water balance terms, calculate by each well (i.e. row) in wsim
   for (i in 1:nrow(wsim)) {
     
     # Calculate produced water as timeseries based on well type. Check - is well
@@ -84,26 +107,6 @@ water <- function(wsim, osim, gsim, wellType, depth, dw.lm) {
     
     # Water flooding as timeseries
     inj[i,] <- wsim$inj[i]*osim[i,]
-    
-    # For one-time events, place in correct matrix location based on value of
-    # wsim$tDrill.
-    fw[i, wsim$tDrill[i]] <- wsim$frack[i]
-    
-    # Also, calculate drilling water usage as function of well depth. Since it's
-    # possible for a shallow well to be outside the range of the dw.lm 
-    # regression model, assume that any well shallower than the shallowest well
-    # in the model fit uses the same amount of water as the fitted value of that
-    # shallowest well
-    if (depth[i] >= min(dw.lm$model$depth)) {
-      
-      # If depth is greater than the shallowest well, just use the fitted model
-      dw[i, wsim$tDrill[i]] <- dw.lm$coef[2]*depth[i]+dw.lm$coef[1]
-      
-    } else {
-      
-      # Use that fitted estimate for the shallowest well
-      dw[i, wsim$tDrill[i]] <- min(fitted(dw.lm))
-    }
   } 
   
   
