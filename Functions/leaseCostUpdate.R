@@ -112,7 +112,7 @@ leaseCostUpdate <- function(path, ver, tstart, tstop, basis, LOCbasis, eia.ep) {
                       data = LOC[which(LOC$wellType == "OW" & LOC$LOCtype == "equip"),])
   LOC.oil.op <-    lm(formula = cost ~ op+depth-1,
                       data = LOC[which(LOC$wellType == "OW" & LOC$LOCtype == "op"),])
-  LOC.gas.equip <- lm(formula = cost ~ op+depth+gasRate-1,
+  LOC.gas.equip <- lm(formula = cost ~ gp+depth+gasRate-1,
                       data = LOC[which(LOC$wellType == "GW" & LOC$LOCtype == "equip"),])
   LOC.gas.op <-    lm(formula = cost ~ gp+depth+gasRate-1,
                       data = LOC[which(LOC$wellType == "GW" & LOC$LOCtype == "op"),])
