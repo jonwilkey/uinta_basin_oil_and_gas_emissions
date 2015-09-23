@@ -11,41 +11,49 @@
 
 # Queries and Calculations ------------------------------------------------
 
-# Actual energy prices for oil and gas
-ep.act <- subset(eia.hp,
-                 subset = (month >= as.yearmon(opt$tstart) &
-                             month <= as.yearmon(opt$tstop)),
-                 select = c("OP", "GP"))
+# If cross-validating
+if(opt$crossvalid == T) {
+  
+  # Actual energy prices for oil and gas
+  ep.act <- subset(eia.hp,
+                   subset = (month >= as.yearmon(opt$tstart) &
+                               month <= as.yearmon(opt$tstop)),
+                   select = c("OP", "GP"))
+  
+  # Actual number of wells drilled as timeseries. sqldf returns result as a
+  # data.frame, so brackets extract numerical results as a vector.
+  Drilled.act <- drillModelData$wells[which(drillModelData$month >= opt$tstart &
+                                              drillModelData$month <= opt$tstop)]
+  
+  # Actual total oil/gas production as timeseries...
+  all.p <- sqldf("select p_rpt_period, sum(p_oil_prod), sum(p_gas_prod)
+                 from p
+                 group by p_rpt_period")
+  names(all.p) <- c("date", "oil", "gas")
+  all.p <- all.p[which(all.p$date >= opt$tstart & all.p$date <= opt$tstop),]
+  
+  # ...and just from new wells
+  temp <- subset(p,
+                 subset = (h_first_prod >= opt$tstart),
+                 select = c("p_rpt_period", "p_oil_prod", "p_gas_prod"))
+  new.p <- sqldf("select p_rpt_period, sum(p_oil_prod), sum(p_gas_prod)
+                 from temp
+                 group by p_rpt_period")
+  remove(temp)
+  names(new.p) <- c("date", "oil", "gas")
+  new.p <- new.p[which(new.p$date >= opt$tstart & new.p$date <= opt$tstop),]
+  
+  # ...and just from existing wells
+  prior.p <- data.frame(date = all.p$date,
+                        oil = (all.p$oil-new.p$oil),
+                        gas = (all.p$gas-new.p$gas))
+}
 
-# Actual number of wells drilled as timeseries. sqldf returns result as a
-# data.frame, so brackets extract numerical results as a vector.
-Drilled.act <- drillModelData$wells[which(drillModelData$month >= opt$tstart &
-                                            drillModelData$month <= opt$tstop)]
+# Calculate total government take (royalties and taxes)
+take <- roy.oil+roy.gas+st.oil+st.gas+CTfed+CTstate+PT
 
-# Actual total oil/gas production as timeseries...
-all.p <- sqldf("select p_rpt_period, sum(p_oil_prod), sum(p_gas_prod)
-              from p
-              group by p_rpt_period")
-names(all.p) <- c("date", "oil", "gas")
-all.p <- all.p[which(all.p$date >= opt$tstart & all.p$date <= opt$tstop),]
 
-# ...and just from new wells
-temp <- subset(p,
-               subset = (h_first_prod >= opt$tstart),
-               select = c("p_rpt_period", "p_oil_prod", "p_gas_prod"))
-new.p <- sqldf("select p_rpt_period, sum(p_oil_prod), sum(p_gas_prod)
-              from temp
-              group by p_rpt_period")
-remove(temp)
-names(new.p) <- c("date", "oil", "gas")
-new.p <- new.p[which(new.p$date >= opt$tstart & new.p$date <= opt$tstop),]
-
-# ...and just from existing wells
-prior.p <- data.frame(date = all.p$date,
-                      oil = (all.p$oil-new.p$oil),
-                      gas = (all.p$gas-new.p$gas))
-
-# ---Quantiles---
+# Quantiles ---------------------------------------------------------------
 
 # Predefine quantile matrices
 Drilled.q <- matrix(0, nrow = length(opt$quant), ncol = length(opt$tsteps))
@@ -70,6 +78,7 @@ w.fw.q <-    Drilled.q
 w.inj.q <-   Drilled.q
 w.in.q <-    Drilled.q
 w.r.q <-     Drilled.q
+take.q <-    Drilled.q
 
 # For each timestep, get quantiles
 for (i in 1:ncol(Drilled.q)) {
@@ -95,6 +104,7 @@ for (i in 1:ncol(Drilled.q)) {
   w.inj.q[,i] <-   quantile(w.inj[,i],   opt$quant)
   w.in.q[,i] <-    quantile(w.in[,i],    opt$quant)
   w.r.q[,i] <-     quantile(w.r[,i],     opt$quant)
+  take.q[,i] <-    quantile(take[,i],    opt$quant)
 }
 
 
@@ -120,28 +130,39 @@ if(opt$plist$plot[j] == TRUE) {
   
   # Main plot with largest quantile result
   plot(opt$tsteps, op.q[1,],
-       ylim = c(0.9*min(c(min(op.q), min(ep.act$OP))), 1.1*max(c(max(op.q), max(ep.act$OP)))),
+       ylim = c(0.9*min(op.q), 1.1*max(op.q)),
        type = "l",
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = paste("Oil First Purchase Price (", opt$cpiDate, " $/bbl)", sep = ""),
-       main = "Oil Price - Simulation vs. Actual")
+       main = "Oil Price")
   
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, op.q[i,], col = linecolor[i])}
   
-  # Add the line for the actual value
-  lines(opt$tsteps, ep.act$OP)
-  
   # Add the forecast line
   lines(opt$tsteps, op.FC, lty = 2)
   
-  # Add legend
-  legend("topleft",
-         c("Actual", "Forecast", "90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = c("black", "black", linecolor),
-         lty = c(1, 2, rep(1, times = 5)))
+  if(opt$crossvalid == T) {
+    
+    # Add the line for the actual value
+    lines(opt$tsteps, ep.act$OP)
+    
+    # Add legend
+    legend("topleft",
+           c("Actual", "Forecast", "90%", "70%", "50%", "30%", "10%"),
+           ncol = 2,
+           col = c("black", "black", linecolor),
+           lty = c(1, 2, rep(1, times = 5)))
+  } else {
+    
+    # Add legend
+    legend("topleft",
+           c("Forecast", "90%", "70%", "50%", "30%", "10%"),
+           ncol = 2,
+           col = c("black", linecolor),
+           lty = c(2, rep(1, times = 5)))
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -163,27 +184,38 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, gp.q[1,],
        type = "l",
-       ylim = c(0.9*min(c(min(gp.q), min(ep.act$GP))), 1.1*max(c(max(gp.q), max(ep.act$GP)))),
+       ylim = c(0.9*min(gp.q), 1.1*max(gp.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""),
-       main = "Gas Price - Simulation vs. Actual")
+       main = "Gas Price")
   
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, gp.q[i,], col = linecolor[i])}
   
-  # Add the line for the actual value
-  lines(opt$tsteps, ep.act$GP)
-  
   # Add the forecast line
   lines(opt$tsteps, gp.FC, lty = 2)
   
-  # Add legend
-  legend("topleft",
-         c("Actual", "Forecast", "90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = c("black", "black", linecolor),
-         lty = c(1, 2, rep(1, times = 5)))
+  if(opt$crossvalid == T) {
+    
+    # Add the line for the actual value
+    lines(opt$tsteps, ep.act$GP)
+    
+    # Add legend
+    legend("topleft",
+           c("Actual", "Forecast", "90%", "70%", "50%", "30%", "10%"),
+           ncol = 2,
+           col = c("black", "black", linecolor),
+           lty = c(1, 2, rep(1, times = 5)))
+  } else {
+    
+    # Add legend
+    legend("topleft",
+           c("Forecast", "90%", "70%", "50%", "30%", "10%"),
+           ncol = 2,
+           col = c("black", linecolor),
+           lty = c(2, rep(1, times = 5)))
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -205,20 +237,27 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, Drilled.q[1,],
        type = "l",
-       ylim = c(0, 1.1*max(c(max(Drilled.q),max(Drilled.act)))),
+       ylim = c(0, 1.1*max(Drilled.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Wells Drilled",
-       main = "Drilling Schedule - Simulation vs. Actual")
+       main = "Drilling Schedule")
   
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, Drilled.q[i,], col = linecolor[i])}
   
-  # Add the line for the actual value
-  lines(opt$tsteps, Drilled.act)
-  
-  # Add legend
-  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  if(opt$crossvalid == T) {
+    
+    # Add the line for the actual value
+    lines(opt$tsteps, Drilled.act)
+    
+    # Add legend
+    legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  } else {
+    
+    # Add legend
+    legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -290,32 +329,35 @@ if(opt$plist$plot[j] == TRUE) {
   ind <- which(d$month >= opt$tstart &
                d$month <= opt$tstop)
   
-  # Main plot for cross-validation
-  plot(d$month[ind], d$wells[ind],
-       ylim = c(0, 100),
-       lwd = 2,
-       type = "l",
-       xlab = "Time (months)",
-       ylab = "Total Wells Drilled (oil, gas, or dry)",
-       main = "Cross-Validation of Drilling Schedule Models")
-  
-  # Add line for model predictions
-  lines(d$month[ind],
-        PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
-        col = "red", lty = 1)
-  lines(d$month[ind],
-        EPM(fit = coefficients(drillModel$epm), OP = d$OP[ind-1], GP = d$GP[ind-1]),
-        col = "blue", lty = 1)
-  lines(d$month[ind],
-        OPM(fit = coefficients(drillModel$opm), OP = d$OP[ind-1]),
-        col = "green", lty = 1)
-  lines(d$month[ind],
-        GPM(fit = coefficients(drillModel$gpm), GP = d$GP[ind-1]),
-        col = "purple", lty = 1)
-  
-  # Legend
-  legend("bottomleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
-         lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"), ncol = 2, cex = 1/opt$defFontSize)
+  if(opt$crossvalid == T) {
+    
+    # Main plot for cross-validation
+    plot(d$month[ind], d$wells[ind],
+         ylim = c(0, 100),
+         lwd = 2,
+         type = "l",
+         xlab = "Time (months)",
+         ylab = "Total Wells Drilled (oil, gas, or dry)",
+         main = "Cross-Validation of Drilling Schedule Models")
+    
+    # Add line for model predictions
+    lines(d$month[ind],
+          PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
+          col = "red", lty = 1)
+    lines(d$month[ind],
+          EPM(fit = coefficients(drillModel$epm), OP = d$OP[ind-1], GP = d$GP[ind-1]),
+          col = "blue", lty = 1)
+    lines(d$month[ind],
+          OPM(fit = coefficients(drillModel$opm), OP = d$OP[ind-1]),
+          col = "green", lty = 1)
+    lines(d$month[ind],
+          GPM(fit = coefficients(drillModel$gpm), GP = d$GP[ind-1]),
+          col = "purple", lty = 1)
+    
+    # Legend
+    legend("bottomleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
+           lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"), ncol = 2, cex = 1/opt$defFontSize)
+  }
   
   # Remove everything
   remove(PWM, EPM, OPM, GPM, d, ind)
@@ -386,21 +428,27 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, oil.q[1,]+poil.q[1,],
        type = "l",
-       ylim = c(min(c(min(oil.q+poil.q),min(all.p$oil))),
-                max(c(max(oil.q+poil.q),max(all.p$oil)))),
+       ylim = c(0.9*min(oil.q+poil.q), 1.1*max(oil.q+poil.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
-       main = "Oil Production - Simulated vs. Actual")
+       main = "Total Oil Production")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, oil.q[i,]+poil.q[i,], col = linecolor[i])}
   
-  # Actual oil production
-  lines(opt$tsteps, all.p$oil)
-  
-  # Legend
-  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  if(opt$crossvalid == T) {
+    
+    # Actual oil production
+    lines(opt$tsteps, all.p$oil)
+    
+    # Legend
+    legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  } else {
+    
+    # Legend
+    legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -422,21 +470,28 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, oil.q[1,],
        type = "l",
-       ylim = c(min(c(min(oil.q),min(new.p$oil))),
-                max(c(max(oil.q),max(new.p$oil)))),
+       ylim = c(0.9*min(oil.q), 1.1*max(oil.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
-       main = "Oil Production from New Wells - Simulated vs. Actual")
+       main = "Oil Production from New Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, oil.q[i,], col = linecolor[i])}
   
-  # Actual oil production
-  lines(opt$tsteps, new.p$oil)
+  if(opt$crossvalid == T) {
+    
+    # Actual oil production
+    lines(opt$tsteps, new.p$oil)
+    
+    # Legend
+    legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  } else {
+    
+    # Legend
+    legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
+  }
   
-  # Legend
-  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -458,21 +513,27 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, poil.q[1,],
        type = "l",
-       ylim = c(min(c(min(poil.q),min(prior.p$oil))),
-                max(c(max(poil.q),max(prior.p$oil)))),
+       ylim = c(0.9*min(poil.q), 1.1*max(poil.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Oil Production (bbl)",
-       main = "Oil Production from Existing Wells - Simulated vs. Actual")
+       main = "Oil Production from Existing Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, poil.q[i,], col = linecolor[i])}
   
-  # Actual oil production
-  lines(opt$tsteps, prior.p$oil)
-  
-  # Legend
-  legend("topright", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  if(opt$crossvalid == T) {
+    
+    # Actual oil production
+    lines(opt$tsteps, prior.p$oil)
+    
+    # Legend
+    legend("topright", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  } else {
+    
+    # Legend
+    legend("topright", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -494,21 +555,27 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, gas.q[1,]+pgas.q[1,],
        type = "l",
-       ylim = c(min(c(min(gas.q+pgas.q),min(all.p$gas))),
-                max(c(max(gas.q+pgas.q),max(all.p$gas)))),
+       ylim = c(0.9*min(gas.q+pgas.q), 1.1*max(gas.q+pgas.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
-       main = "Gas Production - Simulated vs. Actual")
+       main = "Total Gas Production")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, gas.q[i,]+pgas.q[i,], col = linecolor[i])}
   
-  # Actual gas production
-  lines(opt$tsteps, all.p$gas)
-  
-  # Legend
-  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  if(opt$crossvalid == T) {
+    
+    # Actual gas production
+    lines(opt$tsteps, all.p$gas)
+    
+    # Legend
+    legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  } else {
+    
+    # Legend
+    legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -530,21 +597,27 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, gas.q[1,],
        type = "l",
-       ylim = c(min(c(min(gas.q),min(new.p$gas))),
-                max(c(max(gas.q),max(new.p$gas)))),
+       ylim = c(0.9*min(gas.q), 1.1*max(gas.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
-       main = "Gas Production from New Wells - Simulated vs. Actual")
+       main = "Gas Production from New Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, gas.q[i,], col = linecolor[i])}
   
-  # Actual gas production
-  lines(opt$tsteps, new.p$gas)
-  
-  # Legend
-  legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  if(opt$crossvalid == T) {
+    
+    # Actual gas production
+    lines(opt$tsteps, new.p$gas)
+    
+    # Legend
+    legend("topleft", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  } else {
+    
+    # Legend
+    legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -566,21 +639,27 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, pgas.q[1,],
        type = "l",
-       ylim = c(min(c(min(pgas.q),min(prior.p$gas))),
-                max(c(max(pgas.q),max(prior.p$gas)))),
+       ylim = c(0.9*min(pgas.q), 1.1*max(pgas.q)),
        col = linecolor[1],
        xlab = "Time (months)",
        ylab = "Gas Production (MCF)",
-       main = "Gas Production from Existing Wells - Simulated vs. Actual")
+       main = "Gas Production from Existing Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, pgas.q[i,], col = linecolor[i])}
   
-  # Actual gas production
-  lines(opt$tsteps, prior.p$gas)
-  
-  # Legend
-  legend("topright", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  if(opt$crossvalid == T) {
+    
+    # Actual gas production
+    lines(opt$tsteps, prior.p$gas)
+    
+    # Legend
+    legend("topright", c("Actual", "90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c("black", linecolor), lty = 1)
+  } else {
+    
+    # Legend
+    legend("topright", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -1030,14 +1109,14 @@ if(opt$plist$plot[j] == TRUE) {
   # Oil FPP
   plot(eia.hp$month, eia.hp$OP,
        type = "l",
-       xlab = "Date - July 1978 to Nov. 2014 (by month)",
+       xlab = "Date (by month)",
        ylab = paste("Price in", opt$cpiDate, "$/bbl"),
        main = "Utah Oil First Purchase Price History")
   
   # Gas FPP
   plot(eia.hp$month, eia.hp$GP,
        type = "l",
-       xlab = "Date - July 1978 to Nov. 2014 (by month)",
+       xlab = "Date (by month)",
        ylab = paste("Price in", opt$cpiDate, "$/MCF"),
        main = "Utah Gas First Purchase Price History")
   
@@ -1384,7 +1463,7 @@ if(opt$plist$plot[j] == TRUE) {
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.r.q[i,], col = linecolor[i])}
   
   # Legend
-  legend("topright", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(linecolor), lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -1471,6 +1550,39 @@ if(opt$plist$plot[j] == TRUE) {
   
   # Remove data
   remove(din)
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# Government Take -------------------------------------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  # Main plot with largest quantile result
+  plot(opt$tsteps, take.q[1,]/1e6,
+       type = "l",
+       ylim = c(min(take.q)/1e6,
+                max(take.q)/1e6),
+       col = linecolor[1],
+       xlab = "Time (months)",
+       ylab = "Total Royalties and Taxes (1e6 USD)",
+       main = "Total Royalties and Taxes from Oil and Gas")
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {lines(opt$tsteps, take.q[i,]/1e6, col = linecolor[i])}
+  
+  # Legend
+  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = linecolor, lty = 1)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
