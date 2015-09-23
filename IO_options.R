@@ -18,6 +18,8 @@ opt <- NULL
 # Enter number of overall simulation iterations
 opt$nrun <- 1e2
 
+opt$crossvalid <- F
+
 # Time Options
 opt$tstart <-      as.Date("2010-01-01")                                 # Start date of simulation period
 opt$tstop  <-      as.Date("2014-12-01")                                 # Stop date of simulation period
@@ -69,7 +71,7 @@ opt$FPPdate <- as.Date("2009-12-01")
 # Threshold oil production rate (bbl per month) below which a well is consider 
 # to be abandoned. Used in both priorProd and productionsim functions. 
 # Calculated here as minimum revenue ($2e3 in oil sales)/(Dec. 2014 FPP for oil)
-opt$acut <- 2000/51.72
+opt$acut <- 0#2000/51.72
 
 
 # 1.1 Flags for updating prepared data files ----------------------------------
@@ -215,9 +217,9 @@ opt$field.cutoff <- 0.05
 
 # Well depth criteria (minimum, maximum, and resolution of well depth CDF) in 
 # feet. Minimum well depth is set in global options (Section 1.0). Note that one
-# important use of these values is to generate well depth probability
+# important use of these values is to generate well depth probability 
 # distributions. In that context, the # of bins generated is 
-# (max.depth-min.depth)/depth.step. This result **MUST** be a whole number.
+# (max.depth-min.depth)/depth.step. This result must be a whole number.
 opt$max.well.depth <-  20e3
 opt$well.depth.step <- 10
 
@@ -300,35 +302,15 @@ opt$GBM.tstop  <- opt$train.stop
 # June). The final date of the modeled time period should be equal to or greater
 # than the last date in the year column.
 
-# # AEO 2013 Forecast
-# year <- seq(as.Date("2013-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
-# oil  <- c(94.65, 94.84) # Rocky Mountain wellhead oil price forecast in 2011 $/bbl from Table 101
-# gas  <- c( 3.26,  3.20) # Rocky Mountain wellhead gas price forecast in 2011 $/MCF from Table 102
+# # AEO 2015 Forecast (CPI = 232.957)
+# year <- seq(as.Date("2015-06-01"), as.Date("2019-06-01"), by = "year") # Year (time step for EIA price forecasts)
+# oil  <- c(45.99, 60.92, 65.07, 65.02, 66.53) # Rocky Mountain wellhead oil price forecast in 2013 $/bbl from Table 60
+# gas  <- c( 3.00,  3.61,  4.04,  3.95,  4.27) # Rocky Mountain wellhead gas price forecast in 2013 $/MCF from Table 61
 
-# # AEO 2012 Forecast
-# year <- seq(as.Date("2012-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
-# oil  <- c(101.73, 110.29, 118.23) # Rocky Mountain wellhead oil price forecast in 2010 $/bbl from Table 101
-# gas  <- c(  3.19,   3.33,   3.46) # Rocky Mountain wellhead gas price forecast in 2010 $/MCF from Table 102
-
-# # AEO 2011 Forecast
-# year <- seq(as.Date("2000-06-01"), as.Date("2012-06-01"), by = "year") # Year (time step for EIA price forecasts)
-# oil  <- c(88.76, 91.15) # Rocky Mountain wellhead oil price forecast in 2009 $/bbl from Table 101
-# gas  <- c( 3.93,  3.94) # Rocky Mountain wellhead gas price forecast in 2009 $/MCF from Table 102
-
-# AEO 2010 Forecast
+# AEO 2010 Forecast (CPI = 215.303)
 year <- seq(as.Date("2010-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
 oil  <- c(73.90, 74.13, 81.39, 87.98, 93.26) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
 gas  <- c( 4.16,  5.33,  5.65,  5.48,  5.44) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
-
-# # AEO 2005 Forecast
-# year <- seq(as.Date("2005-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
-# oil  <- c(33.36, 27.70, 26.36, 25.12, 24.32, 24.02, 24.26, 24.67, 24.98, 25.33) # Rocky Mountain wellhead oil price forecast in 2003 $/bbl from Table 101
-# gas  <- c( 5.04,  4.73,  4.41,  3.96,  3.62,  3.41,  3.36,  3.48,  3.61,  3.74) # Rocky Mountain wellhead gas price forecast in 2003 $/MCF from Table 102
-
-# # AEO 2000 Forecast
-# year <- seq(as.Date("2000-06-01"), as.Date("2012-06-01"), by = "year") # Year (time step for EIA price forecasts)
-# oil  <- c(19.98,19.69,19.82,19.95,20.07,20.21,20.27,20.38,20.54,20.60,20.69,21.18,21.04) # Rocky Mountain wellhead oil price forecast in 1998 $/bbl from Table 101
-# gas  <- c(1.87,1.90,1.95,2.05,2.16,2.28,2.38,2.49,2.56,2.58,2.59,2.58,2.55) # Rocky Mountain wellhead gas price forecast in 1998 $/MCF from Table 102
 
 opt$forecast <- data.frame(year, oil, gas)
 remove(year, oil, gas)
@@ -520,6 +502,10 @@ opt$prod.type <- "a"
 opt$mc.DCeq.type <- "b"
 
 
+# PLACE ME IN A NEW SECTION IF I WORK
+opt$grFrac <- 0.8
+
+
 # 3.3.3 royalty Options ---------------------------------------------------
 
 # Royatly rates for Federal, Indian, State, and Fee type leases (in that order).
@@ -608,6 +594,7 @@ opt$edcut <- c(as.Date("2012-11-01"), as.Date("2015-01-01"))
 
 # 3.3.X Employment Options ------------------------------------------------
 
+# RIMS II multiplier for oil and gas industry
 opt$RIMSmultiplier <- 2.2370
 
 # 4.1 postProcess Options -------------------------------------------------
@@ -615,7 +602,7 @@ opt$RIMSmultiplier <- 2.2370
 # Export options
 opt$exportFlag <- F                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e2run -actual DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e2run -sim DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
@@ -627,11 +614,11 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("05 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
                    c("07 Total Oil Production",       F), # Total oil production simulated vs actual
-                   c("08 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
-                   c("09 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
+                   c("08 Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
+                   c("09 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
                    c("10 Total Gas Production",       F), # Total gas production simulated vs actual
-                   c("11 Gas from New Wells",         F), # Total gas production simulated vs actual from new wells
-                   c("12 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
+                   c("11 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
+                   c("12 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
                    c("13 CO2e Emissions",             F), # CO2 emissions
                    c("14 CH4 Emissions",              F), # CH4 emissions
                    c("15 VOC Emissions",              F), # VOC emissions
@@ -647,9 +634,10 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("25 Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
                    c("26 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
                    c("27 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
-                   c("28 Water Balance Results",      T), # Results of water balance calculations for each term in WB eq.
+                   c("28 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
                    c("29 CDF for Well Reworks",       F), # CDFs for well reworks
-                   c("30 EIA AEO Relative Error",     F) # Boxplot of EIA AEO relative errors as f(prediction year)
+                   c("30 EIA AEO Relative Error",     F), # Boxplot of EIA AEO relative errors as f(prediction year)
+                   c("31 Total Royalties and Taxes",  F)  # Total royalties and taxes (severance, property, and corporate income)
 )
 
 # Convert to data.frame and adjust column names
