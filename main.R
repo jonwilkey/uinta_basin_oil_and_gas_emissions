@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-pwd.drop <- "C:/Users/jonwi/"                 # Desktop
-pwd.git  <- "C:/Users/jonwi/Documents/R/"
-# pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
-# pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
+# pwd.drop <- "C:/Users/jonwi/"                 # Desktop
+# pwd.git  <- "C:/Users/jonwi/Documents/R/"
+pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
+pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
@@ -76,6 +76,8 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "ctax.R",
                               "ptax.R",
                               "Ecalc.R",
+                              "LECcalc.R",
+                              "LOCcalc.R",
                               #"RIMS.R",
                               #"workload.R",
                               "water.R",
@@ -88,7 +90,7 @@ flst <- file.path(path$fun, c("GBMsim.R",
 for (f in flst) source(f); remove(f, flst)
 
 
-# 1.3 Libraries -----------------------------------------------------------
+# 1.3 Packages -----------------------------------------------------------
 
 library(foreign)
 library(plyr)
@@ -113,6 +115,10 @@ source("IO_options.R")
 
 # Set seed for random number generation (for reproducibility)
 set.seed(1)
+
+# Print and save start time
+print(paste("Start time:",Sys.time()))
+runstart <- Sys.time()
 
 
 # 2.1 DOGM *.dbf database file processing ---------------------------------
@@ -840,6 +846,55 @@ for (i in 1:opt$nrun) {
                                 ppri =      ppri)
   
   
+  # 3.3.9 Lease equipment costs ----------------------------------------
+  
+  # Calculate the capital cost for lease equipment
+  wsim$LEC <- LECcalc(wsim =          wsim[,c("prior","rework","tDrill","wellType","depth")],
+                      LOC.oil.equip = LOC.oil.equip,
+                      LOC.gas.equip = LOC.gas.equip,
+                      op =            op[i,],
+                      gp =            gp[i,],
+                      osim =          psim$osim,
+                      gsim =          psim$gsim)
+  
+  
+  # 3.3.10 Lease operating costs ---------------------------------------
+  
+  # Calculate the capital cost for lease equipment
+  LOC <- LOCcalc(wsim =       rbind(wsim[,c("wellType", "depth")],
+                                    wpri[,c("wellType", "depth")]),
+                 LOC.oil.op = LOC.oil.op,
+                 LOC.gas.op = LOC.gas.op,
+                 op =         op[i,],
+                 gp =         gp[i,],
+                 osim =       rbind(psim$osim, apri$oil),
+                 gsim =       rbind(psim$gsim, apri$gas))
+  
+  
+  # 3.3.X Production correction -----------------------------------------
+  
+  OSIM <- rbind(psim$osim, apri$oil)
+  GSIM <- rbind(psim$gsim, apri$gas)
+  
+  # No well should produce if its LOC is higher than some fraction of its gross 
+  # revenue. Calculate gross revenue from oil and gas sales.
+  gr <- op[i,]*rbind(psim$osim, apri$oil)+gp[i,]*rbind(psim$gsim, apri$gas)
+  
+  # Get indices of wells (rows) and time steps (columns) with LOC/gr >= cutoff
+  ind <- which(LOC/gr >= opt$grFrac)
+  
+  # Zero out production records and LOCs for wells in ind
+  LOC[ind] <- 0
+  OSIM[ind] <- 0
+  GSIM[ind] <- 0
+  
+  # Pullout production records from OSIM/GSIM
+  psim$osim <- OSIM[1:nrow(psim$osim),]
+  apri$oil <-  OSIM[(nrow(psim$osim)+1):nrow(OSIM),]
+  psim$gsim <- GSIM[1:nrow(psim$gsim),]
+  apri$gas <-  GSIM[(nrow(psim$gsim)+1):nrow(GSIM),]
+  
+  
   # 3.3.3 Royalties -----------------------------------------------------
   
   # Calculate royalty for oil production
@@ -925,7 +980,7 @@ for (i in 1:opt$nrun) {
                  EFred.Nov12 = opt$EFred.Nov12)
   
   
-  # 3.3.8 Water Balance -------------------------------------------------
+  # 3.3.8 Water Balance ------------------------------------------------
   
   # Calculate water balance
   WB <- water(wsim =     rbind(wsim[,c("tDrill", "pw","disp","evap","frack","inj")],
@@ -937,7 +992,7 @@ for (i in 1:opt$nrun) {
               dw.lm =    water.lm$dw.lm)
   
   
-  # 3.3.x Get totals for MC run i ---------------------------------------
+  # 3.3.x Get totals for MC run i --------------------------------------
   
   # Calculate column sums for each results matrix generated to get totals
   osim[i,] <-    colSums(psim$osim[which(wsim$prior == F),])
@@ -983,7 +1038,7 @@ close(pb)
 #                   wsim = wsim,
 #                   LOC = LOC,
 #                   nrun = nrun)
-# 
+#
 # # Workload-based model employment estimate. See workload.R to change model
 # # constants (too many to pass as input arguments here).
 # jobs.workload <- workload(wsim = wsim,
@@ -1002,6 +1057,10 @@ close(pb)
 
 # Run processing script to generate plots of results
 source(file.path(path$fun, "postProcess.R"))
+
+# Print and stop time
+print(paste("Stop time:",Sys.time()))
+print(paste("Total run time:", format(difftime(Sys.time(), runstart))))
 
 # Print finished message and play sound
 beep(3, message("Script Finished"))
