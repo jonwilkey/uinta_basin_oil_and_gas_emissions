@@ -18,7 +18,7 @@ opt <- NULL
 # Enter number of overall simulation iterations
 opt$nrun <- 1e2
 
-opt$crossvalid <- F
+opt$crossvalid <- T
 
 # Time Options
 opt$tstart <-      as.Date("2010-01-01")                                 # Start date of simulation period
@@ -282,7 +282,7 @@ opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
 # Time step options - for purposes of cross-validating against 2010-2014 data,
 # best window appears to be 1995-2009
 opt$DMU.tstart <- as.Date("1995-01-01")
-opt$DMU.tstop  <- as.Date("2009-12-01")
+opt$DMU.tstop  <- opt$train.stop
 
 
 # 2.8 GBMfitUpdate Options ------------------------------------------------
@@ -318,9 +318,6 @@ remove(year, oil, gas)
 # EIA CPI basis
 opt$EIAbasis  <- 215.303 # Annual average CPI for whatever dollar year is used above
 
-# Time step options
-opt$EFU.tsteps <- seq(from = opt$tstart, to = opt$tstop, by = "months")
-
 
 # 2.10 EIAerrorUpdate Options ---------------------------------------------
 
@@ -340,8 +337,8 @@ opt$n.stopB.min     <- 4    # Any stop points identified that are lower than thi
 opt$n.startT.search <- 3    # Look at the top "n" number of production points and pick the one with the lowest time value
 
 # Time step options - these tsteps need to cover all time prior to start of sim
-opt$DCA.tstart <- as.Date("1984-01-01") # Start cutoff date, only p_rpt_period values >= this date will be included in DCA
-opt$DCA.tstop  <- opt$train.stop        # Stop cutoff date, only p_rpt_period values <= this date will be included in DCA
+opt$DCA.tstart <- opt$train.start # Start cutoff date, only p_rpt_period values >= this date will be included in DCA
+opt$DCA.tstop  <- opt$train.stop  # Stop cutoff date, only p_rpt_period values <= this date will be included in DCA
 
 # Hyperbolic DC Options
 opt$b.start.oil     <- 1.78            # Initial guess value for b coefficient for oil decline curve
@@ -392,6 +389,8 @@ opt$Q.cdf.gas.np    <- c(10e3,  10e3)  # Same as above but for gas
 
 
 # 2.14 drillCapCostUpdate Options -----------------------------------------
+
+# There are no options that need to be set for this function specifically
 
 
 # 2.15 waterUpdate Options ------------------------------------------------
@@ -454,14 +453,14 @@ opt$drilled.init <- 43
 # Select drilling simulation type. Valid options are:
 #  sim - for simulated drilling schedule based on economic drilling model
 #  actual - for actual drilling schedule
-opt$DStype <- "sim"
+opt$DStype <- "actual"
 
 # Pick method for simulated drilling schedule, valid options are:
 #  a - Prior well model:   W_n = a * OP_n   + b * GP_n   + c * W_n-1 + d
 #  b - Energy price model: W_n = a * OP_n-1 + b * GP_n-1 + c
 #  c - Oil price model:    W_n = a * OP_n-1 + b
 #  d - Gas price model:    W_n = a * GP_n-1 + b
-opt$DSsimtype <- "b"
+opt$DSsimtype <- "c"
 
 
 # 3.3 priorProd Options ---------------------------------------------------
@@ -502,7 +501,10 @@ opt$prod.type <- "a"
 opt$mc.DCeq.type <- "b"
 
 
-# PLACE ME IN A NEW SECTION IF I WORK
+# 3.3.x Production correction ---------------------------------------------
+
+# Maximum fraction of gross revenue that can be spent on LOC. Any well with a
+# higher ratio will be shut-in.
 opt$grFrac <- 0.8
 
 
@@ -602,7 +604,7 @@ opt$RIMSmultiplier <- 2.2370
 # Export options
 opt$exportFlag <- F                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -1e2run -sim DS -sim10to15 -train84to10 -v8.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -1e2run -actual DS -sim10to15 -train84to09 -v8.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
@@ -614,11 +616,11 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("05 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
                    c("07 Total Oil Production",       F), # Total oil production simulated vs actual
-                   c("08 Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
-                   c("09 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
+                   c("08 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
+                   c("09 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
                    c("10 Total Gas Production",       F), # Total gas production simulated vs actual
-                   c("11 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
-                   c("12 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
+                   c("11 Gas from New Wells",         F), # Total gas production simulated vs actual from new wells
+                   c("12 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
                    c("13 CO2e Emissions",             F), # CO2 emissions
                    c("14 CH4 Emissions",              F), # CH4 emissions
                    c("15 VOC Emissions",              F), # VOC emissions

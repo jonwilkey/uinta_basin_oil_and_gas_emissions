@@ -846,7 +846,7 @@ for (i in 1:opt$nrun) {
                                 ppri =      ppri)
   
   
-  # 3.3.9 Lease equipment costs ----------------------------------------
+  # 3.3.9 Lease costs --------------------------------------------------
   
   # Calculate the capital cost for lease equipment
   wsim$LEC <- LECcalc(wsim =          wsim[,c("prior","rework","tDrill","wellType","depth")],
@@ -857,10 +857,7 @@ for (i in 1:opt$nrun) {
                       osim =          psim$osim,
                       gsim =          psim$gsim)
   
-  
-  # 3.3.10 Lease operating costs ---------------------------------------
-  
-  # Calculate the capital cost for lease equipment
+  # Calculate the operating cost for lease equipment
   LOC <- LOCcalc(wsim =       rbind(wsim[,c("wellType", "depth")],
                                     wpri[,c("wellType", "depth")]),
                  LOC.oil.op = LOC.oil.op,
