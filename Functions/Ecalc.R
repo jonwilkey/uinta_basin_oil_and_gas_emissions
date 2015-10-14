@@ -121,8 +121,6 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred.Nov12) {
   
   # Part 2: Emission reductions --------------------------------------------
   
-  # Step 0: Preliminaries
-  
   # Emission reductions function
   redfun <- function(v, tstep, red) {
     
@@ -131,7 +129,17 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred.Nov12) {
     # tstep - starting time step / element for reduction
     # red   - actual reduction %
     
-    c(v[1:(tstep-1)], v[tstep:length(v)]*(1+red))
+    # If the starting time step is less than 2, then the entire vector is
+    # reduced
+    if (tstep < 2) {
+      
+      # Reduce entire vector
+      v*(1+red)
+    } else {
+      
+      # Only reduce the emissions after the starting time step
+      c(v[1:(tstep-1)], v[tstep:length(v)]*(1+red))
+    }
   }
   
   # Predefine reduced emissions matrices as their unreduced counterparts
@@ -145,10 +153,10 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred.Nov12) {
   rEtransm.ch4 <- Etransm.ch4
   rEtransm.voc <- Etransm.voc
   
-  # Step 1: Emissions reduction for wells drilled beginning Nov. 2012
+  # Emissions reduction for wells drilled beginning Nov. 2012
   
   # Cut time step equivalent to Nov. 2012 emissions reduction
-  ttstep <- 1+round(as.numeric(difftime(edcut[1], tstart, units = "days"))*(12/365.25))
+  ttstep <- 1+round(as.numeric(difftime(edcut, tstart, units = "days"))*(12/365.25))
   
   # Get row indices of wells drilled on or after Nov. 2012 date
   ind <- which(wsim$tDrill >= ttstep)
@@ -156,7 +164,7 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred.Nov12) {
   # If ind > 0, apply reductions to gas production, processing, and transport
   if(length(ind) > 0) {
     
-    # Production events for gas
+    # Production events for gas -- PROBLEM HERE --
     rEprod.co2[ind,] <- t(apply(Eprod.co2[ind,], 1, redfun, tstep = ttstep, red = EFred.Nov12["prod","co2"]))
     rEprod.ch4[ind,] <- t(apply(Eprod.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred.Nov12["prod","ch4"]))
     rEprod.voc[ind,] <- t(apply(Eprod.voc[ind,], 1, redfun, tstep = ttstep, red = EFred.Nov12["prod","voc"]))
@@ -172,11 +180,7 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred.Nov12) {
     rEtransm.voc[ind,] <- t(apply(Etransm.voc[ind,], 1, redfun, tstep = ttstep, red = EFred.Nov12["transm","voc"]))
   }
   
-  # Step 2: Emissions reductions for completions beginning Jan. 2015
-  
-  # Step 3: Emissions reductions for pneumatic controllers on production beginning Jan. 2015
-  
-  # Step 4: Summation
+  # Summation
   rEco2 <- Edrill.co2+Erework.co2+Ecompl.co2+rEprod.co2+rEproc.co2+rEtransm.co2+Eoprod.co2+Eotrans.co2
   rEch4 <- Edrill.ch4+Erework.ch4+Ecompl.ch4+rEprod.ch4+rEproc.ch4+rEtransm.ch4+Eoprod.ch4+Eotrans.ch4
   rEvoc <- Edrill.voc+Erework.voc+Ecompl.voc+rEprod.voc+rEproc.voc+rEtransm.voc+Eoprod.voc+Eotrans.voc
