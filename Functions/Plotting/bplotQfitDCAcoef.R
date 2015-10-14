@@ -25,43 +25,43 @@ bplotQfitDCAcoef <- function() {
   
   # Data for oil ------------------------------------------------------------
   
-  # Get row index of fits for fields we're specifically fitting
-  ind <- which(qmo$w_field_num == opt$field[1] |
-                 qmo$w_field_num == opt$field[2] |
-                 qmo$w_field_num == opt$field[3] |
-                 qmo$w_field_num == opt$field[4] |
-                 qmo$w_field_num == opt$field[5] |
-                 qmo$w_field_num == opt$field[6] |
-                 qmo$w_field_num == opt$field[7] |
-                 qmo$w_field_num == opt$field[8] |
-                 qmo$w_field_num == opt$field[9] |
-                 qmo$w_field_num == opt$field[10])
+  # Predefine ind vector
+  ind <- NULL
+  
+  # Get row indices of fields which we analyzed individually
+  for (k in 1:(length(field)-1)) {
+    
+    ind <- c(ind, which(qmo$w_field_num == field[k]))
+  }
+  
+  # Anything not in ind is field 999, overwrite their field numbers
+  qmo$w_field_num[-ind] <- 999
   
   # Make data.frame of field and DCA coefficient values, then rename
-  ocf <- data.frame(qmo$w_field_num[ind],
-                    qmo$Cp.1[ind],
-                    qmo$c1.1[ind])
+  ocf <- data.frame(qmo$w_field_num,
+                    qmo$Cp.1,
+                    qmo$c1.1)
   names(ocf) <- c("field", "Cp", "c1")
   
   
   # Data for gas ------------------------------------------------------------
   
-  # Get row index of fits for fields we're specifically fitting
-  ind <- which(mg$w_field_num == opt$field[1] |
-                 mg$w_field_num == opt$field[2] |
-                 mg$w_field_num == opt$field[3] |
-                 mg$w_field_num == opt$field[4] |
-                 mg$w_field_num == opt$field[5] |
-                 mg$w_field_num == opt$field[6] |
-                 mg$w_field_num == opt$field[7] |
-                 mg$w_field_num == opt$field[8] |
-                 mg$w_field_num == opt$field[9] |
-                 mg$w_field_num == opt$field[10])
+  # Predefine ind vector
+  ind <- NULL
+  
+  # Get row indices of fields which we analyzed individually
+  for (k in 1:(length(field)-1)) {
+    
+    ind <- c(ind, which(qmg$w_field_num == field[k]))
+  }
+  
+  # Anything not in ind is field 999, overwrite their field numbers
+  qmg$w_field_num[-ind] <- 999
   
   # Make data.frame of field and DCA coefficient values, then rename
-  gcf <- data.frame(mg$w_field_num[ind],
-                    mg$Cp.1[ind],
-                    mg$c1.1[ind])
+  gcf <- data.frame(qmg$w_field_num,
+                    qmg$Cp.1,
+                    qmg$c1.1)
   names(gcf) <- c("field", "Cp", "c1")
   
   
@@ -107,4 +107,9 @@ bplotQfitDCAcoef <- function() {
           xlab = "Field Number",
           ylab = "c1 value for gas (MCF)",
           main = "Gas c1 values")
+  
+  # Plots for gas -----------------------------------------------------------
+  
+  # Remove temporary variables in this script
+  remove(qmo, qmg, k, ocf, gcf)
 }

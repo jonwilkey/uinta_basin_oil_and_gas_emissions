@@ -17,6 +17,7 @@
 
 # Function ----------------------------------------------------------------
 bplotHypDCAcoef <- function() {
+  
   # Only fitted wells
   hmo <- mo[which(mo$fit.1 == 1),]
   hmg <- mg[which(mg$fit.1 == 1),]
@@ -24,47 +25,47 @@ bplotHypDCAcoef <- function() {
   
   # Data for oil ------------------------------------------------------------
   
-  # Get row index of fits for fields we're specifically fitting
-  ind <- which(hmo$w_field_num == opt$field[1] |
-                 hmo$w_field_num == opt$field[2] |
-                 hmo$w_field_num == opt$field[3] |
-                 hmo$w_field_num == opt$field[4] |
-                 hmo$w_field_num == opt$field[5] |
-                 hmo$w_field_num == opt$field[6] |
-                 hmo$w_field_num == opt$field[7] |
-                 hmo$w_field_num == opt$field[8] |
-                 hmo$w_field_num == opt$field[9] |
-                 hmo$w_field_num == opt$field[10])
+  # Predefine ind vector
+  ind <- NULL
+  
+  # Get row indices of fields which we analyzed individually
+  for (k in 1:(length(field)-1)) {
+    
+    ind <- c(ind, which(hmo$w_field_num == field[k]))
+  }
+  
+  # Anything not in ind is field 999, overwrite their field numbers
+  hmo$w_field_num[-ind] <- 999
   
   # Make data.frame of field and DCA coefficient values, then rename
-  ocf <- data.frame(hmo$w_field_num[ind],
-                    hmo$qo.1[ind],
-                    hmo$b.1[ind],
-                    hmo$Di.1[ind],
-                    hmo$tdelay[ind])
+  ocf <- data.frame(hmo$w_field_num,
+                    hmo$qo.1,
+                    hmo$b.1,
+                    hmo$Di.1,
+                    hmo$tdelay)
   names(ocf) <- c("field", "qo", "b", "Di", "td")
   
   
   # Data for gas ------------------------------------------------------------
   
-  # Get row index of fits for fields we're specifically fitting
-  ind <- which(hmg$w_field_num == opt$field[1] |
-                 hmg$w_field_num == opt$field[2] |
-                 hmg$w_field_num == opt$field[3] |
-                 hmg$w_field_num == opt$field[4] |
-                 hmg$w_field_num == opt$field[5] |
-                 hmg$w_field_num == opt$field[6] |
-                 hmg$w_field_num == opt$field[7] |
-                 hmg$w_field_num == opt$field[8] |
-                 hmg$w_field_num == opt$field[9] |
-                 hmg$w_field_num == opt$field[10])
+  # Predefine ind vector
+  ind <- NULL
+  
+  # Get row indices of fields which we analyzed individually
+  for (k in 1:(length(field)-1)) {
+    
+    ind <- c(ind, which(hmg$w_field_num == field[k]))
+  }
+  
+  # Anything not in ind is field 999, overwrite their field numbers
+  hmg$w_field_num[-ind] <- 999
   
   # Make data.frame of field and DCA coefficient values, then rename
-  gcf <- data.frame(hmg$w_field_num[ind],
-                    hmg$qo.1[ind],
-                    hmg$b.1[ind],
-                    hmg$Di.1[ind],
-                    hmg$tdelay[ind])
+  gcf <- data.frame(hmg$w_field_num,
+                    hmg$qo.1,
+                    hmg$b.1,
+                    hmg$Di.1,
+                    hmg$tdelay)
   names(gcf) <- c("field", "qo", "b", "Di", "td")
   
   
@@ -148,4 +149,9 @@ bplotHypDCAcoef <- function() {
           xlab = "Field Number",
           ylab = "Time delay value for gas production (months)",
           main = "Gas Production Time Delay Values")
+  
+  # Cleanup -----------------------------------------------------------
+  
+  # Remove all temporary variables in this script
+  remove(hmo, hmg, k, ocf, gcf)
 }
