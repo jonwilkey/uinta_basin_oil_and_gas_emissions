@@ -1,5 +1,5 @@
 # Script Info -------------------------------------------------------------
-# Name:      main.R (Conventional Oil and Gas Simulation Driver Script)
+# Name:      main.R (Uinta Basin Oil and Gas Production Model -  Main Script)
 # Author(s): Jon Wilkey
 # Contact:   jon.wilkey@gmail.com
 
@@ -10,7 +10,9 @@
 
 # 1. Set simulation environment, including directory paths, functions, libraries
 #    and loading user input/output options.
-# 2. Process DOGM *.dbf database files
+# 2. Perform data analysis functions on UDOGM database files.
+# 3. Run Monte-Carlo (MC) simulation.
+# 4. Perform post-processing calculations and generate plots.
 
 
 # 1.1 Paths ---------------------------------------------------------------
@@ -18,12 +20,10 @@
 # Predefine list object "path" for holding directory path listings
 path <- NULL
 
-# Path switch - uncomment and/or replace with the path directory for your local
-# copy of the Git repository and Dropbox files.
-pwd.drop <- "C:/Users/jonwi/"                 # Desktop
+# Path switch - replace with the path directory for your local copy of the Git
+# repository and Dropbox files.
+pwd.drop <- "C:/Users/jonwi/"
 pwd.git  <- "C:/Users/jonwi/Documents/R/"
-# pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
-# pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
@@ -63,24 +63,24 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "sim_lease.R",
                               "sim_rework.R",
                               "sim_dupRework.R",
-                              "sim_NTIfrac.R",
-                              "sim_pTaxfrac.R",
+                              #"sim_NTIfrac.R",
+                              #"sim_pTaxfrac.R",
                               "sim_tdrill.R",
-                              "sim_water.R",
-                              "sim_wcost.R",
+                              #"sim_water.R",
+                              #"sim_wcost.R",
                               "sim_wellType.R",
                               "productionsim.R",
                               "priorProdReworkAdjust.R",
-                              "royalty.R",
-                              "stax.R",
-                              "ctax.R",
-                              "ptax.R",
+                              #"royalty.R",
+                              #"stax.R",
+                              #"ctax.R",
+                              #"ptax.R",
                               "Ecalc.R",
                               "LECcalc.R",
                               "LOCcalc.R",
                               #"RIMS.R",
                               #"workload.R",
-                              "water.R",
+                              #"water.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
@@ -116,8 +116,10 @@ source("IO_options.R")
 # Set seed for random number generation (for reproducibility)
 set.seed(1)
 
-# Print and save start time
-print(paste("Start time:",Sys.time()))
+# Print and save start time for data analysis section
+writeLines(c("",
+           "Running data analysis functions and/or loading data analysis results",
+           paste("Start time:",Sys.time())))
 runstart <- Sys.time()
 
 
@@ -218,46 +220,46 @@ if(opt$lease.update == TRUE) {
 load(file.path(path$data, paste("leaseCost_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.5 Corporate income tax conversion factor CDF generation ---------------
-
-# Run function if opt$corptax.update flag is set to "TRUE"
-if(opt$corptax.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "corpIncomeUpdate.R"))
-  
-  # Function call
-  corpIncomeUpdate(production = production,
-                   path =       path,
-                   basis =      opt$cpi,
-                   ver =        opt$file_ver,
-                   NTI =        opt$NTI,
-                   eia.hp =     eia.hp)
-}
-
-# Load net taxable income statistics (corpNTIfrac)
-load(file.path(path$data, paste("corpNTIfrac_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.6 Property tax update -------------------------------------------------
-
-# Run function if opt$ptax.update flag is set to "TRUE"
-if(opt$ptax.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "propertyTaxUpdate.R"))
-  
-  # Function call
-  propertyTaxUpdate(p =      p,
-                    path =   path,
-                    basis =  opt$cpi,
-                    ver =    opt$file_ver,
-                    PTI =    opt$PTI,
-                    eia.hp = eia.hp)
-}
-
-# Load property tax statistics (pTaxRate)
-load(file.path(path$data, paste("pTaxRate_", opt$file_ver, ".rda", sep = "")))
+# # 2.5 Corporate income tax conversion factor CDF generation ---------------
+# 
+# # Run function if opt$corptax.update flag is set to "TRUE"
+# if(opt$corptax.update == TRUE) {
+#   
+#   # Source function to load
+#   source(file.path(path$fun, "corpIncomeUpdate.R"))
+#   
+#   # Function call
+#   corpIncomeUpdate(production = production,
+#                    path =       path,
+#                    basis =      opt$cpi,
+#                    ver =        opt$file_ver,
+#                    NTI =        opt$NTI,
+#                    eia.hp =     eia.hp)
+# }
+# 
+# # Load net taxable income statistics (corpNTIfrac)
+# load(file.path(path$data, paste("corpNTIfrac_", opt$file_ver, ".rda", sep = "")))
+# 
+# 
+# # 2.6 Property tax update -------------------------------------------------
+# 
+# # Run function if opt$ptax.update flag is set to "TRUE"
+# if(opt$ptax.update == TRUE) {
+#   
+#   # Source function to load
+#   source(file.path(path$fun, "propertyTaxUpdate.R"))
+#   
+#   # Function call
+#   propertyTaxUpdate(p =      p,
+#                     path =   path,
+#                     basis =  opt$cpi,
+#                     ver =    opt$file_ver,
+#                     PTI =    opt$PTI,
+#                     eia.hp = eia.hp)
+# }
+# 
+# # Load property tax statistics (pTaxRate)
+# load(file.path(path$data, paste("pTaxRate_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.7 Drilling Schedule Model lm() fit update -----------------------------
@@ -474,48 +476,48 @@ load(file.path(path$data, paste("DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")
 load(file.path(path$data, paste("Q_DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.14 Drilling and Completion Capital Cost Model Update -------------------
-
-# Run function if opt$drillCapCost.update flag is set to "TRUE"
-if(opt$drillCapCost.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "drillCapCostUpdate.R"))
-  
-  drillCapCostUpdate(path =  path,
-                     basis = opt$cpi,
-                     ver =   opt$file_ver)
-}
-
-# Load drilling cost data (drillCost.data), fit (drillCost.fit), and completion
-# cost ratio (complCR)
-load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.15 Water balance data analysis and update -----------------------------
-
-# Run function if opt$water.update flag is set to "TRUE"
-if(opt$water.update == TRUE) {
-  
-  # Load function
-  source(file.path(path$fun, "waterUpdate.R"))
-  
-  # Function call
-  waterUpdate(path =        path,
-              p =           p,
-              tstart =      opt$WU.tstart,
-              tstop =       opt$WU.tstop,
-              xq =          opt$xq,
-              f_mud =       opt$f_mud,
-              f_cem =       opt$f_cem,
-              rcut.pw.oil = opt$rcut.pw.oil,
-              rcut.pw.gas = opt$rcut.pw.gas,
-              rcut.disp =   opt$rcut.disp,
-              ver =         opt$file_ver)
-}
-
-# Load water balance term CDFs (cdf.water) and regression models (water.lm)
-load(file.path(path$data, paste("water_models_", opt$file_ver, ".rda", sep = "")))
+# # 2.14 Drilling and Completion Capital Cost Model Update -------------------
+# 
+# # Run function if opt$drillCapCost.update flag is set to "TRUE"
+# if(opt$drillCapCost.update == TRUE) {
+#   
+#   # Source function to load
+#   source(file.path(path$fun, "drillCapCostUpdate.R"))
+#   
+#   drillCapCostUpdate(path =  path,
+#                      basis = opt$cpi,
+#                      ver =   opt$file_ver)
+# }
+# 
+# # Load drilling cost data (drillCost.data), fit (drillCost.fit), and completion
+# # cost ratio (complCR)
+# load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
+# 
+# 
+# # 2.15 Water balance data analysis and update -----------------------------
+# 
+# # Run function if opt$water.update flag is set to "TRUE"
+# if(opt$water.update == TRUE) {
+#   
+#   # Load function
+#   source(file.path(path$fun, "waterUpdate.R"))
+#   
+#   # Function call
+#   waterUpdate(path =        path,
+#               p =           p,
+#               tstart =      opt$WU.tstart,
+#               tstop =       opt$WU.tstop,
+#               xq =          opt$xq,
+#               f_mud =       opt$f_mud,
+#               f_cem =       opt$f_cem,
+#               rcut.pw.oil = opt$rcut.pw.oil,
+#               rcut.pw.gas = opt$rcut.pw.gas,
+#               rcut.disp =   opt$rcut.disp,
+#               ver =         opt$file_ver)
+# }
+# 
+# # Load water balance term CDFs (cdf.water) and regression models (water.lm)
+# load(file.path(path$data, paste("water_models_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.16 Rework CDF analysis and update -------------------------------------
@@ -565,6 +567,21 @@ if(opt$DCAlnorm.update == TRUE) {
 
 # Load fitted distribution data.frame (DCAlnormFit)
 load(file.path(path$data, paste("DCAlnormFit_", opt$file_ver, ".rda", sep = "")))
+
+
+
+# Transition to MC simulation ---------------------------------------------
+
+# Print stop time for data analysis section
+writeLines(c("",
+             paste("Finished data analysis at:", Sys.time()),
+             paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))
+
+# Print and save start time for MC simulation
+writeLines(c("",
+             "Running Monte-Carlo Simulation",
+             paste("Start time:",Sys.time())))
+runstart <- Sys.time()
 
 
 # 3.1 Energy price path simulation ----------------------------------------
@@ -647,7 +664,6 @@ Drilled <- drillsim(path =            path,
 ppri <- priorProd(mo =        mo,
                   mg =        mg,
                   MC.tsteps = opt$MC.tsteps,
-                  acut =      opt$acut,
                   tend.cut =  opt$tend.cut)
 
 # Get prior well info for wells with fits
@@ -677,28 +693,28 @@ osim <-    matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
 gsim <-    osim # osim/gsim total oil/gas production (bbl or MCF)
 posim <-   osim # total oil production (bbl) from prior wells
 pgsim <-   osim # total gas production (MCF) from prior wells
-roy.oil <- osim # royalty totals from oil production
-roy.gas <- osim # royalty totals from gas production
-st.oil <-  osim # severance tax totals from oil production
-st.gas <-  osim # severance tax totals from gas production
-PT <-      osim # property tax totals
-CTstate <- osim # corporate state income tax totals
-CTfed <-   osim # corporate federal income tax totals
+# roy.oil <- osim # royalty totals from oil production
+# roy.gas <- osim # royalty totals from gas production
+# st.oil <-  osim # severance tax totals from oil production
+# st.gas <-  osim # severance tax totals from gas production
+# PT <-      osim # property tax totals
+# CTstate <- osim # corporate state income tax totals
+# CTfed <-   osim # corporate federal income tax totals
 CO2 <-     osim # CO2 emission totals (metric tons)
 CH4 <-     osim # CH4 emission totals (metric tons)
 VOC <-     osim # VOC emission totals (metric tons)
 rCO2 <-    osim # Reduced CO2 emission totals (metric tons)
 rCH4 <-    osim # Reduced CH4 emission totals (metric tons)
 rVOC <-    osim # Reduced VOC emission totals (metric tons)
-w.pw <-    osim # Produced water totals (bbl)
-w.disp <-  osim # Total water disposed of via injection wells (bbl)
-w.evap <-  osim # Total water evaporated in ponds (bbl)
-w.rec <-   osim # Water recycle totals (bbl)
-w.dw <-    osim # Total water usage for drilling (mud and cement - bbl)
-w.fw <-    osim # Total water usage for hydraulic fracturing (bbl)
-w.inj <-   osim # Total water usage for water flooding (bbl)
-w.in <-    osim # Total water coming into system (bbl)
-w.r <-     osim # Ratio of (water in) / (oil production)
+# w.pw <-    osim # Produced water totals (bbl)
+# w.disp <-  osim # Total water disposed of via injection wells (bbl)
+# w.evap <-  osim # Total water evaporated in ponds (bbl)
+# w.rec <-   osim # Water recycle totals (bbl)
+# w.dw <-    osim # Total water usage for drilling (mud and cement - bbl)
+# w.fw <-    osim # Total water usage for hydraulic fracturing (bbl)
+# w.inj <-   osim # Total water usage for water flooding (bbl)
+# w.in <-    osim # Total water coming into system (bbl)
+# w.r <-     osim # Ratio of (water in) / (oil production)
 
 # Progress Bar (since this next for-loop takes a while)
 pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
@@ -795,37 +811,37 @@ for (i in 1:opt$nrun) {
                               tend =               wsim$tend,
                               DCAlnormFit =        DCAlnormFit))
   
-  # Pick net taxable income fraction
-  wsim$NTIfrac <- sim_NTIfrac(times = nrow(wsim), corpNTIfrac = corpNTIfrac)
-  wpri$NTIfrac <- sim_NTIfrac(times = nrow(wpri), corpNTIfrac = corpNTIfrac)
-  
-  # Pick property tax fraction
-  wsim$pTaxfrac <- sim_pTaxfrac(times = nrow(wsim), pTaxRate = pTaxRate)
-  wpri$pTaxfrac <- sim_pTaxfrac(times = nrow(wpri), pTaxRate = pTaxRate)
-  
-  # Calculate well drilling and completion capital cost for new wells
-  wsim <- cbind(wsim, sim_wcost(type =          "new",
-                                depth =         wsim$depth,
-                                drillCost.fit = drillCost.fit,
-                                complCR =       complCR,
-                                rework =        wsim$rework,
-                                prior =         wsim$prior))
-  
-  # Calculate well drilling and completion capital cost for existing wells
-  wpri <- cbind(wpri, sim_wcost(type =          "prior",
-                                depth =         wpri$depth,
-                                drillCost.fit = drillCost.fit,
-                                complCR =       complCR,
-                                rework =        wpri$rework,
-                                prior =         TRUE))
+#   # Pick net taxable income fraction
+#   wsim$NTIfrac <- sim_NTIfrac(times = nrow(wsim), corpNTIfrac = corpNTIfrac)
+#   wpri$NTIfrac <- sim_NTIfrac(times = nrow(wpri), corpNTIfrac = corpNTIfrac)
+#   
+#   # Pick property tax fraction
+#   wsim$pTaxfrac <- sim_pTaxfrac(times = nrow(wsim), pTaxRate = pTaxRate)
+#   wpri$pTaxfrac <- sim_pTaxfrac(times = nrow(wpri), pTaxRate = pTaxRate)
+#   
+#   # Calculate well drilling and completion capital cost for new wells
+#   wsim <- cbind(wsim, sim_wcost(type =          "new",
+#                                 depth =         wsim$depth,
+#                                 drillCost.fit = drillCost.fit,
+#                                 complCR =       complCR,
+#                                 rework =        wsim$rework,
+#                                 prior =         wsim$prior))
+#   
+#   # Calculate well drilling and completion capital cost for existing wells
+#   wpri <- cbind(wpri, sim_wcost(type =          "prior",
+#                                 depth =         wpri$depth,
+#                                 drillCost.fit = drillCost.fit,
+#                                 complCR =       complCR,
+#                                 rework =        wpri$rework,
+#                                 prior =         TRUE))
   
   # Pick emission factors
   wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
   wpri <- cbind(wpri, sim_EF(times = nrow(wpri), EF = opt$EF))
   
-  # Pick water factors
-  wsim <- cbind(wsim, sim_water(wellType = wsim$wellType, cdf.water = cdf.water))
-  wpri <- cbind(wpri, sim_water(wellType = wpri$wellType, cdf.water = cdf.water))
+#   # Pick water factors
+#   wsim <- cbind(wsim, sim_water(wellType = wsim$wellType, cdf.water = cdf.water))
+#   wpri <- cbind(wpri, sim_water(wellType = wpri$wellType, cdf.water = cdf.water))
   
   
   # 3.3.2 Production simulation ------------------------------------------
@@ -833,11 +849,7 @@ for (i in 1:opt$nrun) {
   # Run production simulation function
   psim <- productionsim(wsim =            wsim,
                         timesteps =       opt$MC.tsteps,
-                        production.type = opt$prod.type,
-                        decline.type =    opt$mc.DCeq.type,
-                        osim.actual =     osim.actual,
-                        gsim.actual =     gsim.actual,
-                        acut =            opt$acut)
+                        decline.type =    opt$mc.DCeq.type)
   
   # Calculate adjusted prior production volumes by removing production from
   # reworked wells.
@@ -892,70 +904,70 @@ for (i in 1:opt$nrun) {
   apri$gas <-  GSIM[(nrow(psim$gsim)+1):nrow(GSIM),]
   
   
-  # 3.3.3 Royalties -----------------------------------------------------
-  
-  # Calculate royalty for oil production
-  t.roy.oil <- royalty(royaltyRate = opt$royaltyRate,
-                       ep =          op[i,],
-                       lease =       c(wsim$lease, wpri$lease),
-                       psim =        rbind(psim$osim, apri$oil))
-  
-  # Calculate royalty for gas production
-  t.roy.gas <- royalty(royaltyRate = opt$royaltyRate,
-                       ep =          gp[i,],
-                       lease =       c(wsim$lease, wpri$lease),
-                       psim =        rbind(psim$gsim, apri$gas))
-  
-  
-  # 3.3.4 Severance Taxes ----------------------------------------------
-    
-  # Calculate ST for oil production
-  t.st.oil <- stax(type =    "oil",
-                   tDrill =  c(wsim$tDrill, wpri$tDrill),
-                   psim =    rbind(psim$osim, apri$oil),
-                   rsim =    t.roy.oil,
-                   ep =      op[i,],
-                   st.low =  opt$st.low,
-                   st.high = opt$st.high,
-                   st.con =  opt$st.con,
-                   st.cut =  opt$st.ocut,
-                   st.skip = opt$st.skip,
-                   strip =   opt$strip.oil)
-  
-  # Calculate ST for gas production
-  t.st.gas <- stax(type =    "gas",
-                   tDrill =  c(wsim$tDrill, wpri$tDrill),
-                   psim =    rbind(psim$gsim, apri$gas),
-                   rsim =    t.roy.gas,
-                   ep =      gp[i,],
-                   st.low =  opt$st.low,
-                   st.high = opt$st.high,
-                   st.con =  opt$st.con,
-                   st.cut =  opt$st.gcut,
-                   st.skip = opt$st.skip,
-                   strip =   opt$strip.gas)
-  
-  
-  # 3.3.5 Property taxes -----------------------------------------------
-  
-  # Calculate property taxes
-  t.PT <- ptax(OP =       op[i,],
-               GP =       gp[i,],
-               osim =     rbind(psim$osim, apri$oil),
-               gsim =     rbind(psim$gsim, apri$gas),
-               pTaxfrac = c(wsim$pTaxfrac, wpri$pTaxfrac))
-  
-  
-  # 3.3.6 Corporate income taxes ---------------------------------------
-  
-  # Run corporate income tax calculation
-  CT <- ctax(OP =           op[i,],
-             GP =           gp[i,],
-             osim =         rbind(psim$osim, apri$oil),
-             gsim =         rbind(psim$gsim, apri$gas),
-             NTIfrac =      c(wsim$NTIfrac, wpri$NTIfrac),
-             CIrate.state = opt$CIrate.state,
-             CIrate.fed =   opt$CIrate.fed)
+#   # 3.3.3 Royalties -----------------------------------------------------
+#   
+#   # Calculate royalty for oil production
+#   t.roy.oil <- royalty(royaltyRate = opt$royaltyRate,
+#                        ep =          op[i,],
+#                        lease =       c(wsim$lease, wpri$lease),
+#                        psim =        rbind(psim$osim, apri$oil))
+#   
+#   # Calculate royalty for gas production
+#   t.roy.gas <- royalty(royaltyRate = opt$royaltyRate,
+#                        ep =          gp[i,],
+#                        lease =       c(wsim$lease, wpri$lease),
+#                        psim =        rbind(psim$gsim, apri$gas))
+#   
+#   
+#   # 3.3.4 Severance Taxes ----------------------------------------------
+#     
+#   # Calculate ST for oil production
+#   t.st.oil <- stax(type =    "oil",
+#                    tDrill =  c(wsim$tDrill, wpri$tDrill),
+#                    psim =    rbind(psim$osim, apri$oil),
+#                    rsim =    t.roy.oil,
+#                    ep =      op[i,],
+#                    st.low =  opt$st.low,
+#                    st.high = opt$st.high,
+#                    st.con =  opt$st.con,
+#                    st.cut =  opt$st.ocut,
+#                    st.skip = opt$st.skip,
+#                    strip =   opt$strip.oil)
+#   
+#   # Calculate ST for gas production
+#   t.st.gas <- stax(type =    "gas",
+#                    tDrill =  c(wsim$tDrill, wpri$tDrill),
+#                    psim =    rbind(psim$gsim, apri$gas),
+#                    rsim =    t.roy.gas,
+#                    ep =      gp[i,],
+#                    st.low =  opt$st.low,
+#                    st.high = opt$st.high,
+#                    st.con =  opt$st.con,
+#                    st.cut =  opt$st.gcut,
+#                    st.skip = opt$st.skip,
+#                    strip =   opt$strip.gas)
+#   
+#   
+#   # 3.3.5 Property taxes -----------------------------------------------
+#   
+#   # Calculate property taxes
+#   t.PT <- ptax(OP =       op[i,],
+#                GP =       gp[i,],
+#                osim =     rbind(psim$osim, apri$oil),
+#                gsim =     rbind(psim$gsim, apri$gas),
+#                pTaxfrac = c(wsim$pTaxfrac, wpri$pTaxfrac))
+#   
+#   
+#   # 3.3.6 Corporate income taxes ---------------------------------------
+#   
+#   # Run corporate income tax calculation
+#   CT <- ctax(OP =           op[i,],
+#              GP =           gp[i,],
+#              osim =         rbind(psim$osim, apri$oil),
+#              gsim =         rbind(psim$gsim, apri$gas),
+#              NTIfrac =      c(wsim$NTIfrac, wpri$NTIfrac),
+#              CIrate.state = opt$CIrate.state,
+#              CIrate.fed =   opt$CIrate.fed)
   
   
   # 3.3.7 Emissions ----------------------------------------------------
@@ -977,16 +989,16 @@ for (i in 1:opt$nrun) {
                  EFred.Nov12 = opt$EFred.Nov12)
   
   
-  # 3.3.8 Water Balance ------------------------------------------------
-  
-  # Calculate water balance
-  WB <- water(wsim =     rbind(wsim[,c("tDrill", "pw","disp","evap","frack","inj")],
-                               wpri[,c("tDrill", "pw","disp","evap","frack","inj")]),
-              osim =     rbind(psim$osim, apri$oil),
-              gsim =     rbind(psim$gsim, apri$gas),
-              wellType = c(wsim$wellType, wpri$wellType),
-              depth =    c(wsim$depth, wpri$depth),
-              dw.lm =    water.lm$dw.lm)
+#   # 3.3.8 Water Balance ------------------------------------------------
+#   
+#   # Calculate water balance
+#   WB <- water(wsim =     rbind(wsim[,c("tDrill", "pw","disp","evap","frack","inj")],
+#                                wpri[,c("tDrill", "pw","disp","evap","frack","inj")]),
+#               osim =     rbind(psim$osim, apri$oil),
+#               gsim =     rbind(psim$gsim, apri$gas),
+#               wellType = c(wsim$wellType, wpri$wellType),
+#               depth =    c(wsim$depth, wpri$depth),
+#               dw.lm =    water.lm$dw.lm)
   
   
   # 3.3.x Get totals for MC run i --------------------------------------
@@ -996,28 +1008,28 @@ for (i in 1:opt$nrun) {
   gsim[i,] <-    colSums(psim$gsim[which(wsim$prior == F),])
   posim[i,] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
   pgsim[i,] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
-  roy.oil[i,] <- colSums(t.roy.oil)
-  roy.gas[i,] <- colSums(t.roy.gas)
-  st.oil[i,] <-  colSums(t.st.oil)
-  st.gas[i,] <-  colSums(t.st.gas)
-  PT[i,] <-      colSums(t.PT)
-  CTstate[i,] <- colSums(CT$state)
-  CTfed[i,] <-   colSums(CT$fed)
+#   roy.oil[i,] <- colSums(t.roy.oil)
+#   roy.gas[i,] <- colSums(t.roy.gas)
+#   st.oil[i,] <-  colSums(t.st.oil)
+#   st.gas[i,] <-  colSums(t.st.gas)
+#   PT[i,] <-      colSums(t.PT)
+#   CTstate[i,] <- colSums(CT$state)
+#   CTfed[i,] <-   colSums(CT$fed)
   CO2[i,] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
   CH4[i,] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
   VOC[i,] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
   rCO2[i,] <-    colSums(rbind(ETsim$rCO2, ETpri$rCO2))
   rCH4[i,] <-    colSums(rbind(ETsim$rCH4, ETpri$rCH4))
   rVOC[i,] <-    colSums(rbind(ETsim$rVOC, ETpri$rVOC))
-  w.pw[i,] <-    WB$pw
-  w.disp[i,] <-  WB$disp
-  w.evap[i,] <-  WB$evap
-  w.rec[i,] <-   WB$recycle
-  w.dw[i,] <-    WB$dw
-  w.fw[i,] <-    WB$fw
-  w.inj[i,] <-   WB$inj
-  w.in[i,] <-    WB$wtr.in
-  w.r[i,] <-     WB$wtr.r
+#   w.pw[i,] <-    WB$pw
+#   w.disp[i,] <-  WB$disp
+#   w.evap[i,] <-  WB$evap
+#   w.rec[i,] <-   WB$recycle
+#   w.dw[i,] <-    WB$dw
+#   w.fw[i,] <-    WB$fw
+#   w.inj[i,] <-   WB$inj
+#   w.in[i,] <-    WB$wtr.in
+#   w.r[i,] <-     WB$wtr.r
   
   # Update progress bar
   Sys.sleep(1e-3)
@@ -1055,9 +1067,14 @@ close(pb)
 # Run processing script to generate plots of results
 source(file.path(path$fun, "postProcess.R"))
 
-# Print and stop time
-print(paste("Stop time:",Sys.time()))
-print(paste("Total run time:", format(difftime(Sys.time(), runstart))))
+# Print stop time for MC simulation section
+writeLines(c("",
+             paste("Finished Monte-Carlo simulation at:", Sys.time()),
+             paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))
 
-# Print finished message and play sound
-beep(3, message("Script Finished"))
+# Print finished message and play sound - feel free to replace with your
+# preferred sound, see help for function by typing "?beep" in console
+beep(1)
+writeLines(c("",
+             "Model run complete"))
+
