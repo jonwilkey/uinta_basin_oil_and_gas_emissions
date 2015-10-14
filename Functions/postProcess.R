@@ -113,9 +113,6 @@ for (i in 1:ncol(Drilled.q)) {
 # Set line colors for quantiles used in quant
 linecolor <- rainbow(length(opt$quant))
 
-# Set line colors for fields
-flinecolor <- rainbow(length(field))
-
 # Plot counter
 j <- 1
 

@@ -20,10 +20,10 @@ path <- NULL
 
 # Path switch - uncomment and/or replace with the path directory for your local
 # copy of the Git repository and Dropbox files.
-# pwd.drop <- "C:/Users/jonwi/"                 # Desktop
-# pwd.git  <- "C:/Users/jonwi/Documents/R/"
-pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
-pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
+pwd.drop <- "C:/Users/jonwi/"                 # Desktop
+pwd.git  <- "C:/Users/jonwi/Documents/R/"
+# pwd.drop <- "C:/Users/Jon Wilkey/"              # Laptop
+# pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
@@ -596,11 +596,11 @@ switch(opt$ep.type,
        b = {
          
          # Run EIAsim
-         epsim <- EIAsim(nrun <-  opt$nrun,
-                         Eoil <-  Eoil,
-                         Egas <-  Egas,
-                         op.FC <- op.FC,
-                         gp.FC <- gp.FC)
+         epsim <- EIAsim(nrun =  opt$nrun,
+                         Eoil =  Eoil,
+                         Egas =  Egas,
+                         op.FC = op.FC,
+                         gp.FC = gp.FC)
          
          # Extract objects from list
          op <- epsim$op
