@@ -14,9 +14,6 @@
 
 # MC.steps - number of time steps in simulation period
 
-# acut - threshold oil production rate below which a well is consider to be
-# abandoned
-
 # tend.cut - cutoff threshold for how old a well can be and still be included as
 # a prior well. For example, if tend.cut == 50, then any well that doesn't have 
 # a last decline curve fit (either because it had too few production records or 
@@ -33,22 +30,17 @@
 
 # Description -------------------------------------------------------------
 
-# This function calculates oil and gas production from wells drilled prior to 
-# the start of the simulation period. The calculation is performed on each field
-# by selecting the production time point at the beginning of the simulation 
-# period "tend" for all wells located in that field. This returns a vector of 
-# months into the production history for each well in that field. Next, the 
-# calculation uses the hyperbolic decline curve coefficients for each field to 
-# calculate the production in each timestep of the simulation for each well in 
-# that field. This results in a production matrix with rows = wells in a given 
-# field, columns = time steps in the simulation period, and values = production 
-# from that well in that time step. The column sum is taken of this matrix and 
-# added to the total production vectors "oil" and "gas". After repeating this
-# process for each field in hypFF, the total production vector is returned.
+# This function (1) collects well information about prior wells and (2)
+# calculates oil and gas production from wells drilled prior to the start of the
+# simulation period by extrapolating from the last fitted hyperbolic decline
+# curve for each well with a hyperbolic decline curve fit in mo or mg. Any wells
+# without fits (which were either skipped due to having too few points or for
+# which the nonlinear solver failed to converge) are identified in the
+# data.frame skip.
 
 
 # Function ----------------------------------------------------------------
-priorProd <- function(mo, mg, MC.tsteps, acut, tend.cut) {
+priorProd <- function(mo, mg, MC.tsteps, tend.cut) {
   
   # Get DCCs from wells with fits -----------------------------------------
   
@@ -97,25 +89,7 @@ priorProd <- function(mo, mg, MC.tsteps, acut, tend.cut) {
   }
   
   
-  # Well abandonment ------------------------------------------------------
-  
-  # Get row index of oil wells
-  ind <- which(ow$wellType == "OW")
-  
-  # For each oil well
-  for (i in 1:length(ind)) {
-    
-    # Get index of elements in oil production vector that are < value of acut
-    temp <- which(oil[ind[i],] < acut)
-    
-    # If there are elements which are < acut
-    if (length(temp) > 0) {
-      
-      # Then rewrite the production values in those elements with zeroes
-      oil[ind[i],temp] <- 0
-      gas[ind[i],temp] <- 0
-    }
-  }
+  # Return results --------------------------------------------------------
   
   # Return result
   return(list(oil =       oil,
