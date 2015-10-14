@@ -17,6 +17,10 @@
 
 # gp.FC - Same as op.FC but for gas prices and in units of basis $/MCF
 
+# rm.skew - logical T/F value that indicates whether or not to remove the skew 
+# in EIA AEO relative error percentages by multiplying by a randomly selected
+# value of +/- 1
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -35,10 +39,16 @@
 # effectively adjusts the forecast up or down by a percentage that is
 # representative of the range of error that exists in EIA's forecasts.
 
+# If desired, the historical skew in EIA's AEO forecast can be removed by 
+# multiplying the randomly selected relative error percentage by +/- 1. Random 
+# values are selected from a binomial distribution with a 50% probability cutoff
+# (50% will be -1, 50% will be +1). This has the net effect of mirroring the PDF
+# for the relative error about a mean of 0.
+
 
 # Function ----------------------------------------------------------------
 
-EIAsim <- function(nrun, Eoil, Egas, op.FC, gp.FC) {
+EIAsim <- function(nrun, Eoil, Egas, op.FC, gp.FC, rm.skew) {
   
   # Energy price path simulation --------------------------------------------
   
@@ -52,10 +62,26 @@ EIAsim <- function(nrun, Eoil, Egas, op.FC, gp.FC) {
   opsim <- matrix(0, nrow = nrun, ncol = length(op.FC))
   gpsim <- opsim
   
-  # For each time step
-  for (i in 1:length(op.FC)) {
-    opsim[,i] <- op.FC[i]*(1-Eoil[temp,i]/100)
-    gpsim[,i] <- gp.FC[i]*(1-Egas[temp,i]/100)
+  # If removing the skew of the EIA AEO relative error
+  if (rm.skew == T) {
+    
+    # Pick random value of +/- 1
+    rskew <- rbinom(n = nrun, size = 1, prob = 0.5)
+    rskew <- ifelse(rskew == 0, -1, rskew)
+    
+    # For each time step
+    for (i in 1:length(op.FC)) {
+      opsim[,i] <- op.FC[i]*(1-rskew*Eoil[temp,i]/100)
+      gpsim[,i] <- gp.FC[i]*(1-rskew*Egas[temp,i]/100)
+    }
+    
+  } else {
+    
+    # For each time step
+    for (i in 1:length(op.FC)) {
+      opsim[,i] <- op.FC[i]*(1-Eoil[temp,i]/100)
+      gpsim[,i] <- gp.FC[i]*(1-Egas[temp,i]/100)
+    }
   }
   
   
