@@ -1,4 +1,7 @@
-### Copy/Paste function ###
+# Function Info -----------------------------------------------------------
+# Name:      clipboard.R (Clipboard copy/paste function)
+# Author(s): Jon Wilkey
+# Contact:   jon.wilkey@gmail.com
 
 # Inputs ------------------------------------------------------------------
 

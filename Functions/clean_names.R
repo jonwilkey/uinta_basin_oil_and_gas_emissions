@@ -1,4 +1,8 @@
-# Replacement of multiple patterns in character vectors
+# Function Info -----------------------------------------------------------
+# Name:      clean_names.R (Replacement of multiple patterns in character vectors)
+# Author(s): Michael Hogue
+# Contact:   michael.hogue@economics.utah.edu
+
 
 # Inputs ------------------------------------------------------------------
 

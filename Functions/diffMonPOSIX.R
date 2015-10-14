@@ -1,4 +1,8 @@
-# Monthly Difference Calculation
+# Function Info -----------------------------------------------------------
+# Name:      diffMonPOSIX (Monthly Difference Calculation)
+# Author(s): Michael Hogue
+# Contact:   michael.hogue@economics.utah.edu
+
 
 # Inputs ------------------------------------------------------------------
 
