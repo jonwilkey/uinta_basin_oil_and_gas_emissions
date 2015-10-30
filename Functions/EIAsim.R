@@ -12,14 +12,22 @@
 
 # Eoil/Egas - EIA AEO error CDF matrix for oil and gas forecasts, respectively
 
+# EoilFrac/EgasFrac - EIA AEO error CDF matrix for oil and gas forecasts with
+# fractional relative error, respectively
+
 # op.FC - EIA reference forecast for oil prices, adjusted for inflation to basis
 # $/bbl and on a monthly basis
 
 # gp.FC - Same as op.FC but for gas prices and in units of basis $/MCF
 
-# rm.skew - logical T/F value that indicates whether or not to remove the skew 
-# in EIA AEO relative error percentages by multiplying by a randomly selected
-# value of +/- 1
+# type - lcharacter string specifying relative error quantification method. Valid
+# options are "RE Direct" for relative error with directionality (for RE = (FP -
+# AP) / FP data where RE = relative error, FP = forecasted price, and AP = 
+# actual price) or "RE Frac" for relative fractional error (for RE = FP / AP IFF
+# AP > FP | RE = AP / FP IFF FP > AP data).
+
+# fracProb - probability between 0 and 1 that forecasted price will be
+# over-predicting (SP = FC / RE) vs. under-predicting (SP = FC * RE)
 
 
 # Outputs -----------------------------------------------------------------
@@ -48,7 +56,8 @@
 
 # Function ----------------------------------------------------------------
 
-EIAsim <- function(nrun, Eoil, Egas, op.FC, gp.FC, rm.skew) {
+EIAsim <- function(nrun, Eoil, Egas, EoilFrac, EgasFrac, op.FC, gp.FC, type,
+                   fracProb) {
   
   # Energy price path simulation --------------------------------------------
   
@@ -62,27 +71,49 @@ EIAsim <- function(nrun, Eoil, Egas, op.FC, gp.FC, rm.skew) {
   opsim <- matrix(0, nrow = nrun, ncol = length(op.FC))
   gpsim <- opsim
   
-  # If removing the skew of the EIA AEO relative error
-  if (rm.skew == T) {
-    
-    # Pick random value of +/- 1
-    rskew <- rbinom(n = nrun, size = 1, prob = 0.5)
-    rskew <- ifelse(rskew == 0, -1, rskew)
-    
-    # For each time step
-    for (i in 1:length(op.FC)) {
-      opsim[,i] <- op.FC[i]*(1-rskew*Eoil[temp,i]/100)
-      gpsim[,i] <- gp.FC[i]*(1-rskew*Egas[temp,i]/100)
-    }
-    
-  } else {
-    
-    # For each time step
-    for (i in 1:length(op.FC)) {
-      opsim[,i] <- op.FC[i]*(1-Eoil[temp,i]/100)
-      gpsim[,i] <- gp.FC[i]*(1-Egas[temp,i]/100)
-    }
-  }
+  switch(type,
+         
+         "direct" = {
+           
+           # For each time step
+           for (i in 1:length(op.FC)) {
+             
+             opsim[,i] <- op.FC[i]*(1-Eoil[temp,i]/100)
+             gpsim[,i] <- gp.FC[i]*(1-Egas[temp,i]/100)
+             }
+           },
+           
+           "frac" = {
+             
+             # Pick direction of forecast error (under/over predicting)
+             direct.oil <- rbinom(n = nrun, size = 1, prob = fracProb)
+             direct.gas <- rbinom(n = nrun, size = 1, prob = fracProb)
+             
+             # For each MC simulation
+             for (j in 1:nrun) {
+               
+               # For oil - if the forecasting is under-predicting
+               if(direct.oil[j] == 0){
+                 
+                 opsim[j, ] <- op.FC * EoilFrac[temp[j], ]
+                 
+               } else {
+                 
+                 opsim[j, ] <- op.FC / EoilFrac[temp[j], ]
+               }
+               
+               # For gas - if the forecasting is under-predicting
+               if(direct.gas[j] == 0){
+                 
+                 gpsim[j, ] <- gp.FC * EgasFrac[temp[j], ]
+                 
+               } else {
+                 
+                 gpsim[j, ] <- gp.FC / EgasFrac[temp[j], ]
+               }
+             }
+           }
+  )
   
   
   # Return results ----------------------------------------------------------
