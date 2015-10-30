@@ -31,7 +31,8 @@
 priorInfo <- function(apilist, p, field) {
   
   # Get list of all the info needed
-  temp <- sqldf("select distinct p_api, w_field_num, h_well_type, h_td_md, w_lease_type
+  temp <- sqldf("select distinct p_api, w_field_num, h_well_type, h_td_md,
+                w_lease_type, w_county
                 from p
                 group by p_api")
   
@@ -39,7 +40,7 @@ priorInfo <- function(apilist, p, field) {
   result <- merge(x = apilist, y = temp, by.x = 1, by.y = "p_api", all.x = T)
   
   # Rename columns
-  names(result) <- c("api", "fieldnum", "wellType", "depth", "lease")
+  names(result) <- c("api", "fieldnum", "wellType", "depth", "lease", "county")
   
   # Rewrite field numbers to match simulation field number selection. Start by 
   # building index of rows in result whose field numbers match those in the

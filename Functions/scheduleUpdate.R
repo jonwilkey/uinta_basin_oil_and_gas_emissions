@@ -73,7 +73,7 @@ scheduleUpdate <- function(path, p, tsteps, min.depth, max.depth,
   # Create dataframe containing dates of 1st production for each unique APD #
   # and the field it is located in
   well <- sqldf("select distinct p_api, prod_date, w_field_num, h_well_type,
-                w_well_type, w_lease_type, h_td_md, h_rec_seq
+                w_well_type, w_lease_type, h_td_md, h_rec_seq, w_county
                 from p
                 order by prod_date")
   
@@ -196,29 +196,32 @@ scheduleUpdate <- function(path, p, tsteps, min.depth, max.depth,
   # Probabilities for well type by field ------------------------------------
   
   # Predefine matrix for results
-  prob <- matrix(0, nrow = length(field), ncol = 3)
+  prob <- matrix(0, nrow = length(field), ncol = 4)
   
   # For each field, get counts of (1) dry well, (2) gas wells, and (3) all wells
   for (i in 1:(length(field)-1)) {
     temp <- subset(well, subset = (w_field_num == field[i]))
     prob[i,1] <- length(which(temp$h_well_type == "D"))
     prob[i,2] <- length(which(temp$h_well_type == "GW"))
-    prob[i,3] <- nrow(temp)
+    prob[i,3] <- length(which(temp$w_county == "UINTAH"))
+    prob[i,4] <- nrow(temp)
   }
   # Use previously defined index for Field 999
   temp <- well[ind999,]
   prob[nrow(prob),] <- c(length(which(temp$h_well_type == "D")),
                          length(which(temp$h_well_type == "GW")),
+                         length(which(temp$w_county == "UINTAH")),
                          nrow(temp))
   
   # Calculate probability first for (1) a well being dry, and (2) if the well is
   # not dry, that it will be a gas well (conversely if it isn't a gas well then
   # its an oil well). Vector operation does this for each field.
-  dry <- prob[,1]/prob[,3]
-  gas <- prob[,2]/(prob[,3]-prob[,1])
+  dry <- prob[,1]/prob[,4]
+  gas <- prob[,2]/(prob[,4]-prob[,1])
+  Uintah <- prob[,3]/prob[,4]
   
   # Redefine prob as data.frame with probabilities above and add field column
-  prob <- data.frame(field, dry, gas)
+  prob <- data.frame(field, dry, gas, Uintah)
   
   
   # Lease type --------------------------------------------------------------
