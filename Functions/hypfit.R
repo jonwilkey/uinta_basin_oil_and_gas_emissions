@@ -334,6 +334,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     # Add legend
     legend("topright",
            c("Actual", "Both", "First", "Last"),
+           bg = "white",
            pch = c(1, NA, NA, NA),
            lty = c(NA, 1, 1, 1),
            col = c("grey", "blue", "red", "green"))
@@ -377,6 +378,7 @@ hypfit <- function(ws, bin, diff.bin.cutoff, minProdRec, api, b.start, Di.start,
     # Add legend
     legend("topleft",
            c("Actual", "Both", "First", "Last"),
+           bg = "white",
            pch = c(1, NA, NA, NA),
            lty = c(NA, 1, 1, 1),
            col = c("grey", "blue", "red", "green"))
