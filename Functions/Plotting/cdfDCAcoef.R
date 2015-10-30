@@ -23,6 +23,9 @@
 # Function ----------------------------------------------------------------
 cdfDCAcoef <- function(hyp, Qfit) {
   
+  # Set line colors for quantiles used in quant
+  flinecolor <- rainbow(length(field))
+  
   # If hyp is TRUE, plot hyperbolic fits
   if (hyp) {
     
