@@ -78,17 +78,14 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
     
     # Rework events
     ind <- which(wsim$rework == i)
-    
-    Erework.co2[ind,i] <- wsim$EFrework.co2[ind]*ifelse(wsim$rework[ind] > 0, 1, 0) # Check
-    
-    Erework.ch4[ind,i] <- wsim$EFrework.ch4[ind]*ifelse(wsim$rework[ind] > 0, 1, 0) # me
-    
-    Erework.voc[ind,i] <- wsim$EFrework.voc[ind]*ifelse(wsim$rework[ind] > 0, 1, 0) # why?
+    Erework.co2[ind,i] <- wsim$EFrework.co2[ind]
+    Erework.ch4[ind,i] <- wsim$EFrework.ch4[ind]
+    Erework.voc[ind,i] <- wsim$EFrework.voc[ind]
     
     # Completion events for reworked wells
-    Ecompl.co2[ind,i] <- wsim$EFcompl.co2[ind]*ifelse(wsim$rework[ind] > 0, 1, 0)
-    Ecompl.ch4[ind,i] <- wsim$EFcompl.ch4[ind]*ifelse(wsim$rework[ind] > 0, 1, 0)
-    Ecompl.voc[ind,i] <- wsim$EFcompl.voc[ind]*ifelse(wsim$rework[ind] > 0, 1, 0)
+    Ecompl.co2[ind,i] <- wsim$EFcompl.co2[ind]
+    Ecompl.ch4[ind,i] <- wsim$EFcompl.ch4[ind]
+    Ecompl.voc[ind,i] <- wsim$EFcompl.voc[ind]
     
     # Production events for gas
     Eprod.co2[,i] <- wsim$EFprod.co2*ifelse(test = (gsim[,i] != 0), yes = 1, no = 0)
@@ -120,6 +117,21 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   Eco2 <- Edrill.co2+Erework.co2+Ecompl.co2+Eprod.co2+Eproc.co2+Etransm.co2+Eoprod.co2+Eotrans.co2
   Ech4 <- Edrill.ch4+Erework.ch4+Ecompl.ch4+Eprod.ch4+Eproc.ch4+Etransm.ch4+Eoprod.ch4+Eotrans.ch4
   Evoc <- Edrill.voc+Erework.voc+Ecompl.voc+Eprod.voc+Eproc.voc+Etransm.voc+Eoprod.voc+Eotrans.voc
+  
+  # Find what fraction of total emissions is attributable to each activity
+  fET <- data.frame(co2 = c(sum(Edrill.co2), sum(Erework.co2), sum(Ecompl.co2), sum(Eprod.co2),
+                              sum(Eproc.co2), sum(Etransm.co2), sum(Eoprod.co2), sum(Eotrans.co2))/sum(Eco2),
+                    ch4 = c(sum(Edrill.ch4), sum(Erework.ch4), sum(Ecompl.ch4), sum(Eprod.ch4),
+                              sum(Eproc.ch4), sum(Etransm.ch4), sum(Eoprod.ch4), sum(Eotrans.ch4))/sum(Ech4),
+                    voc = c(sum(Edrill.voc), sum(Erework.voc), sum(Ecompl.voc), sum(Eprod.voc),
+                              sum(Eproc.voc), sum(Etransm.voc), sum(Eoprod.voc), sum(Eotrans.voc))/sum(Evoc),
+                    row.names = c("drill", "rework", "compl", "prod", "proc", "transm", "oprod", "otrans"))
+  
+  
+  # And what fraction is from oil wells (by difference, gas fraction is 1 - oil fraction)
+  ind <- which(wsim$wellType == "OW")
+  foil <- (sum(Eco2[ind])+sum(Ech4[ind])+sum(Evoc[ind]))/(sum(Eco2)+sum(Ech4)+sum(Evoc))
+  
   
   # Part 2: Emission reductions --------------------------------------------
   
@@ -183,6 +195,10 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
     rEtransm.voc[ind,] <- t(apply(Etransm.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "transm", "voc"]))
   }
   
+  # Overall emissions reduction fraction
+  temp <-    1 - (sum(rEprod.voc)+sum(rEproc.voc)+sum(rEtransm.voc))/(sum(Eprod.voc)+sum(Eproc.voc)+sum(Etransm.voc))
+  NSPSred <- temp*(fET["prod", "voc"]+fET["proc", "voc"]+fET["transm", "voc"])
+  
   
   # --(2)-- Completions
   
@@ -194,8 +210,8 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   # Cut time step equivalent to Jan 2015 emissions reduction
   ttstep <- 1+round(as.numeric(difftime(EFred$date[4], tstart, units = "days"))*(12/365.25))
   
-  # Get row indices of wells drilled on or after Jan. 2015
-  ind <- which(wsim$tDrill >= ttstep)
+  # Get row indices of wells drilled on or after Jan. 2015 (and aren't existing wells)
+  ind <- which(wsim$tDrill >= ttstep & wsim$tDrill != 0)
   
   # If ind > 0, apply reductions to gas production, processing, and transport
   if(length(ind) > 0) {
@@ -205,6 +221,10 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
     rEcompl.ch4[ind,] <- t(apply(Ecompl.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "compl", "ch4"]))
     rEcompl.voc[ind,] <- t(apply(Ecompl.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "compl", "voc"]))
   }
+  
+  # Overall emissions reduction fraction
+  temp <-    1-sum(rEcompl.voc)/sum(Ecompl.voc)
+  NSPSred <- c(NSPSred, temp*(fET["compl", "voc"]))
   
   
   # --(3)-- Drilling construction activity
@@ -217,8 +237,8 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   # Cut time step equivalent to Jan 2015 emissions increase in drilling (related to construction activity)
   ttstep <- 1+round(as.numeric(difftime(EFred$date[5], tstart, units = "days"))*(12/365.25))
   
-  # Get row indices of wells drilled on or after Jan. 2015
-  ind <- which(wsim$tDrill >= ttstep)
+  # Get row indices of wells drilled on or after Jan. 2015 (and aren't existing wells)
+  ind <- which(wsim$tDrill >= ttstep & wsim$tDrill != 0)
   
   # If ind > 0, apply reductions to gas production, processing, and transport
   if(length(ind) > 0) {
@@ -229,6 +249,8 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
     rEdrill.voc[ind,] <- t(apply(Edrill.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "drill", "voc"]))
   }
   
+  # No VOC impact from drilling construction activity
+  
   # Get overall summation
   rEco2 <- rEdrill.co2+Erework.co2+rEcompl.co2+rEprod.co2+rEproc.co2+rEtransm.co2+Eoprod.co2+Eotrans.co2
   rEch4 <- rEdrill.ch4+Erework.ch4+rEcompl.ch4+rEprod.ch4+rEproc.ch4+rEtransm.ch4+Eoprod.ch4+Eotrans.ch4
@@ -237,7 +259,7 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   
   # --(4)-- Pneumatic controllers
   
-  # Cut time step equivalent to Jan 2015 emissions increase in drilling (related to construction activity)
+  # Cut time step equivalent to Jan 2015 emissions reduction for pneumatic controllers
   ttstep <- 1+round(as.numeric(difftime(EFred$date[6], tstart, units = "days"))*(12/365.25))
   
   # Get row indices of wells drilled on or after Jan. 2015 and located in Uintah County
@@ -264,10 +286,28 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
     rEvoc[ind,] <- t(apply(rEvoc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
   }
   
+  # VOC reductions from pneumatic controllers can be found be difference
+  
+  # Find what fraction of total emissions is attributable to each activity
+  rfET <- data.frame(co2 = c(sum(rEdrill.co2), sum(Erework.co2),  sum(rEcompl.co2), sum(rEprod.co2),
+                             sum(rEproc.co2),  sum(rEtransm.co2), sum(Eoprod.co2),  sum(Eotrans.co2))/sum(rEco2),
+                     ch4 = c(sum(rEdrill.ch4), sum(Erework.ch4),  sum(rEcompl.ch4), sum(rEprod.ch4),
+                             sum(rEproc.ch4),  sum(rEtransm.ch4), sum(Eoprod.ch4),  sum(Eotrans.ch4))/sum(rEch4),
+                     voc = c(sum(rEdrill.voc), sum(Erework.voc),  sum(rEcompl.voc), sum(rEprod.voc),
+                             sum(rEproc.voc),  sum(rEtransm.voc), sum(Eoprod.voc),  sum(Eotrans.voc))/sum(rEvoc),
+                     row.names = c("drill", "rework", "compl", "prod", "proc", "transm", "oprod", "otrans"))
   
   # Part 3: Return results -------------------------------------------------
   
   # Return result
-  return(list(CO2 =  Eco2,  CH4 =  Ech4,  VOC =  Evoc,
-              rCO2 = rEco2, rCH4 = rEch4, rVOC = rEvoc))
+  return(list(CO2 =     Eco2,
+              CH4 =     Ech4,
+              VOC =     Evoc,
+              rCO2 =    rEco2,
+              rCH4 =    rEch4,
+              rVOC =    rEvoc,
+              fET =     fET,
+              rfET =    rfET,
+              foil =    foil,
+              NSPSred = NSPSred))
 }
