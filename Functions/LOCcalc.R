@@ -62,7 +62,7 @@ LOCcalc <- function(wsim, LOC.oil.op, LOC.gas.op, op, gp, osim, gsim) {
   }
   
   # Scale by production in first month (base is 100 BPD well operating cost per month)
-  LOC[ind.ow,] <- LOC[ind.ow,]*(osim[ind.ow,]/(100*30))
+  #LOC[ind.ow,] <- LOC[ind.ow,]*(osim[ind.ow,]/(100*30))
   
   # Return result
   return(LOC)
