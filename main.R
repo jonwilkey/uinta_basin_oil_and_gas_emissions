@@ -314,8 +314,8 @@ if(opt$EIAforecast.update == TRUE) {
   # Source function to load
   source(file.path(path$fun, "EIAforecastUpdate.R"))
   
-  # Function call
-  EIAforecastUpdate(forecast <-     opt$forecast,
+  # Function call - Reference Case
+  EIAforecastUpdate(forecast <-     opt$forecast[opt$forecast$type == "ref",],
                     basis <-        opt$cpi,
                     EIAbasis <-     opt$EIAbasis,
                     tsteps <-       opt$tsteps,
@@ -323,11 +323,40 @@ if(opt$EIAforecast.update == TRUE) {
                     gas.fpp.init <- opt$gas.fpp.init,
                     FPPdate <-      opt$FPPdate,
                     ver =           opt$file_ver,
-                    path =          path)
+                    path =          path,
+                    type =          "ref")
+  
+  # Function call - Low Oil Case
+  EIAforecastUpdate(forecast <-     opt$forecast[opt$forecast$type == "low",],
+                    basis <-        opt$cpi,
+                    EIAbasis <-     opt$EIAbasis,
+                    tsteps <-       opt$tsteps,
+                    oil.fpp.init <- opt$oil.fpp.init,
+                    gas.fpp.init <- opt$gas.fpp.init,
+                    FPPdate <-      opt$FPPdate,
+                    ver =           opt$file_ver,
+                    path =          path,
+                    type =          "low")
+  
+  # Function call - High Oil Case
+  EIAforecastUpdate(forecast <-     opt$forecast[opt$forecast$type == "high",],
+                    basis <-        opt$cpi,
+                    EIAbasis <-     opt$EIAbasis,
+                    tsteps <-       opt$tsteps,
+                    oil.fpp.init <- opt$oil.fpp.init,
+                    gas.fpp.init <- opt$gas.fpp.init,
+                    FPPdate <-      opt$FPPdate,
+                    ver =           opt$file_ver,
+                    path =          path,
+                    type =          "high")
 }
 
 # Load EIA forecast vector
-load(file.path(path$data, paste("EIAforecast_", opt$file_ver, ".rda", sep = "")))
+# - op.FC.ref/low/high: Oil forecast for reference/low oil/high oil scenario
+# - gp.FC.ref/low/high: Gas forecast for reference/low oil/high oil scenario
+load(file.path(path$data, paste("EIAforecast_ref_",  opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("EIAforecast_low_",  opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("EIAforecast_high_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.10 EIA Error Analysis Update ------------------------------------------
@@ -628,8 +657,8 @@ switch(opt$ep.type,
                          Egas =     Egas,
                          EoilFrac = EoilFrac,
                          EgasFrac = EgasFrac,
-                         op.FC =    op.FC,
-                         gp.FC =    gp.FC,
+                         op.FC =    op.FC.ref,
+                         gp.FC =    gp.FC.ref,
                          type =     opt$EIA.ep.type,
                          fracProb = opt$EIA.fracProb)
          
@@ -729,6 +758,22 @@ w.fw <-    osim # Total water usage for hydraulic fracturing (bbl)
 w.inj <-   osim # Total water usage for water flooding (bbl)
 w.in <-    osim # Total water coming into system (bbl)
 w.r <-     osim # Ratio of (water in) / (oil production)
+nfCO2 <-   matrix(0, nrow = opt$nrun, ncol = 8) # New well emission source fractions for CO2
+nfCH4 <-   nfCO2                                # New well emission source fractions for CH4
+nfVOC <-   nfCO2                                # New well emission source fractions for VOC
+pfCO2 <-   nfCO2                                # Prior well emission source fractions for CO2
+pfCH4 <-   nfCO2                                # Prior well emission source fractions for CH4
+pfVOC <-   nfCO2                                # Prior well emission source fractions for VOC
+rnfCO2 <-  nfCO2                                # Reduced new well emission source fractions for CO2
+rnfCH4 <-  nfCO2                                # Reduced new well emission source fractions for CH4
+rnfVOC <-  nfCO2                                # Reduced new well emission source fractions for VOC
+rpfCO2 <-  nfCO2                                # Reduced prior well emission source fractions for CO2
+rpfCH4 <-  nfCO2                                # Reduced prior well emission source fractions for CH4
+rpfVOC <-  nfCO2                                # Reduced prior well emission source fractions for VOC
+foil <-    matrix(0, nrow = opt$nrun, ncol = 2) # Fraction of base emissions from oil wells
+NSPSred <- matrix(0, nrow = opt$nrun, ncol = 4) # Fraction of NSPS reductions
+fnvp <-    matrix(0, nrow = opt$nrun, ncol = 3) # Fraction of emissions from new wells vs. prior wells
+rfnvp <-   fnvp                                 # Reduced fraction of emissions from new wells vs. prior wells
 
 # Progress Bar (since this next for-loop takes a while)
 pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
@@ -1021,32 +1066,48 @@ for (i in 1:opt$nrun) {
   # 3.3.x Get totals for MC run i --------------------------------------
   
   # Calculate column sums for each results matrix generated to get totals
-  osim[i,] <-    colSums(psim$osim[which(wsim$prior == F),])
-  gsim[i,] <-    colSums(psim$gsim[which(wsim$prior == F),])
-  posim[i,] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
-  pgsim[i,] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
-  roy.oil[i,] <- colSums(t.roy.oil)
-  roy.gas[i,] <- colSums(t.roy.gas)
-  st.oil[i,] <-  colSums(t.st.oil)
-  st.gas[i,] <-  colSums(t.st.gas)
-  PT[i,] <-      colSums(t.PT)
-  CTstate[i,] <- colSums(CT$state)
-  CTfed[i,] <-   colSums(CT$fed)
-  CO2[i,] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
-  CH4[i,] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
-  VOC[i,] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
-  rCO2[i,] <-    colSums(rbind(ETsim$rCO2, ETpri$rCO2))
-  rCH4[i,] <-    colSums(rbind(ETsim$rCH4, ETpri$rCH4))
-  rVOC[i,] <-    colSums(rbind(ETsim$rVOC, ETpri$rVOC))
-  w.pw[i,] <-    WB$pw
-  w.disp[i,] <-  WB$disp
-  w.evap[i,] <-  WB$evap
-  w.rec[i,] <-   WB$recycle
-  w.dw[i,] <-    WB$dw
-  w.fw[i,] <-    WB$fw
-  w.inj[i,] <-   WB$inj
-  w.in[i,] <-    WB$wtr.in
-  w.r[i,] <-     WB$wtr.r
+  osim[i, ] <-    colSums(psim$osim[which(wsim$prior == F),])
+  gsim[i, ] <-    colSums(psim$gsim[which(wsim$prior == F),])
+  posim[i, ] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
+  pgsim[i, ] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
+  roy.oil[i, ] <- colSums(t.roy.oil)
+  roy.gas[i, ] <- colSums(t.roy.gas)
+  st.oil[i, ] <-  colSums(t.st.oil)
+  st.gas[i, ] <-  colSums(t.st.gas)
+  PT[i, ] <-      colSums(t.PT)
+  CTstate[i, ] <- colSums(CT$state)
+  CTfed[i, ] <-   colSums(CT$fed)
+  CO2[i, ] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
+  CH4[i, ] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
+  VOC[i, ] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
+  rCO2[i, ] <-    colSums(rbind(ETsim$rCO2, ETpri$rCO2))
+  rCH4[i, ] <-    colSums(rbind(ETsim$rCH4, ETpri$rCH4))
+  rVOC[i, ] <-    colSums(rbind(ETsim$rVOC, ETpri$rVOC))
+  nfCO2[i, ] <-   ETsim$fET$co2
+  nfCH4[i, ] <-   ETsim$fET$ch4
+  nfVOC[i, ] <-   ETsim$fET$voc
+  pfCO2[i, ] <-   ETpri$fET$co2
+  pfCH4[i, ] <-   ETpri$fET$ch4
+  pfVOC[i, ] <-   ETpri$fET$voc
+  rnfCO2[i, ] <-  ETsim$rfET$co2
+  rnfCH4[i, ] <-  ETsim$rfET$ch4
+  rnfVOC[i, ] <-  ETsim$rfET$voc
+  rpfCO2[i, ] <-  ETpri$rfET$co2
+  rpfCH4[i, ] <-  ETpri$rfET$ch4
+  rpfVOC[i, ] <-  ETpri$rfET$voc
+  foil[i, ] <-    c(ETsim$foil, ETpri$foil)
+  fnvp[i, ] <-    c(sum(ETsim$CO2)/sum(CO2[i, ]),   sum(ETsim$CH4)/sum(CH4[i, ]),   sum(ETsim$VOC)/sum(VOC[i, ]))
+  rfnvp[i, ] <-   c(sum(ETsim$rCO2)/sum(rCO2[i, ]), sum(ETsim$rCH4)/sum(rCH4[i, ]), sum(ETsim$rVOC)/sum(rVOC[i, ]))
+  NSPSred[i, ] <- c(ETsim$NSPSred, ETpri$NSPSred)
+  w.pw[i, ] <-    WB$pw
+  w.disp[i, ] <-  WB$disp
+  w.evap[i, ] <-  WB$evap
+  w.rec[i, ] <-   WB$recycle
+  w.dw[i, ] <-    WB$dw
+  w.fw[i, ] <-    WB$fw
+  w.inj[i, ] <-   WB$inj
+  w.in[i, ] <-    WB$wtr.in
+  w.r[i, ] <-     WB$wtr.r
   
   # Update progress bar
   Sys.sleep(1e-3)
@@ -1091,7 +1152,7 @@ writeLines(c("",
 
 # Print finished message and play sound - feel free to replace with your
 # preferred sound, see help for function by typing "?beep" in console
-beep(1)
+beep(4)
 writeLines(c("",
              "Model run complete"))
 
