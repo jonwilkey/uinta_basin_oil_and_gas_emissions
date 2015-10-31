@@ -64,6 +64,7 @@ sim_dupRework <- function(wsim, wpri) {
                        td.gas =   rep(0, nrow(temp)),
                        depth =    temp$depth,
                        lease =    temp$lease,
+                       county =   temp$county,
                        rework =   rep(NA, nrow(temp)))
     
     # Bind rework wells with to end of wsim
