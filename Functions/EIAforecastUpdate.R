@@ -27,6 +27,9 @@
 
 # path - List object containing directory paths for file I/O
 
+# type - character switch indicating what kind of forecast is being generated.
+# Valid options are "ref", "high", or "low".
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -47,7 +50,7 @@
 # Function ----------------------------------------------------------------
 
 EIAforecastUpdate <- function(forecast, basis, EIAbasis, tsteps, oil.fpp.init,
-                              gas.fpp.init, FPPdate, ver, path) {
+                              gas.fpp.init, FPPdate, ver, path, type) {
   
   # Internal values - uncomment to debug ------------------------------------
   
@@ -126,7 +129,45 @@ EIAforecastUpdate <- function(forecast, basis, EIAbasis, tsteps, oil.fpp.init,
   
   # Save results ----------------------------------------------------------
   
-  save(file = file.path(path$data, paste("EIAforecast_", ver, ".rda", sep = "")),
-       list = c("op.FC",
-                "gp.FC"))
+  # Depending on update type, change forecast object name and save instructions
+  switch(type,
+         
+         # Reference case
+         "ref" = {
+           
+           # Forecast
+           op.FC.ref <- op.FC
+           gp.FC.ref <- gp.FC
+           flist <-     c("op.FC.ref", "gp.FC.ref")
+           
+           # File name
+           fn <- paste("EIAforecast_ref_", ver, ".rda", sep = "")
+         },
+         
+         # Low oil price
+         "low" = {
+           
+           # Forecast
+           op.FC.low <- op.FC
+           gp.FC.low <- gp.FC
+           flist <-     c("op.FC.low", "gp.FC.low")
+           
+           # File name
+           fn <- paste("EIAforecast_low_", ver, ".rda", sep = "")
+         },
+         
+         # High oil price
+         "high" = {
+           
+           # Forecast
+           op.FC.high <- op.FC
+           gp.FC.high <- gp.FC
+           flist <-     c("op.FC.high", "gp.FC.high")
+           
+           # File name
+           fn <- paste("EIAforecast_high_", ver, ".rda", sep = "")
+         }
+         )
+  
+  save(file = file.path(path$data, fn), list = flist)
 }
