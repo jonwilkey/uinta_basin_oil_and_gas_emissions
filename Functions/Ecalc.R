@@ -114,23 +114,23 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   }
   
   # Sum everything together by species
-  Eco2 <- Edrill.co2+Erework.co2+Ecompl.co2+Eprod.co2+Eproc.co2+Etransm.co2+Eoprod.co2+Eotrans.co2
-  Ech4 <- Edrill.ch4+Erework.ch4+Ecompl.ch4+Eprod.ch4+Eproc.ch4+Etransm.ch4+Eoprod.ch4+Eotrans.ch4
-  Evoc <- Edrill.voc+Erework.voc+Ecompl.voc+Eprod.voc+Eproc.voc+Etransm.voc+Eoprod.voc+Eotrans.voc
+  Eco2 <- Edrill.co2 + Ecompl.co2 + Erework.co2 + Eprod.co2 + Eproc.co2 + Etransm.co2 + Eoprod.co2 + Eotrans.co2
+  Ech4 <- Edrill.ch4 + Ecompl.ch4 + Erework.ch4 + Eprod.ch4 + Eproc.ch4 + Etransm.ch4 + Eoprod.ch4 + Eotrans.ch4
+  Evoc <- Edrill.voc + Ecompl.voc + Erework.voc + Eprod.voc + Eproc.voc + Etransm.voc + Eoprod.voc + Eotrans.voc
   
   # Find what fraction of total emissions is attributable to each activity
-  fET <- data.frame(co2 = c(sum(Edrill.co2), sum(Erework.co2), sum(Ecompl.co2), sum(Eprod.co2),
+  fET <- data.frame(co2 = c(sum(Edrill.co2), sum(Ecompl.co2), sum(Erework.co2), sum(Eprod.co2),
                               sum(Eproc.co2), sum(Etransm.co2), sum(Eoprod.co2), sum(Eotrans.co2))/sum(Eco2),
-                    ch4 = c(sum(Edrill.ch4), sum(Erework.ch4), sum(Ecompl.ch4), sum(Eprod.ch4),
+                    ch4 = c(sum(Edrill.ch4), sum(Ecompl.ch4), sum(Erework.ch4), sum(Eprod.ch4),
                               sum(Eproc.ch4), sum(Etransm.ch4), sum(Eoprod.ch4), sum(Eotrans.ch4))/sum(Ech4),
-                    voc = c(sum(Edrill.voc), sum(Erework.voc), sum(Ecompl.voc), sum(Eprod.voc),
+                    voc = c(sum(Edrill.voc), sum(Ecompl.voc), sum(Erework.voc), sum(Eprod.voc),
                               sum(Eproc.voc), sum(Etransm.voc), sum(Eoprod.voc), sum(Eotrans.voc))/sum(Evoc),
-                    row.names = c("drill", "rework", "compl", "prod", "proc", "transm", "oprod", "otrans"))
+                    row.names = c("drill", "compl", "rework", "prod", "proc", "transm", "oprod", "otrans"))
   
   
   # And what fraction is from oil wells (by difference, gas fraction is 1 - oil fraction)
   ind <- which(wsim$wellType == "OW")
-  foil <- (sum(Eco2[ind])+sum(Ech4[ind])+sum(Evoc[ind]))/(sum(Eco2)+sum(Ech4)+sum(Evoc))
+  foil <- (sum(Eco2[ind,])+sum(Ech4[ind,])+sum(Evoc[ind,]))/(sum(Eco2)+sum(Ech4)+sum(Evoc))
   
   
   # Part 2: Emission reductions --------------------------------------------
@@ -157,6 +157,15 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   }
   
   # Predefine reduced emissions matrices as their unreduced counterparts
+  rEdrill.co2 <-  Edrill.co2
+  rEdrill.ch4 <-  Edrill.ch4
+  rEdrill.voc <-  Edrill.voc
+  rErework.co2 <- Erework.co2
+  rErework.ch4 <- Erework.ch4
+  rErework.voc <- Erework.voc
+  rEcompl.co2 <-  Ecompl.co2
+  rEcompl.ch4 <-  Ecompl.ch4
+  rEcompl.voc <-  Ecompl.voc
   rEprod.co2 <-   Eprod.co2
   rEprod.ch4 <-   Eprod.ch4
   rEprod.voc <-   Eprod.voc
@@ -166,6 +175,12 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   rEtransm.co2 <- Etransm.co2
   rEtransm.ch4 <- Etransm.ch4
   rEtransm.voc <- Etransm.voc
+  rEoprod.co2 <-  Eoprod.co2
+  rEoprod.ch4 <-  Eoprod.ch4
+  rEoprod.voc <-  Eoprod.voc
+  rEotrans.co2 <- Eotrans.co2
+  rEotrans.ch4 <- Eotrans.ch4
+  rEotrans.voc <- Eotrans.voc
   
   
   # --(1)-- Emissions reduction for wells drilled beginning Nov. 2012
@@ -175,6 +190,21 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   
   # Get row indices of wells drilled on or after Nov. 2012 date (and aren't existing wells)
   ind <- which(wsim$tDrill >= ttstep & wsim$tDrill != 0)
+  
+  # Get prior wells which may be subject to change. If implementation date
+  # occurs before start of simulation...
+  if (ttstep < 0) {
+    
+    # ... then find any well younger than implementation date
+    temp <- which(wsim$tend <= abs(ttstep) & wsim$tDrill == 0)
+    
+    # If there are any such wells
+    if (length(temp) > 0) {
+      
+      # Then add them to row index
+      ind <- c(ind, temp)
+    }
+  }
   
   # If ind > 0, apply reductions to gas production, processing, and transport
   if(length(ind) > 0) {
@@ -196,7 +226,15 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   }
   
   # Overall emissions reduction fraction
-  temp <-    1 - (sum(rEprod.voc)+sum(rEproc.voc)+sum(rEtransm.voc))/(sum(Eprod.voc)+sum(Eproc.voc)+sum(Etransm.voc))
+  temp <- (1 - (sum(Edrill.voc) +
+                  sum(Ecompl.voc) +
+                  sum(Erework.voc) +
+                  sum(rEprod.voc) +
+                  sum(rEproc.voc) +
+                  sum(rEtransm.voc) +
+                  sum(Eoprod.voc) +
+                  sum(Eotrans.voc)) /
+             sum(Evoc))
   NSPSred <- temp*(fET["prod", "voc"]+fET["proc", "voc"]+fET["transm", "voc"])
   
   
@@ -223,7 +261,15 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   }
   
   # Overall emissions reduction fraction
-  temp <-    1-sum(rEcompl.voc)/sum(Ecompl.voc)
+  temp <- (1 - (sum(Edrill.voc) +
+                  sum(rEcompl.voc) +
+                  sum(Erework.voc) +
+                  sum(Eprod.voc) +
+                  sum(Eproc.voc) +
+                  sum(Etransm.voc) +
+                  sum(Eoprod.voc) +
+                  sum(Eotrans.voc)) /
+             sum(Evoc))
   NSPSred <- c(NSPSred, temp*(fET["compl", "voc"]))
   
   
@@ -251,51 +297,127 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   
   # No VOC impact from drilling construction activity
   
-  # Get overall summation
-  rEco2 <- rEdrill.co2+Erework.co2+rEcompl.co2+rEprod.co2+rEproc.co2+rEtransm.co2+Eoprod.co2+Eotrans.co2
-  rEch4 <- rEdrill.ch4+Erework.ch4+rEcompl.ch4+rEprod.ch4+rEproc.ch4+rEtransm.ch4+Eoprod.ch4+Eotrans.ch4
-  rEvoc <- rEdrill.voc+Erework.voc+rEcompl.voc+rEprod.voc+rEproc.voc+rEtransm.voc+Eoprod.voc+Eotrans.voc
-  
   
   # --(4)-- Pneumatic controllers
   
   # Cut time step equivalent to Jan 2015 emissions reduction for pneumatic controllers
   ttstep <- 1+round(as.numeric(difftime(EFred$date[6], tstart, units = "days"))*(12/365.25))
   
-  # Get row indices of wells drilled on or after Jan. 2015 and located in Uintah County
-  ind <- which(wsim$tDrill >= ttstep & wsim$county == "UINTAH")
-  
-  # If ind > 0, apply reductions to gas production, processing, and transport
-  if(length(ind) > 0) {
+  # If the implementation date is effective
+  if (ttstep > 0) {
     
-    # Completion events for all wells
-    rEco2[ind,] <- t(apply(rEco2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
-    rEch4[ind,] <- t(apply(rEch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
-    rEvoc[ind,] <- t(apply(rEvoc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+    # Then all wells have their VOC/CH4 emissions reduced, with percentages specified by county
+    
+    # Get row indices of wells drilled on or after Jan. 2015 and located in Uintah County
+    ind <- which(wsim$county == "UINTAH")
+    
+    # If ind > 0, apply reductions to everything
+    if(length(ind) > 0) {
+      
+      # Drilling events
+      rEdrill.co2[ind,] <- t(apply(rEdrill.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rEdrill.ch4[ind,] <- t(apply(rEdrill.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rEdrill.voc[ind,] <- t(apply(rEdrill.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+      
+      # Completion events
+      rEcompl.co2[ind,] <- t(apply(rEcompl.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rEcompl.ch4[ind,] <- t(apply(rEcompl.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rEcompl.voc[ind,] <- t(apply(rEcompl.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+      
+      # Rework events
+      rErework.co2[ind,] <- t(apply(rErework.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rErework.ch4[ind,] <- t(apply(rErework.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rErework.voc[ind,] <- t(apply(rErework.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+      
+      # Production events for gas
+      rEprod.co2[ind,] <- t(apply(rEprod.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rEprod.ch4[ind,] <- t(apply(rEprod.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rEprod.voc[ind,] <- t(apply(rEprod.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+      
+      # Processing events for gas
+      rEproc.co2[ind,] <- t(apply(rEproc.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rEproc.ch4[ind,] <- t(apply(rEproc.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rEproc.voc[ind,] <- t(apply(rEproc.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+      
+      # Transmission and distribution events for gas
+      rEtransm.co2[ind,] <- t(apply(rEtransm.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rEtransm.ch4[ind,] <- t(apply(rEtransm.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rEtransm.voc[ind,] <- t(apply(rEtransm.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+      
+      # Production events for oil
+      rEoprod.co2[ind,] <- t(apply(rEoprod.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rEoprod.ch4[ind,] <- t(apply(rEoprod.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rEoprod.voc[ind,] <- t(apply(rEoprod.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+      
+      # Transport events for oil
+      rEotrans.co2[ind,] <- t(apply(rEotrans.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "co2"]))
+      rEotrans.ch4[ind,] <- t(apply(rEotrans.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "ch4"]))
+      rEotrans.voc[ind,] <- t(apply(rEotrans.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pUintah", "voc"]))
+    }
+    
+    # Get row indices of wells drilled on or after Jan. 2015 and located in DUchesne County
+    ind <- which(wsim$county == "DUCHESNE")
+    
+    # If ind > 0, apply reductions to everything
+    if(length(ind) > 0) {
+      
+      # Drilling events
+      rEdrill.co2[ind,] <- t(apply(rEdrill.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rEdrill.ch4[ind,] <- t(apply(rEdrill.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rEdrill.voc[ind,] <- t(apply(rEdrill.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+      
+      # Completion events
+      rEcompl.co2[ind,] <- t(apply(rEcompl.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rEcompl.ch4[ind,] <- t(apply(rEcompl.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rEcompl.voc[ind,] <- t(apply(rEcompl.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+      
+      # Rework events
+      rErework.co2[ind,] <- t(apply(rErework.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rErework.ch4[ind,] <- t(apply(rErework.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rErework.voc[ind,] <- t(apply(rErework.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+      
+      # Production events for gas
+      rEprod.co2[ind,] <- t(apply(rEprod.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rEprod.ch4[ind,] <- t(apply(rEprod.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rEprod.voc[ind,] <- t(apply(rEprod.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+      
+      # Processing events for gas
+      rEproc.co2[ind,] <- t(apply(rEproc.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rEproc.ch4[ind,] <- t(apply(rEproc.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rEproc.voc[ind,] <- t(apply(rEproc.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+      
+      # Transmission and distribution events for gas
+      rEtransm.co2[ind,] <- t(apply(rEtransm.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rEtransm.ch4[ind,] <- t(apply(rEtransm.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rEtransm.voc[ind,] <- t(apply(rEtransm.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+      
+      # Production events for oil
+      rEoprod.co2[ind,] <- t(apply(rEoprod.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rEoprod.ch4[ind,] <- t(apply(rEoprod.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rEoprod.voc[ind,] <- t(apply(rEoprod.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+      
+      # Transport events for oil
+      rEotrans.co2[ind,] <- t(apply(rEotrans.co2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
+      rEotrans.ch4[ind,] <- t(apply(rEotrans.ch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
+      rEotrans.voc[ind,] <- t(apply(rEotrans.voc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
+    }
   }
   
-  # Get row indices of wells drilled on or after Jan. 2015 and located in DUchesne County
-  ind <- which(wsim$tDrill >= ttstep & wsim$county == "DUCHESNE")
-  
-  # If ind > 0, apply reductions to gas production, processing, and transport
-  if(length(ind) > 0) {
-    
-    # Completion events for all wells
-    rEco2[ind,] <- t(apply(rEco2[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "co2"]))
-    rEch4[ind,] <- t(apply(rEch4[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "ch4"]))
-    rEvoc[ind,] <- t(apply(rEvoc[ind,], 1, redfun, tstep = ttstep, red = EFred[EFred$cat == "pDuchesne", "voc"]))
-  }
+  # Sum everything together by species
+  rEco2 <- rEdrill.co2 + rEcompl.co2 + rErework.co2 + rEprod.co2 + rEproc.co2 + rEtransm.co2 + rEoprod.co2 + rEotrans.co2
+  rEch4 <- rEdrill.ch4 + rEcompl.ch4 + rErework.ch4 + rEprod.ch4 + rEproc.ch4 + rEtransm.ch4 + rEoprod.ch4 + rEotrans.ch4
+  rEvoc <- rEdrill.voc + rEcompl.voc + rErework.voc + rEprod.voc + rEproc.voc + rEtransm.voc + rEoprod.voc + rEotrans.voc
   
   # VOC reductions from pneumatic controllers can be found be difference
   
   # Find what fraction of total emissions is attributable to each activity
-  rfET <- data.frame(co2 = c(sum(rEdrill.co2), sum(Erework.co2),  sum(rEcompl.co2), sum(rEprod.co2),
-                             sum(rEproc.co2),  sum(rEtransm.co2), sum(Eoprod.co2),  sum(Eotrans.co2))/sum(rEco2),
-                     ch4 = c(sum(rEdrill.ch4), sum(Erework.ch4),  sum(rEcompl.ch4), sum(rEprod.ch4),
-                             sum(rEproc.ch4),  sum(rEtransm.ch4), sum(Eoprod.ch4),  sum(Eotrans.ch4))/sum(rEch4),
-                     voc = c(sum(rEdrill.voc), sum(Erework.voc),  sum(rEcompl.voc), sum(rEprod.voc),
-                             sum(rEproc.voc),  sum(rEtransm.voc), sum(Eoprod.voc),  sum(Eotrans.voc))/sum(rEvoc),
-                     row.names = c("drill", "rework", "compl", "prod", "proc", "transm", "oprod", "otrans"))
+  rfET <- data.frame(co2 = c(sum(rEdrill.co2), sum(rEcompl.co2), sum(rErework.co2),  sum(rEprod.co2),
+                             sum(rEproc.co2),  sum(rEtransm.co2), sum(rEoprod.co2),  sum(rEotrans.co2))/sum(rEco2),
+                     ch4 = c(sum(rEdrill.ch4), sum(rEcompl.ch4), sum(rErework.ch4),  sum(rEprod.ch4),
+                             sum(rEproc.ch4),  sum(rEtransm.ch4), sum(rEoprod.ch4),  sum(rEotrans.ch4))/sum(rEch4),
+                     voc = c(sum(rEdrill.voc), sum(rEcompl.voc), sum(rErework.voc),  sum(rEprod.voc),
+                             sum(rEproc.voc),  sum(rEtransm.voc), sum(rEoprod.voc),  sum(rEotrans.voc))/sum(rEvoc),
+                     row.names = c("drill", "compl", "rework", "prod", "proc", "transm", "oprod", "otrans"))
   
   # Part 3: Return results -------------------------------------------------
   
