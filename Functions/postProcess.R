@@ -1769,11 +1769,11 @@ if(opt$plist$plot[j] == TRUE) {
   tVOC <- NULL
   
   # Median emissions activity fractions
-  nfVOC.med <-  apply(nfVOC, 2, median)
-  pfVOC.med <-  apply(pfVOC, 2, median)
-  rnfVOC.med <- apply(rnfVOC, 2, median)
-  rpfVOC.med <- apply(rpfVOC, 2, median)
-  fVOC.names <- c("Drill", "Rework", "Completion", "Gas Production", "Gas Processing",
+  nfVOC.med <-  apply(nfVOC, 2, median)  # VOC emissions fractions by activity for new wells
+  pfVOC.med <-  apply(pfVOC, 2, median)  # VOC emissions fractions by activity for prior wells
+  rnfVOC.med <- apply(rnfVOC, 2, median) # VOC emissions fractions by activity for new wells with reductions
+  rpfVOC.med <- apply(rpfVOC, 2, median) # VOC emissions fractions by activity for prior wells with reductions
+  fVOC.names <- c("Drill", "Completion", "Rework", "Gas Production", "Gas Processing",
                   "Gas Transmission", "Oil Production", "Oil Transportation")
   
   # Median emissions from new vs. prior wells for VOCs
@@ -1791,6 +1791,10 @@ if(opt$plist$plot[j] == TRUE) {
     tVOC <- cbind(tVOC, (sum(apply(rVOC[, i:(i+11)], 2, median))*rfconv))
   }
   
+  # Sum together small stuff
+  # finish me in the future (put categories < 5% in "other" category)
+  
+  
   # Barplot
   barplot(height = tVOC/1e3,
           names.arg = c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5"),
@@ -1802,6 +1806,69 @@ if(opt$plist$plot[j] == TRUE) {
           ylab = "VOC Emissions (1E+06 kg / yr)",
           legend.text = fVOC.names,
           args.legend = list(x = ncol(tVOC) + 10.35, y=max(colSums(tVOC)/1.3e3)))
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# Production ratio new wells vs. existing wells ---------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  # Get ratios
+  sPR <- data.frame(oil = oil.q[3, ] / (oil.q[3, ] + poil.q[3, ]),
+                    gas = gas.q[3, ] / (gas.q[3, ] + pgas.q[3, ]))
+  
+  # Main plot with largest quantile result
+  plot(opt$tsteps, sPR$oil,
+       type = "l",
+       ylim = c(0, 1),
+       col = qlinecolor[1],
+       lty = qlinetype[1],
+       lwd = qlinewidth[1],
+       xlab = "Time (months)",
+       ylab = "New Well Production Fraction",
+       main = "Fraction of Total Production from New Wells")
+  
+  # Other quantile lines
+  lines(opt$tsteps, sPR$gas, col = qlinecolor[2], lty = qlinetype[2], lwd = qlinewidth[2])
+  
+  if(opt$crossvalid == T) {
+    
+    # Get actual ratio
+    aPR <- data.frame(oil = new.p$oil / (new.p$oil + prior.p$oil),
+                      gas = new.p$gas / (new.p$gas + prior.p$gas))
+    
+    # Actual oil production
+    lines(opt$tsteps, aPR$oil, col = qlinecolor[1], lty = alinetype, lwd = alinewidth)
+    lines(opt$tsteps, aPR$gas, col = qlinecolor[2], lty = alinetype, lwd = alinewidth)
+    
+    # Legend
+    legend("topleft",
+           c("Oil - Actual", "Oil - Sim", "Gas - Actual", "Gas - Sim"),
+           ncol = 1,
+           col = c(qlinecolor[1], qlinecolor[1], qlinecolor[2], qlinecolor[2]),
+           lwd = c(alinewidth, qlinewidth[1]),
+           lty = c(alinetype,  qlinetype[1], alinetype, qlinetype[2]))
+  } else {
+    
+    # Legend
+    legend("topleft",
+           c("Oil - Sim", "Gas - Sim"),
+           ncol = 1,
+           col = qlinecolor[1:2],
+           lwd = qlinewidth[1:2],
+           lty = qlinetype[1:2])
+  }
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
