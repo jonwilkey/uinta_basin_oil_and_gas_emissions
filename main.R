@@ -1142,6 +1142,44 @@ close(pb)
 
 # 4.1 Post processing -----------------------------------------------------
 
+# If specified
+if (opt$save == T) {
+  
+  # Save results
+  save(file = file.path(path$data, opt$save.name),
+       list = c("osim",
+                "gsim",
+                "posim",
+                "pgsim",
+                "CO2",
+                "CH4",
+                "VOC",
+                "rCO2",
+                "rCH4",
+                "rVOC",
+                "nfCO2",
+                "nfCH4",
+                "nfVOC",
+                "pfCO2",
+                "pfCH4",
+                "pfVOC",
+                "rnfCO2",
+                "rnfCH4",
+                "rnfVOC",
+                "rpfCO2",
+                "rpfCH4",
+                "rpfVOC",
+                "foil",
+                "fnvp",
+                "rfnvp",
+                "NSPSred","op",
+                "gp",
+                "Drilled",
+                "ppri",
+                "prior.Info",
+                "pi.skip"))
+}
+
 # Run processing script to generate plots of results
 source(file.path(path$fun, "postProcess.R"))
 
