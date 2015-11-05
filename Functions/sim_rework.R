@@ -6,8 +6,9 @@
 
 # Inputs ------------------------------------------------------------------
 
-# type - character string used as switch for adjusting to timescale used in
-# simulation, valid options are "new" for new wells and "prior" for prior wells
+# type - character string used as switch for adjusting to timescale used in 
+# simulation, valid options are "new" for new wells, "prior" for prior wells,
+# and "none" for no reworks
 
 # wellType - oil or gas (assuming dry wells are gas wells)
 
@@ -90,6 +91,13 @@ sim_rework <- function(type, wellType, tDrill, td.oil, td.gas, cdf.rework,
            # All other prior wells are just the value of rework + trel on time
            # scale of simulation
            rework <- rework+trel
+         },
+         
+         # No reworks
+         none = {
+           
+           # Set everything back to zero
+           rework <- rep(0, times = length(wellType))
          })
   
   # Finally, since any well reworked before/after the simulation period is
