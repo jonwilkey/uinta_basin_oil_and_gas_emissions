@@ -376,9 +376,9 @@ if(opt$EIAerror.update == TRUE) {
   
   # Function call - Relative fractional error
   EIAerrorUpdateFrac(path =   path,
-                 xq =     opt$xq,
-                 tsteps = opt$EEU.tsteps,
-                 ver =    opt$file_ver)
+                     xq =     opt$xq,
+                     tsteps = opt$EEU.tsteps,
+                     ver =    opt$file_ver)
 }
 
 # Load EIA error CDF matrices (Eoil & Egas and EoilFrac & EgasFrac)
@@ -1037,18 +1037,20 @@ for (i in 1:opt$nrun) {
   # 3.3.7 Emissions ----------------------------------------------------
   
   # Calculate emissions from new wells
-  ETsim <- Ecalc(osim =   psim$osim,
-                 gsim =   psim$gsim,
-                 wsim =   wsim,
-                 tstart = opt$tstart,
-                 EFred =  opt$EFred)
+  ETsim <- Ecalc(osim =      psim$osim,
+                 gsim =      psim$gsim,
+                 wsim =      wsim,
+                 tstart =    opt$tstart,
+                 EFred =     opt$EFred,
+                 MC.tsteps = opt$MC.tsteps)
   
   # Calculate emissions from existing wells
-  ETpri <- Ecalc(osim =   apri$oil,
-                 gsim =   apri$gas,
-                 wsim =   wpri,
-                 tstart = opt$tstart,
-                 EFred =  opt$EFred)
+  ETpri <- Ecalc(osim =      apri$oil,
+                 gsim =      apri$gas,
+                 wsim =      wpri,
+                 tstart =    opt$tstart,
+                 EFred =     opt$EFred,
+                 MC.tsteps = opt$MC.tsteps)
   
   
   # 3.3.8 Water Balance ------------------------------------------------
@@ -1190,7 +1192,7 @@ writeLines(c("",
 
 # Print finished message and play sound - feel free to replace with your
 # preferred sound, see help for function by typing "?beep" in console
-beep(4)
+beep(3)
 writeLines(c("",
              "Model run complete"))
 

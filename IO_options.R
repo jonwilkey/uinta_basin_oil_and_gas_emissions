@@ -17,18 +17,19 @@ opt <- NULL
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
-opt$file_ver <- "v2"
+opt$file_ver <- "v1"
+# opt$file_ver <- "v1"
 
 # Save run results?
-opt$save <- T
-opt$save.name <- "results xvalid v1.rda"
+opt$save <- F
+opt$save.name <- "results predict 10k v1.rda"
 
 # Version notes
 # v1: Prediction -     train 1984-2014, predict 2015-2019
 # v2: Cross-validate - train 1984-2009, predict 2010-2014
 
 # Enter number of overall simulation iterations
-opt$nrun <- 1e2
+opt$nrun <- 1e1
 
 # Is model run for cross-validation? (turns on/off plots of actual values in
 # postProcess script)
@@ -643,44 +644,45 @@ opt$RIMSmultiplier <- 2.2370
 # Export options
 opt$exportFlag <- F                           # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -epaper -v1.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -epaper -predict -10 -v1.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
-opt$plist <- rbind(c("01 Oil Price",                  T), # Oil prices simulated vs actual
-                   c("02 Gas Price",                  T), # Gas prices simulated vs actual
-                   c("03 Drilling Schedule",          T), # Drilling schedule simulated vs actual
+opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated vs actual
+                   c("02 Gas Price",                  F), # Gas prices simulated vs actual
+                   c("03 Drilling Schedule",          F), # Drilling schedule simulated vs actual
                    c("04 Drilling Model Fit",         F), # Drilling fit vs actual
-                   c("05 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
-                   c("06 DCA Coefficients - CDF",     F), # CDF DCA coefficients
-                   c("07 Total Oil Production",       T), # Total oil production simulated vs actual
-                   c("08 Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
-                   c("09 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
-                   c("10 Total Gas Production",       T), # Total gas production simulated vs actual
-                   c("11 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
-                   c("12 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
-                   c("13 CO2e Emissions",             F), # CO2 emissions
-                   c("14 CH4 Emissions",              F), # CH4 emissions
-                   c("15 VOC Emissions",              T), # VOC emissions
-                   c("16 Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
-                   c("17 Field Fractions -OW",        F), # Same but just oil wells
-                   c("18 Field Fractions -GW",        F), # Same but just gas wells
-                   c("19 Well Capital Cost",          F), # Drilling and completion capital cost data and fit
-                   c("20 Surface Lease Ownership",    F), # Surface lease ownership by field
-                   c("21 CDFs for Well Depth",        F), # CDFs for well depth by well type
-                   c("22 LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
-                   c("23 Enery Price History",        F), # FPP history for oil and gas from EIA data
-                   c("24 NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
-                   c("25 Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
-                   c("26 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
-                   c("27 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
-                   c("28 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
-                   c("29 CDF for Well Reworks",       F), # CDFs for well reworks
-                   c("30 EIA AEO Relative Error",     F), # Boxplot of EIA AEO relative errors as f(prediction year)
-                   c("31 Total Royalties and Taxes",  F), # Total royalties and taxes (severance, property, and corporate income)
-                   c("32 VOC emissions barplot",      T), # Total VOC emissions barplot showing contribution from emissions sources
-                   c("33 Production fraction n vs e", T)
+                   c("05 Drill model cross-valid",    F), # (ONLY IF RUNNING CROSS-VALIDATION) Drilling model cross-validation
+                   c("06 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
+                   c("07 DCA Coefficients - CDF",     F), # CDF DCA coefficients
+                   c("08 Total Oil Production",       F), # Total oil production simulated vs actual
+                   c("09 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
+                   c("10 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
+                   c("11 Total Gas Production",       F), # Total gas production simulated vs actual
+                   c("12 Gas from New Wells",         F), # Total gas production simulated vs actual from new wells
+                   c("13 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
+                   c("14 CO2e Emissions",             F), # CO2 emissions
+                   c("15 CH4 Emissions",              F), # CH4 emissions
+                   c("16 VOC Emissions",              F), # VOC emissions
+                   c("17 Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
+                   c("18 Field Fractions -OW",        F), # Same but just oil wells
+                   c("19 Field Fractions -GW",        F), # Same but just gas wells
+                   c("20 Well Capital Cost",          F), # Drilling and completion capital cost data and fit
+                   c("21 Surface Lease Ownership",    F), # Surface lease ownership by field
+                   c("22 CDFs for Well Depth",        F), # CDFs for well depth by well type
+                   c("23 LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
+                   c("24 Enery Price History",        F), # FPP history for oil and gas from EIA data
+                   c("25 NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
+                   c("26 Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
+                   c("27 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
+                   c("28 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
+                   c("29 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
+                   c("30 CDF for Well Reworks",       F), # CDFs for well reworks
+                   c("31 EIA AEO Relative Error",     F), # Boxplot of EIA AEO relative errors as f(prediction year)
+                   c("32 Total Royalties and Taxes",  F), # Total royalties and taxes (severance, property, and corporate income)
+                   c("33 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources
+                   c("34 Production fraction n vs e", F)
 )
 
 # Convert to data.frame and adjust column names
