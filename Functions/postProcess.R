@@ -50,7 +50,7 @@ if(opt$crossvalid == T) {
 }
 
 # Calculate total government take (royalties and taxes)
-take <- roy.oil+roy.gas+st.oil+st.gas+CTfed+CTstate+PT
+# take <- roy.oil+roy.gas+st.oil+st.gas+CTfed+CTstate+PT
 
 
 # Quantiles ---------------------------------------------------------------
@@ -69,16 +69,16 @@ VOC.q <-     Drilled.q
 rCO2.q <-    Drilled.q
 rCH4.q <-    Drilled.q
 rVOC.q <-    Drilled.q
-w.pw.q <-    Drilled.q
-w.disp.q <-  Drilled.q
-w.evap.q <-  Drilled.q
-w.rec.q <-   Drilled.q
-w.dw.q <-    Drilled.q
-w.fw.q <-    Drilled.q
-w.inj.q <-   Drilled.q
-w.in.q <-    Drilled.q
-w.r.q <-     Drilled.q
-take.q <-    Drilled.q
+# w.pw.q <-    Drilled.q
+# w.disp.q <-  Drilled.q
+# w.evap.q <-  Drilled.q
+# w.rec.q <-   Drilled.q
+# w.dw.q <-    Drilled.q
+# w.fw.q <-    Drilled.q
+# w.inj.q <-   Drilled.q
+# w.in.q <-    Drilled.q
+# w.r.q <-     Drilled.q
+# take.q <-    Drilled.q
 
 # For each timestep, get quantiles
 for (i in 1:ncol(Drilled.q)) {
@@ -95,16 +95,16 @@ for (i in 1:ncol(Drilled.q)) {
   rCO2.q[,i] <-    quantile(rCO2[,i],    opt$quant)
   rCH4.q[,i] <-    quantile(rCH4[,i],    opt$quant)
   rVOC.q[,i] <-    quantile(rVOC[,i],    opt$quant)
-  w.pw.q[,i] <-    quantile(w.pw[,i],    opt$quant)
-  w.disp.q[,i] <-  quantile(w.disp[,i],  opt$quant)
-  w.evap.q[,i] <-  quantile(w.evap[,i],  opt$quant)
-  w.rec.q[,i] <-   quantile(w.rec[,i],   opt$quant)
-  w.dw.q[,i] <-    quantile(w.dw[,i],    opt$quant)
-  w.fw.q[,i] <-    quantile(w.fw[,i],    opt$quant)
-  w.inj.q[,i] <-   quantile(w.inj[,i],   opt$quant)
-  w.in.q[,i] <-    quantile(w.in[,i],    opt$quant)
-  w.r.q[,i] <-     quantile(w.r[,i],     opt$quant)
-  take.q[,i] <-    quantile(take[,i],    opt$quant)
+#   w.pw.q[,i] <-    quantile(w.pw[,i],    opt$quant)
+#   w.disp.q[,i] <-  quantile(w.disp[,i],  opt$quant)
+#   w.evap.q[,i] <-  quantile(w.evap[,i],  opt$quant)
+#   w.rec.q[,i] <-   quantile(w.rec[,i],   opt$quant)
+#   w.dw.q[,i] <-    quantile(w.dw[,i],    opt$quant)
+#   w.fw.q[,i] <-    quantile(w.fw[,i],    opt$quant)
+#   w.inj.q[,i] <-   quantile(w.inj[,i],   opt$quant)
+#   w.in.q[,i] <-    quantile(w.in[,i],    opt$quant)
+#   w.r.q[,i] <-     quantile(w.r[,i],     opt$quant)
+#   take.q[,i] <-    quantile(take[,i],    opt$quant)
 }
 
 
@@ -145,8 +145,8 @@ if(opt$plist$plot[j] == TRUE) {
        lwd = qlinewidth[1],
        col = qlinecolor[1],
        xlab = "Time (months)",
-       ylab = paste("Oil First Purchase Price (", opt$cpiDate, " $/bbl)", sep = ""),
-       main = "Oil Price")
+       ylab = paste("Oil First Purchase Price (", opt$cpiDate, " $/bbl)", sep = ""))#,
+       #main = "Oil Price")
   
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -167,6 +167,7 @@ if(opt$plist$plot[j] == TRUE) {
     legend("topleft",
            c("Actual", "EIA Ref.", "EIA Low", "EIA High", "90%", "70%", "50%", "30%", "10%"),
            ncol = 2,
+           bg = "white",
            col = c(alinecolor, forlinecolor, qlinecolor),
            lwd = c(alinewidth, forlinewidth, qlinewidth),
            lty = c(alinetype,  forlinetype,  qlinetype))
@@ -176,6 +177,7 @@ if(opt$plist$plot[j] == TRUE) {
     legend("topleft",
            c("EIA Ref.", "EIA Low", "EIA High", "90%", "70%", "50%", "30%", "10%"),
            ncol = 2,
+           bg = "white",
            col = c(forlinecolor, qlinecolor),
            lwd = c(forlinewidth, qlinewidth),
            lty = c(forlinetype,  qlinetype))
@@ -198,16 +200,34 @@ if(opt$plist$plot[j] == TRUE) {
   # Set font size
   par(cex = opt$defFontSize)
   
-  # Main plot with largest quantile result
-  plot(opt$tsteps, gp.q[1,],
-       ylim = c(0.9*min(gp.q), 1.1*max(gp.q)),
-       type = "l",
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       col = qlinecolor[1],
-       xlab = "Time (months)",
-       ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""),
-       main = "Gas Price")
+  # What term to use as lower ylim value depends on whether or not
+  # cross-validation is occurring
+  if(opt$crossvalid == T) {
+    
+    # Main plot with largest quantile result using ylim on actual price
+    plot(opt$tsteps, gp.q[1,],
+         ylim = c(0.9*min(ep.act$GP), 1.1*max(gp.q)),
+         type = "l",
+         lty = qlinetype[1],
+         lwd = qlinewidth[1],
+         col = qlinecolor[1],
+         xlab = "Time (months)",
+         ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""))#,
+         #main = "Gas Price")
+    
+  } else {
+    
+    # Main plot with largest quantile result using ylim on simulated price
+    plot(opt$tsteps, gp.q[1,],
+         ylim = c(0.9*min(gp.q), 1.1*max(gp.q)),
+         type = "l",
+         lty = qlinetype[1],
+         lwd = qlinewidth[1],
+         col = qlinecolor[1],
+         xlab = "Time (months)",
+         ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""))#,
+         #main = "Gas Price")
+  }
   
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -238,6 +258,7 @@ if(opt$plist$plot[j] == TRUE) {
     legend("topleft",
            c("EIA Ref.", "EIA Low", "EIA High", "90%", "70%", "50%", "30%", "10%"),
            ncol = 2,
+           bg = "white",
            col = c(forlinecolor, qlinecolor),
            lwd = c(forlinewidth, qlinewidth),
            lty = c(forlinetype,  qlinetype))
@@ -268,8 +289,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Wells Drilled",
-       main = "Drilling Schedule")
+       ylab = "Wells Drilled")#,
+       #main = "Drilling Schedule")
   
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -345,61 +366,131 @@ if(opt$plist$plot[j] == TRUE) {
   ind <- which(d$month >= opt$DMU.tstart &
                d$month <= opt$DMU.tstop)
   
-  # Main plot for training fit
-  plot(d$month[ind], d$wells[ind],
-       lwd = 2,
-       type = "l",
-       xlab = "Time (months)",
-       ylab = "Wells Drilled",
-       main = "Drilling Schedule Models")
+  # 2x2 multiplot
+  par(mfrow = c(2,2),
+      oma = c(5,4,0,0) + 0.1,
+      mar = c(0,0,3,3) + 0.1)
   
-  # Add line for model fit results
-  lines(d$month[ind],
-        PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
-        col = "red", lty = 1)
-  lines(d$month[ind], fitted(drillModel$epm), col = "blue", lty = 1)
-  lines(d$month[ind], fitted(drillModel$opm), col = "green", lty = 1)
-  lines(d$month[ind], fitted(drillModel$gpm), col = "purple", lty = 1)
+  # names for character switch
+  char.switch <- c("Eq. (7)", "Eq. (8)", "Eq. (9)", "Eq. (10)")
   
-  # Legend
-  #legend("topleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
-  legend("topleft", c("Actual", "Eq. (7)", "Eq. (8)", "Eq. (9)", "Eq. (10)"), lty = c(1,rep(1,4)),
-         lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"))
+  for (k in 1:4) {
+    
+    # Main plot for training fit
+    plot(d$month[ind], d$wells[ind],
+         lwd =  2,
+         col =  alinecolor,
+         lty =  alinetype,
+         type = "l",
+         xlab = "Time (months)",
+         ylab = "Wells Drilled")#,
+    #main = "Drilling Schedule Models")
+    
+    #Cswitch <- 
+    
+    # Add line for model fit results
+    switch(char.switch[k],
+           
+           "Eq. (7)" =  lines(d$month[ind],
+                              PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
+                              col = "grey", lwd = 2, lty = 1),
+           "Eq. (8)" =  lines(d$month[ind], fitted(drillModel$epm), col = "grey", lwd = 2, lty = 1),
+           "Eq. (9)" =  lines(d$month[ind], fitted(drillModel$opm), col = "grey", lwd = 2, lty = 1),
+           "Eq. (10)" = lines(d$month[ind], fitted(drillModel$gpm), col = "grey", lwd = 2, lty = 1))
+    
+    # Legend
+    legend("topleft",
+           c("Actual", char.switch[k]),
+           lty = c(alinetype,  1),
+           lwd = c(alinewidth, 2),
+           col = c(alinecolor, "grey"))
+  }
+  
+  title(xlab = "Time (months)",
+        ylab = "Wells Drilled",
+        outer = TRUE, line = 3)
+  
+  # Remove everything
+  remove(PWM, EPM, OPM, GPM, d, ind, char.switch, k)
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# Drilling fit cross-validation --------------------------------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  # Prior well model function
+  PWM <- function(OP, GP, par, init) {
+    
+    # Initial wells drilled
+    w <- round(par[1]*OP[1]+par[2]*GP[1]+par[3]*init+par[4])
+    w <- ifelse(w < 0, 0, w)
+    
+    for(i in 2:length(OP)) {
+      
+      # Wells drilled
+      w <- c(w, round(par[1]*OP[i]+par[2]*GP[i]+par[3]*w[length(w)]+par[4]))
+      w <- ifelse(w < 0, 0, w)
+    }
+    
+    return(w)
+  }
+  
+  # Other models
+  EPM <- function(fit, OP, GP) {temp <- round(fit[2]*OP+fit[3]*GP+fit[1]); ifelse(temp > 0, temp, 0)} # Energy price model
+  OPM <- function(fit, OP)     {temp <- round(fit[2]*OP+fit[1]); ifelse(temp > 0, temp, 0)}           # Oil price model
+  GPM <- function(fit, GP)     {temp <- round(fit[2]*GP+fit[1]); ifelse(temp > 0, temp, 0)}
+  
+  # For simplicity, make copy of drillModelData just labeled as "d"
+  d <- drillModelData
   
   # Temporary time index
   ind <- which(d$month >= opt$tstart &
-               d$month <= opt$tstop)
+                 d$month <= opt$tstop)
   
-  if(opt$crossvalid == T) {
-    
-    # Main plot for cross-validation
-    plot(d$month[ind], d$wells[ind],
-         ylim = c(0, 100),
-         lwd = 2,
-         type = "l",
-         xlab = "Time (months)",
-         ylab = "Wells Drilled",
-         main = "Cross-Validation of Drilling Schedule Models")
-    
-    # Add line for model predictions
-    lines(d$month[ind],
-          PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
-          col = "red", lty = 1)
-    lines(d$month[ind],
-          EPM(fit = coefficients(drillModel$epm), OP = d$OP[ind-1], GP = d$GP[ind-1]),
-          col = "blue", lty = 1)
-    lines(d$month[ind],
-          OPM(fit = coefficients(drillModel$opm), OP = d$OP[ind-1]),
-          col = "green", lty = 1)
-    lines(d$month[ind],
-          GPM(fit = coefficients(drillModel$gpm), GP = d$GP[ind-1]),
-          col = "purple", lty = 1)
-    
-    # Legend
-    #legend("bottomleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
-    legend("bottomleft", c("Actual", "Eq. (7)", "Eq. (8)", "Eq. (9)", "Eq. (10)"), lty = c(1,rep(1,4)),
-           lwd = c(2, rep(1,4)), col = c("black", "red", "blue", "green", "purple"), ncol = 2, cex = 1/opt$defFontSize)
-  }
+  # Main plot for cross-validation
+  plot(d$month[ind], d$wells[ind],
+       ylim = c(0, 100),
+       lwd =  alinewidth,
+       col =  alinecolor,
+       lty =  alinetype,
+       type = "l",
+       xlab = "Time (months)",
+       ylab = "Wells Drilled")#,
+  #main = "Cross-Validation of Drilling Schedule Models")
+  
+  # Add line for model predictions
+  lines(d$month[ind],
+        PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
+        col = qlinecolor[1], lwd = qlinewidth[1], lty = qlinetype[1])
+  lines(d$month[ind],
+        EPM(fit = coefficients(drillModel$epm), OP = d$OP[ind-1], GP = d$GP[ind-1]),
+        col = qlinecolor[2], lwd = qlinewidth[2], lty = qlinetype[2])
+  lines(d$month[ind],
+        OPM(fit = coefficients(drillModel$opm), OP = d$OP[ind-1]),
+        col = qlinecolor[3], lwd = qlinewidth[3], lty = qlinetype[3])
+  lines(d$month[ind],
+        GPM(fit = coefficients(drillModel$gpm), GP = d$GP[ind-1]),
+        col = qlinecolor[4], lwd = qlinewidth[4], lty = qlinetype[4])
+  
+  # Legend
+  #legend("bottomleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
+  legend("bottomleft", c("Actual", "Eq. (7)", "Eq. (8)", "Eq. (9)", "Eq. (10)"),
+         lty = c(alinetype,  qlinetype[1:4]),
+         lwd = c(alinewidth, qlinewidth[1:4]),
+         col = c(alinecolor, qlinecolor[1:4]),
+         ncol = 3, cex = 1/opt$defFontSize)
   
   # Remove everything
   remove(PWM, EPM, OPM, GPM, d, ind)
@@ -474,8 +565,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Oil Production (bbl)",
-       main = "Total Oil Production")
+       ylab = "Oil Production (bbl)")#,
+       #main = "Total Oil Production")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -530,8 +621,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Oil Production (bbl)",
-       main = "Oil Production from New Wells")
+       ylab = "Oil Production (bbl)")#,
+       #main = "Oil Production from New Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -586,8 +677,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Oil Production (bbl)",
-       main = "Oil Production from Existing Wells")
+       ylab = "Oil Production (bbl)")#,
+       #main = "Oil Production from Existing Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -642,8 +733,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Gas Production (MCF)",
-       main = "Total Gas Production")
+       ylab = "Gas Production (MCF)")#,
+       #main = "Total Gas Production")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -698,8 +789,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Gas Production (MCF)",
-       main = "Gas Production from New Wells")
+       ylab = "Gas Production (MCF)")#,
+       #main = "Gas Production from New Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -754,8 +845,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Gas Production (MCF)",
-       main = "Gas Production from Existing Wells")
+       ylab = "Gas Production (MCF)")#,
+       #main = "Gas Production from Existing Wells")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -805,16 +896,15 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, CO2.q[1,],
        type = "l",
-       lty = 2,
        ylim = c(0.9*min(rCO2.q),
                 1.1*max(CO2.q)),
        col = qlinecolor[1],
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "CO2e Emissions (metric tons)",
-       main = "Total CO2e Emissions")
-  mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
+       ylab = "CO2e Emissions (metric tons)")#,
+       #main = "Total CO2e Emissions")
+  #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
   lines(opt$tsteps, rCO2.q[1,], col = qlinecolor[1], lty = 1)
   
   # Other quantile lines
@@ -846,16 +936,15 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot with largest quantile result
   plot(opt$tsteps, CH4.q[1,],
        type = "l",
-       lty = 2,
        ylim = c(0.9*min(rCH4.q),
                 1.1*max(CH4.q)),
        col = qlinecolor[1],
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "CH4 Emissions (metric tons)",
-       main = "Total CH4 Emissions")
-  mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
+       ylab = "CH4 Emissions (metric tons)")#,
+       #main = "Total CH4 Emissions")
+  #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
   lines(opt$tsteps, rCH4.q[1,], col = qlinecolor[1], lty = 1)
   
   # Other quantile lines
@@ -893,9 +982,9 @@ if(opt$plist$plot[j] == TRUE) {
        lty = 1,
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "VOC Emissions (metric tons/month)",
-       main = "Total VOC Emissions")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = NSPS Emissions")
+       ylab = "VOC Emissions (metric tons/month)")#,
+       #main = "Total VOC Emissions")
+  #mtext("Solid Lines = Base Emissions, Dotted Lines = NSPS Emissions")
   lines(opt$tsteps, rVOC.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
   
   # Other quantile lines
@@ -1637,17 +1726,18 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot - CDF for oil
   plot(oil~month, cdf.rework,
        type = "l",
-       col = "blue",
+       col = qlinecolor[1],
+       lwd = 2,
        ylim = c(0, 1),
-       xlab = "Time Since Drilling Completion (months)",
-       ylab = "Cumulative Probability",
-       main = "CDF for Well Reworks as f(time)")
+       xlab = "Well Age (months)",
+       ylab = "Cumulative Probability")#,
+       #main = "CDF for Well Reworks as f(time)")
   
   # CDF for gas
-  lines(gas~month, cdf.rework, col = "red")
+  lines(gas~month, cdf.rework, col = qlinecolor[3], lwd = 2, lty = qlinetype[1])
   
   # Legend
-  legend("topleft", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue", "red"))
+  legend("topleft", c("Oil Wells", "Gas Wells"), lty = c(1, qlinetype[1]), lwd = 2, col = qlinecolor[c(1,3)])
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -1680,37 +1770,37 @@ if(opt$plist$plot[j] == TRUE) {
                  data.frame(year = "FY 5", err = din[,5]))
   }
   
-  # Main plot - oil directional relative error
-  boxplot(err~year, din(fname = "EIA_op_error_export.csv"),
-          range = 0,
-          ylim = c(-250, 100),
-          xlab = "Future-Year",
-          ylab = "Relative Error (%)",
-          main = "Error in EIA Oil Price Forecasts (RE = (FP - AP) / AP)")
-  
-  # Main plot - gas directional relative error
-  boxplot(err~year, din(fname = "EIA_gp_error_export.csv"),
-          range = 0,
-          ylim = c(-250, 100),
-          xlab = "Future-Year",
-          ylab = "Relative Error (%)",
-          main = "Error in EIA Gas Price Forecasts (RE = (FP - AP) / AP)")
+#   # Main plot - oil directional relative error
+#   boxplot(err~year, din(fname = "EIA_op_error_export.csv"),
+#           range = 0,
+#           ylim = c(-250, 100),
+#           xlab = "Future-Year",
+#           ylab = "Relative Error (%)")#,
+#           #main = "Error in EIA Oil Price Forecasts (RE = (FP - AP) / AP)")
+#   
+#   # Main plot - gas directional relative error
+#   boxplot(err~year, din(fname = "EIA_gp_error_export.csv"),
+#           range = 0,
+#           ylim = c(-250, 100),
+#           xlab = "Future-Year",
+#           ylab = "Relative Error (%)")#,
+#           #main = "Error in EIA Gas Price Forecasts (RE = (FP - AP) / AP)")
   
   # Main plot - oil fractional relative error
   boxplot(r[year <= 5]~year[year <= 5], read.csv(file.path(path$raw, "EIA AEO frac error op export.csv")),
           range = 0,
           ylim = c(0, 1),
           xlab = "Future-Year",
-          ylab = "Relative Error (%)",
-          main = "Error in EIA Oil Price Forecasts (RE = FP/AP | RE = AP/FP)")
+          ylab = "Relative Error (%)")#,
+          #main = "Error in EIA Oil Price Forecasts (RE = FP/AP | RE = AP/FP)")
   
   # Main plot - gas fractional relative error
   boxplot(r[year <= 5]~year[year <= 5], read.csv(file.path(path$raw, "EIA AEO frac error gp export.csv")),
           range = 0,
           ylim = c(0, 1),
           xlab = "Future-Year",
-          ylab = "Relative Error (%)",
-          main = "Error in EIA Gas Price Forecasts (RE = FP/AP | RE = AP/FP)")
+          ylab = "Relative Error (%)")#,
+          #main = "Error in EIA Gas Price Forecasts (RE = FP/AP | RE = AP/FP)")
   
   # Remove function
   remove(din)
@@ -1741,8 +1831,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Total Royalties and Taxes (1e6 USD)",
-       main = "Total Royalties and Taxes from Oil and Gas")
+       ylab = "Total Royalties and Taxes (1e6 USD)")#,
+       #main = "Total Royalties and Taxes from Oil and Gas")
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {lines(opt$tsteps, take.q[i,]/1e6, col = qlinecolor[i])}
@@ -1773,8 +1863,6 @@ if(opt$plist$plot[j] == TRUE) {
   pfVOC.med <-  apply(pfVOC, 2, median)  # VOC emissions fractions by activity for prior wells
   rnfVOC.med <- apply(rnfVOC, 2, median) # VOC emissions fractions by activity for new wells with reductions
   rpfVOC.med <- apply(rpfVOC, 2, median) # VOC emissions fractions by activity for prior wells with reductions
-  fVOC.names <- c("Drill", "Completion", "Rework", "Gas Production", "Gas Processing",
-                  "Gas Transmission", "Oil Production", "Oil Transportation")
   
   # Median emissions from new vs. prior wells for VOCs
   fnvp.VOC <-  median(fnvp[, 3])
@@ -1792,20 +1880,38 @@ if(opt$plist$plot[j] == TRUE) {
   }
   
   # Sum together small stuff
-  # finish me in the future (put categories < 5% in "other" category)
+  ind <- c(3, 5, 7, 8)
+  tVOC <- rbind(tVOC, colSums(tVOC[ind,]))
+  tVOC <- tVOC[-ind, ]
   
+  # Names
+  fVOC.names <- c("Drill", "Completion", "Gas Production", "Gas Transmission", "Other")
+  fVOC.lab <- c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5")
+  fVOC.xlab <- c("Year (2010 - 2014)")
   
   # Barplot
   barplot(height = tVOC/1e3,
-          names.arg = c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5"),
+          names.arg = fVOC.lab,
           las = 2,
-          xlim = c(0, 18),
-          angle = c(0, 45, 90, 135),
-          density = c(0, rep(10, 3), rep(20, 4)),
-          xlab = "Year (2010 - 2014)",
+          ylim = c(0, 60),
+          xlab = fVOC.xlab,
           ylab = "VOC Emissions (1E+06 kg / yr)",
           legend.text = fVOC.names,
-          args.legend = list(x = ncol(tVOC) + 10.35, y=max(colSums(tVOC)/1.3e3)))
+          args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
+  
+  abline(h = seq(10, 50, 10), col = "lightgrey")
+  box()
+  
+  # Barplot
+  barplot(height = tVOC/1e3,
+          add = TRUE,
+          names.arg = fVOC.lab,
+          las = 2,
+          ylim = c(0, 60),
+          xlab = fVOC.xlab,
+          ylab = "VOC Emissions (1E+06 kg / yr)",
+          legend.text = fVOC.names,
+          args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -1836,8 +1942,8 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "New Well Production Fraction",
-       main = "Fraction of Total Production from New Wells")
+       ylab = "New Well Production Fraction")#,
+       #main = "Fraction of Total Production from New Wells")
   
   # Other quantile lines
   lines(opt$tsteps, sPR$gas, col = qlinecolor[2], lty = qlinetype[2], lwd = qlinewidth[2])
