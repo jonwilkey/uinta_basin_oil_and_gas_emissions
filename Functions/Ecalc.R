@@ -16,6 +16,8 @@
 
 # EFred - emissions reductions matrix for NSPS
 
+# MC.tsteps - number of time steps in simulation
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -32,7 +34,7 @@
 
 
 # Function ----------------------------------------------------------------
-Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
+Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred, MC.tsteps) {
   
   # Preallocate space for each emissions matrix
   Edrill.co2 <-  matrix(0, nrow = nrow(osim), ncol = ncol(osim))
@@ -240,11 +242,6 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   
   # --(2)-- Completions
   
-  # Predefine reduced emissions matrices as their unreduced counterparts
-  rEcompl.co2 <- Ecompl.co2
-  rEcompl.ch4 <- Ecompl.ch4
-  rEcompl.voc <- Ecompl.voc
-  
   # Cut time step equivalent to Jan 2015 emissions reduction
   ttstep <- 1+round(as.numeric(difftime(EFred$date[4], tstart, units = "days"))*(12/365.25))
   
@@ -275,11 +272,6 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   
   # --(3)-- Drilling construction activity
   
-  # Predefine reduced emissions matrices as their unreduced counterparts
-  rEdrill.co2 <- Edrill.co2
-  rEdrill.ch4 <- Edrill.ch4
-  rEdrill.voc <- Edrill.voc
-  
   # Cut time step equivalent to Jan 2015 emissions increase in drilling (related to construction activity)
   ttstep <- 1+round(as.numeric(difftime(EFred$date[5], tstart, units = "days"))*(12/365.25))
   
@@ -304,7 +296,7 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred) {
   ttstep <- 1+round(as.numeric(difftime(EFred$date[6], tstart, units = "days"))*(12/365.25))
   
   # If the implementation date is effective
-  if (ttstep > 0) {
+  if (ttstep > 0 & ttstep <= MC.tsteps) {
     
     # Then all wells have their VOC/CH4 emissions reduced, with percentages specified by county
     
