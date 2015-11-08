@@ -16,7 +16,7 @@ library(foreign)
 # Paths
 #-------------------------------------------------------------------------------
 
-data_root <- "D:/Dropbox/CLEAR/DOGM Data/RIMS II State Oil and Gas/Uinta Basin"
+data_root <- "C:/Users/jonwi/Dropbox/CLEAR/DOGM Data/RIMS II State Oil and Gas/Uinta Basin"
 
 #-------------------------------------------------------------------------------
 # Data

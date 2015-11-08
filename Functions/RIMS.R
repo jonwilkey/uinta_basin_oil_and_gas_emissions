@@ -8,7 +8,11 @@
 
 # LOC - lease operating cost matrix
 
-# nrun - number of iterations in overall simulation
+# tsteps - number of time steps in simulation
+
+# RIMS.cpi - CPI basis for RIMS II multiplier
+
+# cpi - CPI basis for simulation
 
 
 # Outputs -----------------------------------------------------------------
@@ -30,34 +34,20 @@
 
 
 # Function ----------------------------------------------------------------
-RIMS <- function (multiplier, wsim, LOC, nrun) {
-    
-  # Preallocate investment schedule space
-  invest <- matrix(0, nrow = nrun, ncol = floor(ncol(LOC)/12))
+RIMS <- function (multiplier, wsim, LOC, tsteps, RIMS.cpi, cpi) {
   
-  # Determine spending schedule on annual basis
-  for (i in 1:nrun) {
+  # Preallocate spending vector
+  invest <- rep(0, tsteps)
+  
+  for (i in 1:length(invest)) {
     
-    # Get summation of capital investments for drilling and completing wells
-    for (j in 1:ncol(invest)) {
-      tstart <- 12*(j-1)+1
-      tstop <- 12*(j-1)+12
-      ind <- which(wsim$runID == i &
-                   wsim$tDrill >= tstart &
-                   wsim$tDrill <= tstop)
-      invest[i,j] <- sum(wsim$cost[ind])
-    }
-    
-    # Reset selection index to be all wells for runID == i
-    ind <- which(wsim$runID == i)
-    
-    # Add summation of LOCs to previous sum of capital investments
-    for (j in 1:ncol(invest)) {
-      tstart <- 12*(j-1)+1
-      tstop <- 12*(j-1)+12
-      invest[i,j] <- invest[i,j]+sum(rowSums(LOC[ind,tstart:tstop], na.rm = TRUE), na.rm = TRUE)
-    }
+    # Calculate spending (sum of capital and operating costs) 
+    ind <-       which(wsim$tDrill == i)
+    invest[i] <- with(wsim[ind, ], sum(cap.drill + cap.compl + LEC)) + sum(LOC[, i])
   }
+  
+  # Inflation adjust to same cost basis as RIMS multiplier
+  invest <- invest * (RIMS.cpi / cpi)
   
   # RIMS II job creation calculation (muliplier * spending in millions of
   # dollars)

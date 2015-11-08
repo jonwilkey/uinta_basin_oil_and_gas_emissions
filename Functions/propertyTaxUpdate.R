@@ -21,6 +21,8 @@
 # eia.hp - data.frame of oil and gas FPP inflation adjusted to basis $/bbl or
 # $/MCF each month since 1977
 
+# tstart/tstop - start/stop points of training period
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -49,13 +51,19 @@
 
 # Function ----------------------------------------------------------------
 
-propertyTaxUpdate <- function(p, path, basis, ver, PTI, eia.hp, cf.MCF.to.MMBtu) {
+propertyTaxUpdate <- function(p, path, basis, ver, PTI, eia.hp, cf.MCF.to.MMBtu,
+                              tstart, tstop) {
   
   # # Internal variables - uncomment to debug ---------------------------------
   # 
   # basis <- opt$cpi
   # ver <- opt$file_ver
   # PTI <- opt$PTI
+  
+  
+  # Subset to training time -------------------------------------------------
+  
+  PTI <- PTI[which(PTI$year >= tstart & PTI$year <= tstop), ]
   
   
   # Get production and mean prices ------------------------------------------

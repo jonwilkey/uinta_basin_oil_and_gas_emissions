@@ -52,6 +52,21 @@ if(opt$crossvalid == T) {
 # Calculate total government take (royalties and taxes)
 # take <- roy.oil+roy.gas+st.oil+st.gas+CTfed+CTstate+PT
 
+# Annual summation function
+aSum <- function(input) {
+  
+  result <- NULL
+  
+  temp <- seq(1, 49, 12)
+  
+  for (i in temp) {
+    
+    result <- c(result, sum(input[i:(i + 11)])) 
+  }
+  
+  return(result)
+}
+
 
 # Quantiles ---------------------------------------------------------------
 
@@ -69,6 +84,11 @@ VOC.q <-     Drilled.q
 rCO2.q <-    Drilled.q
 rCH4.q <-    Drilled.q
 rVOC.q <-    Drilled.q
+jobs.q <-    Drilled.q
+roy.q  <-    Drilled.q
+ST.q   <-    Drilled.q
+PT.q   <-    Drilled.q
+CTstate.q <- Drilled.q
 # w.pw.q <-    Drilled.q
 # w.disp.q <-  Drilled.q
 # w.evap.q <-  Drilled.q
@@ -82,19 +102,24 @@ rVOC.q <-    Drilled.q
 
 # For each timestep, get quantiles
 for (i in 1:ncol(Drilled.q)) {
-  Drilled.q[,i] <- quantile(Drilled[,i], opt$quant)
-  oil.q[,i] <-     quantile(osim[,i],    opt$quant)
-  gas.q[,i] <-     quantile(gsim[,i],    opt$quant)
-  poil.q[,i] <-    quantile(posim[,i],   opt$quant)
-  pgas.q[,i] <-    quantile(pgsim[,i],   opt$quant)
-  op.q[,i] <-      quantile(op[,i],      opt$quant)
-  gp.q[,i] <-      quantile(gp[,i],      opt$quant)
-  CO2.q[,i] <-     quantile(CO2[,i],     opt$quant)
-  CH4.q[,i] <-     quantile(CH4[,i],     opt$quant)
-  VOC.q[,i] <-     quantile(VOC[,i],     opt$quant)
-  rCO2.q[,i] <-    quantile(rCO2[,i],    opt$quant)
-  rCH4.q[,i] <-    quantile(rCH4[,i],    opt$quant)
-  rVOC.q[,i] <-    quantile(rVOC[,i],    opt$quant)
+  Drilled.q[,i] <- quantile(Drilled[,i],                   opt$quant)
+  oil.q[,i] <-     quantile(osim[,i],                      opt$quant)
+  gas.q[,i] <-     quantile(gsim[,i],                      opt$quant)
+  poil.q[,i] <-    quantile(posim[,i],                     opt$quant)
+  pgas.q[,i] <-    quantile(pgsim[,i],                     opt$quant)
+  op.q[,i] <-      quantile(op[,i],                        opt$quant)
+  gp.q[,i] <-      quantile(gp[,i],                        opt$quant)
+  CO2.q[,i] <-     quantile(CO2[,i],                       opt$quant)
+  CH4.q[,i] <-     quantile(CH4[,i],                       opt$quant)
+  VOC.q[,i] <-     quantile(VOC[,i],                       opt$quant)
+  rCO2.q[,i] <-    quantile(rCO2[,i],                      opt$quant)
+  rCH4.q[,i] <-    quantile(rCH4[,i],                      opt$quant)
+  rVOC.q[,i] <-    quantile(rVOC[,i],                      opt$quant)
+  jobs.q[,i] <-    quantile(jobs[,i],                      opt$quant)
+  roy.q[,i]  <-    quantile(roy.oil.UT[,i]+roy.gas.UT[,i], opt$quant)
+  ST.q[,i]   <-    quantile(st.oil[,i]+st.gas[,i],         opt$quant)
+  PT.q[,i]   <-    quantile(PT[,i],                        opt$quant)
+  CTstate.q[,i] <- quantile(CTstate[,i],                   opt$quant)
 #   w.pw.q[,i] <-    quantile(w.pw[,i],    opt$quant)
 #   w.disp.q[,i] <-  quantile(w.disp[,i],  opt$quant)
 #   w.evap.q[,i] <-  quantile(w.evap[,i],  opt$quant)
@@ -1120,20 +1145,20 @@ if(opt$plist$plot[j] == TRUE) {
   # Main plot
   plot(cost ~ depth,
        data = drillCost.data,
+       col =  "grey40",
        xlab = "Measured Well Depth (ft)",
-       ylab = paste("Capital Cost (in", opt$cpiDate, "dollars)"),
-       main = "Well Capital Cost Model")
+       ylab = paste("Well Capital Cost (in", opt$cpiDate, "dollars)"))#,
+       #main = "Well Capital Cost Model")
   
   # Add line for model fit results
   lines(seq(0, 16e3, 100),
-        exp(coef(drillCost.fit)["(Intercept)"]+coef(drillCost.fit)["depth"]*seq(0, 16e3, 100)),
-        col = "red")
+        exp(coef(drillCost.fit)["(Intercept)"]+coef(drillCost.fit)["depth"]*seq(0, 16e3, 100)))
   
   # Add text line with equation
-  mtext(expression(log(C)==a+b%.%D))
+  # mtext(expression(log(C)==a+b%.%D))
   
   # Legend
-  legend("topleft", c("Actual", "Fit"), lty = c(NA,1), pch = c(1,NA), col = c("black","red"))
+  legend("topleft", c("Actual", "Fit"), lty = c(NA,1), pch = c(1,NA), col = c("grey40","black"))
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
