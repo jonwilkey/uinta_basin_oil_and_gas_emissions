@@ -383,8 +383,8 @@ if(opt$EIAerror.update == TRUE) {
 }
 
 # Load EIA error CDF matrices (Eoil & Egas and EoilFrac & EgasFrac)
-load(file.path(path$data, paste("EIAerror_", opt$file_ver, ".rda", sep = "")))
-load(file.path(path$data, paste("EIAerrorFrac_", opt$file_ver, ".rda", sep = "")))
+# load(file.path(path$data, paste("EIAerror_", opt$file_ver, ".rda", sep = "")))
+# load(file.path(path$data, paste("EIAerrorFrac_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.11 Decline curve analysis update --------------------------------------
@@ -557,7 +557,7 @@ if(opt$water.update == TRUE) {
 }
 
 # Load water balance term CDFs (cdf.water) and regression models (water.lm)
-load(file.path(path$data, paste("water_models_", opt$file_ver, ".rda", sep = "")))
+# load(file.path(path$data, paste("water_models_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.16 Rework CDF analysis and update -------------------------------------
@@ -760,15 +760,15 @@ if (opt$load.prior == TRUE) {
   rCO2 <-       osim # Reduced CO2 emission totals (metric tons)
   rCH4 <-       osim # Reduced CH4 emission totals (metric tons)
   rVOC <-       osim # Reduced VOC emission totals (metric tons)
-  w.pw <-       osim # Produced water totals (bbl)
-  w.disp <-     osim # Total water disposed of via injection wells (bbl)
-  w.evap <-     osim # Total water evaporated in ponds (bbl)
-  w.rec <-      osim # Water recycle totals (bbl)
-  w.dw <-       osim # Total water usage for drilling (mud and cement - bbl)
-  w.fw <-       osim # Total water usage for hydraulic fracturing (bbl)
-  w.inj <-      osim # Total water usage for water flooding (bbl)
-  w.in <-       osim # Total water coming into system (bbl)
-  w.r <-        osim # Ratio of (water in) / (oil production)
+#   w.pw <-       osim # Produced water totals (bbl)
+#   w.disp <-     osim # Total water disposed of via injection wells (bbl)
+#   w.evap <-     osim # Total water evaporated in ponds (bbl)
+#   w.rec <-      osim # Water recycle totals (bbl)
+#   w.dw <-       osim # Total water usage for drilling (mud and cement - bbl)
+#   w.fw <-       osim # Total water usage for hydraulic fracturing (bbl)
+#   w.inj <-      osim # Total water usage for water flooding (bbl)
+#   w.in <-       osim # Total water coming into system (bbl)
+#   w.r <-        osim # Ratio of (water in) / (oil production)
   jobs <-       osim # Jobs created as result of spending by oil and gas industry
   nfCO2 <-      matrix(0, nrow = opt$nrun, ncol = 8) # New well emission source fractions for CO2
   nfCH4 <-      nfCO2                                # New well emission source fractions for CH4
@@ -915,9 +915,9 @@ if (opt$load.prior == TRUE) {
     wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
     wpri <- cbind(wpri, sim_EF(times = nrow(wpri), EF = opt$EF))
     
-    # Pick water factors
-    wsim <- cbind(wsim, sim_water(wellType = wsim$wellType, cdf.water = cdf.water))
-    wpri <- cbind(wpri, sim_water(wellType = wpri$wellType, cdf.water = cdf.water))
+#     # Pick water factors
+#     wsim <- cbind(wsim, sim_water(wellType = wsim$wellType, cdf.water = cdf.water))
+#     wpri <- cbind(wpri, sim_water(wellType = wpri$wellType, cdf.water = cdf.water))
     
     
     # 3.3.2 Production simulation ------------------------------------------
@@ -1065,16 +1065,16 @@ if (opt$load.prior == TRUE) {
                    MC.tsteps = opt$MC.tsteps)
     
     
-    # 3.3.8 Water Balance ------------------------------------------------
-    
-    # Calculate water balance
-    WB <- water(wsim =     rbind(wsim[,c("tDrill", "pw","disp","evap","frack","inj")],
-                                 wpri[,c("tDrill", "pw","disp","evap","frack","inj")]),
-                osim =     rbind(psim$osim, apri$oil),
-                gsim =     rbind(psim$gsim, apri$gas),
-                wellType = c(wsim$wellType, wpri$wellType),
-                depth =    c(wsim$depth, wpri$depth),
-                dw.lm =    water.lm$dw.lm)
+#     # 3.3.8 Water Balance ------------------------------------------------
+#     
+#     # Calculate water balance
+#     WB <- water(wsim =     rbind(wsim[,c("tDrill", "pw","disp","evap","frack","inj")],
+#                                  wpri[,c("tDrill", "pw","disp","evap","frack","inj")]),
+#                 osim =     rbind(psim$osim, apri$oil),
+#                 gsim =     rbind(psim$gsim, apri$gas),
+#                 wellType = c(wsim$wellType, wpri$wellType),
+#                 depth =    c(wsim$depth, wpri$depth),
+#                 dw.lm =    water.lm$dw.lm)
     
     
     # 3.3.9 Jobs ---------------------------------------------------------
@@ -1124,15 +1124,15 @@ if (opt$load.prior == TRUE) {
     fnvp[i, ] <-    c(sum(ETsim$CO2)/sum(CO2[i, ]),   sum(ETsim$CH4)/sum(CH4[i, ]),   sum(ETsim$VOC)/sum(VOC[i, ]))
     rfnvp[i, ] <-   c(sum(ETsim$rCO2)/sum(rCO2[i, ]), sum(ETsim$rCH4)/sum(rCH4[i, ]), sum(ETsim$rVOC)/sum(rVOC[i, ]))
     NSPSred[i, ] <- c(ETsim$NSPSred, ETpri$NSPSred)
-    w.pw[i, ] <-    WB$pw
-    w.disp[i, ] <-  WB$disp
-    w.evap[i, ] <-  WB$evap
-    w.rec[i, ] <-   WB$recycle
-    w.dw[i, ] <-    WB$dw
-    w.fw[i, ] <-    WB$fw
-    w.inj[i, ] <-   WB$inj
-    w.in[i, ] <-    WB$wtr.in
-    w.r[i, ] <-     WB$wtr.r
+#     w.pw[i, ] <-    WB$pw
+#     w.disp[i, ] <-  WB$disp
+#     w.evap[i, ] <-  WB$evap
+#     w.rec[i, ] <-   WB$recycle
+#     w.dw[i, ] <-    WB$dw
+#     w.fw[i, ] <-    WB$fw
+#     w.inj[i, ] <-   WB$inj
+#     w.in[i, ] <-    WB$wtr.in
+#     w.r[i, ] <-     WB$wtr.r
     jobs[i, ] <-    jobs.RIMS
     
     # Calculate taxes and royalties for just the state of Utah
