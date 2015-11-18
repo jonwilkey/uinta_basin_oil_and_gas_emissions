@@ -16,8 +16,8 @@
 opt <- NULL
 
 # Options for loading prior results
-opt$load.prior <- F
-opt$load.name <- "results xvalid 1k econ.rda"
+opt$load.prior <- T
+opt$load.name <- "results xvalid 10yr 1k eCDF oil v3.rda"
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
@@ -25,15 +25,17 @@ opt$load.name <- "results xvalid 1k econ.rda"
 # opt$file_ver <- "v1"
 # opt$file_ver <- "v2"
 opt$file_ver <- "v3"
+# opt$file_ver <- "v4"
 
 # Save run results?
-opt$save <- T
+opt$save <- F
 opt$save.name <- "results xvalid 10yr 1k eCDF oil v3.rda"
 
 # Version notes
 # v1: Prediction -     train 1984-2014, predict 2015-2019
 # v2: Cross-validate - train 1984-2009, predict 2010-2014
 # v3: Cross-validate - train 1984-2004, predict 2005-2014
+# v4: Cross-validate - train 1984-2004, predict 2005-2014
 
 # Enter number of overall simulation iterations
 opt$nrun <- 1e3
@@ -61,6 +63,12 @@ opt$tstart <-      as.Date("2005-01-01") # Start date of simulation period
 opt$tstop  <-      as.Date("2014-12-01") # Stop date of simulation period
 opt$train.start <- as.Date("1984-01-01") # Start date of training period
 opt$train.stop  <- as.Date("2004-12-01") # Stop date of training period
+
+# # Time options v4
+# opt$tstart <-      as.Date("1995-01-01") # Start date of simulation period
+# opt$tstop  <-      as.Date("2014-12-01") # Stop date of simulation period
+# opt$train.start <- as.Date("1984-01-01") # Start date of training period
+# opt$train.stop  <- as.Date("1994-12-01") # Stop date of training period
 
 # Additional time related values calculated from inputs above
 opt$tsteps <-      seq(from = opt$tstart, to = opt$tstop, by = "months")
@@ -90,6 +98,10 @@ opt$min.well.depth <- 0
 
 # https://docs.google.com/spreadsheets/d/1S1M6RD3QXHewViG-7stioRxxzDDZvSKBHUe4YEVH-CU/edit?usp=sharing
 
+# # 1995-2014 x-valid
+# opt$oil.fpp.init <- 25.89
+# opt$gas.fpp.init <-  2.83
+
 # 2005-2014 x-valid
 opt$oil.fpp.init <- 51.88
 opt$gas.fpp.init <-  7.10
@@ -104,6 +116,7 @@ opt$gas.fpp.init <-  7.10
 
 # FPP date - enter month here associated with FPPs above
 
+# opt$FPPdate <- as.Date("1994-12-01")
 opt$FPPdate <- as.Date("2004-12-01")
 # opt$FPPdate <- as.Date("2009-12-01")
 # opt$FPPdate <- as.Date("2014-12-01")
@@ -292,8 +305,8 @@ opt$NTI <- data.frame(year, NTI, cpi); remove(NTI, year, cpi)
 # 2.6 propertyTaxUpdate Options -------------------------------------------
 
 # Start stop points of training period
-opt$PTU.tstart <- as.year(opt$train.start)
-opt$PTU.tstop <-  as.year(opt$train.stop)
+opt$PTU.tstart <- 2000#as.year(opt$train.start)
+opt$PTU.tstop <-  2014#as.year(opt$train.stop)
 
 # Property taxes collected (Duchesne + Uintah) - by year
 year <- c(2000:2014)
@@ -328,6 +341,8 @@ opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
 
 # Time step options - for purposes of cross-validating against 2010-2014 data,
 # best window appears to be 1995-2009
+
+# opt$DMU.tstart <- as.Date("1990-01-01")
 opt$DMU.tstart <- as.Date("1995-01-01")
 opt$DMU.tstop  <- opt$train.stop
 
@@ -375,7 +390,7 @@ opt$GBM.tstop  <- opt$train.stop
 # hoil  <- c(74.57, 85.80, 104.25, 119.73, 137.15) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
 # hgas  <- c( 4.18,  5.57,   5.97,   5.81,   5.89) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
 
-# AEO 2010 Reference Forecast (CPI = 184.000)
+# AEO 2005 Reference Forecast (CPI = 184.000)
 year <- seq(as.Date("2005-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
 oil  <- c(33.36, 27.70, 26.36, 25.12, 24.32, 24.02, 24.26, 24.67, 24.98, 25.33) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
 gas  <- c( 5.04,  4.73,  4.41,  3.96,  3.62,  3.41,  3.36,  3.48,  3.61,  3.74) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
@@ -384,15 +399,29 @@ loil <- hoil
 hgas <- hoil
 lgas <- hoil
 
+# # AEO 20yr pretend forecast (CPI = 160.5)
+# #            95    96     97     98     99     00     01     02     03     04     05     06     07     08     09     10     11     12     13     14
+# hoil <- c(26.00, 23.00, 20.00, 13.00, 14.00, 16.91, 18.65, 20.36, 21.72, 22.92, 23.85, 24.87, 25.39, 25.91, 26.28, 26.73, 27.08, 27.46, 27.76, 27.90)
+# oil  <- c(25.00, 22.00, 18.00, 12.00, 13.00, 13.02, 14.36, 15.45, 16.72, 17.77, 18.80, 19.81, 20.49, 20.65, 20.80, 20.80,	20.83, 21.06, 21.09, 21.08)
+# loil <- c(24.00, 21.00, 17.00, 11.00, 12.00,  9.35, 10.63, 11.85, 12.85, 13.78, 14.08, 14.19, 14.13, 14.34, 14.27, 14.20, 13.98, 13.96, 13.94, 13.80)
+# hgas <- c( 3.00, 3.00,  3.00,  2.50,  3.08,  2.12,  2.20,  2.27,  2.32,  2.35,  2.41,  2.46,  2.48,  2.50,  2.51,  2.52,  2.53,  2.54,  2.56,  2.59)
+# gas  <- c( 2.50, 2.50,  2.23,  1.96, 	2.09,  2.10,  2.16,  2.20,  2.25,  2.29,  2.35,  2.42,  2.45,  2.47,  2.49,  2.52,  2.53,  2.54,  2.55,  2.58)
+# lgas <- c( 2.00, 2.00,  2.00,  1.50,  1.50,  2.07,  2.10,  2.12,  2.15,  2.18,  2.23,  2.30,  2.37,  2.41,  2.44,  2.48,  2.50,  2.52,  2.53,  2.55)
+# year <- seq(as.Date("1995-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
+
 # Make data.frame for forecasts
-opt$forecast <- data.frame(type = c(rep("ref", 5), rep("low", 5), rep("high", 5)),
+# n <- 20
+n <- 10
+# n <- 5
+opt$forecast <- data.frame(type = c(rep("ref", n), rep("low", n), rep("high", n)),
                            year = rep(year, 3),
                            oil =  c(oil, loil, hoil),
                            gas =  c(gas, lgas, hgas))
 
-remove(year, oil, gas, loil, lgas, hoil, hgas)
+remove(year, oil, gas, loil, lgas, hoil, hgas, n)
 
 # EIA CPI basis
+# opt$EIAbasis  <- 165.500 # Annual average CPI for whatever dollar year is used above
 opt$EIAbasis  <- 184.000 # Annual average CPI for whatever dollar year is used above
 # opt$EIAbasis  <- 215.303 # Annual average CPI for whatever dollar year is used above
 # opt$EIAbasis  <- 232.957 # Annual average CPI for whatever dollar year is used above
@@ -502,11 +531,12 @@ opt$wc.min <- 100
 opt$DFmin.rec.count <- 10
 
 # Plot results? T/F
-opt$DFplot.flag <- T
+opt$DFplot.flag <- F
 
 # Set start/stop years for trendline analysis. For example, tstart = 2000 and
 # tstop = 2009 would be equivalent to using 2000-2009 as a trendline training
 # period
+# opt$DF.tstart <- 1984
 opt$DF.tstart <- 1999
 opt$DF.tstop <-  2004
 # opt$DF.tstop <-  2009
@@ -519,6 +549,7 @@ opt$DF.tstop <-  2004
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
 #  c - Actual price path
+#  d - EIA long-term price forecast based on log-normal distribution
 opt$ep.type <- "c"
 
 # Additional options for EIA forecast with error propagation method
@@ -541,9 +572,10 @@ opt$EIA.fracProb <- 0.5
 # the following command (after running the dogmDataUpdate function, loading the
 # results, and subsetting production to p):
 
-# length(unique(p$p_api[which(p$h_first_prod >= as.Date("2004-12-01") &
-#                             p$h_first_prod <= as.Date("2004-12-31"))]))
+# length(unique(p$p_api[which(p$h_first_prod >= as.Date("1994-12-01") &
+#                             p$h_first_prod <= as.Date("1994-12-31"))]))
 
+# opt$drilled.init <- 17 # 2004-12-01 value
 opt$drilled.init <- 50 # 2004-12-01 value
 # opt$drilled.init <- 43 # 2009-12-01 value
 # opt$drilled.init <- 54 # 2014-12-01 value
@@ -723,7 +755,7 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("27 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
                    c("28 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
                    c("29 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
-                   c("30 CDF for Well Reworks",       F), # CDFs for well reworks
+                   c("30 CDF for Well Reworks",       T), # CDFs for well reworks
                    c("31 EIA AEO Relative Error",     F), # Boxplot of EIA AEO relative errors as f(prediction year)
                    c("32 Total Royalties and Taxes",  F), # Total royalties and taxes (severance, property, and corporate income)
                    c("33 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources

@@ -136,18 +136,18 @@ for (i in 1:ncol(Drilled.q)) {
 # Global plotting options -------------------------------------------------
 
 # Set line colors for quantiles used in quant
-qlinecolor <- gray(1:5/7)  #rep("grey", length(opt$quant))  #rainbow(length(opt$quant))
-qlinetype <-  2:6
-qlinewidth <- rep(2,5)
+qlinecolor <- rainbow(length(opt$quant)) # gray(1:5/7)  #rep("grey", length(opt$quant))  #rainbow(length(opt$quant))
+qlinetype <-  rep(1,5)#2:6
+qlinewidth <- rep(1,5)
 
 # Set line options for actual lines (for cross-validation plots)
 alinecolor <- "black"
 alinetype <-  1
-alinewidth <- 3
+alinewidth <- 2#3
 
 # Set line options for forecast lines (for price plots)
 forlinecolor <- c("grey50", "grey75", "grey25")
-forlinetype <-  c(1,1,1)
+forlinetype <-  c(2,2,2)
 forlinewidth <- c(1,1,1)
 
 # Plot counter
@@ -164,7 +164,7 @@ if(opt$plist$plot[j] == TRUE) {
   
   # Main plot with largest quantile result
   plot(opt$tsteps, op.q[1,],
-       ylim = c(0.9*min(op.q), 1.1*max(op.q)),
+       ylim = c(0.9*min(op.q), 1.1*max(ep.act$OP)),
        type = "l",
        lty = qlinetype[1],
        lwd = qlinewidth[1],
@@ -231,7 +231,7 @@ if(opt$plist$plot[j] == TRUE) {
     
     # Main plot with largest quantile result using ylim on actual price
     plot(opt$tsteps, gp.q[1,],
-         ylim = c(0.9*min(ep.act$GP), 1.1*max(gp.q)),
+         ylim = c(0.9*min(ep.act$GP), 1.1*max(ep.act$GP)),
          type = "l",
          lty = qlinetype[1],
          lwd = qlinewidth[1],

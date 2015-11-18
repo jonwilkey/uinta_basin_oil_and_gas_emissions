@@ -52,6 +52,7 @@ setwd(path$work)
 # List of functions used in this script to be loaded here
 flst <- file.path(path$fun, c("GBMsim.R",
                               "EIAsim.R",
+                              "EIAsimLT.R",
                               "drillsim.R",
                               "priorProd.R",
                               "priorInfo.R",
@@ -368,23 +369,36 @@ if(opt$EIAerror.update == TRUE) {
   # Source function to load
   source(file.path(path$fun, "EIAerrorUpdate.R"))
   source(file.path(path$fun, "EIAerrorUpdateFrac.R"))
+  source(file.path(path$fun, "EIAerrorUpdateLT.R"))
   
-  # Function call - Relative error w/ directionality
-  EIAerrorUpdate(path =   path,
-                 xq =     opt$xq,
-                 tsteps = opt$EEU.tsteps,
-                 ver =    opt$file_ver)
+#   # Function call - Relative error w/ directionality
+#   EIAerrorUpdate(path =   path,
+#                  xq =     opt$xq,
+#                  tsteps = opt$EEU.tsteps,
+#                  ver =    opt$file_ver)
   
-  # Function call - Relative fractional error
-  EIAerrorUpdateFrac(path =   path,
-                     xq =     opt$xq,
-                     tsteps = opt$EEU.tsteps,
-                     ver =    opt$file_ver)
+#   # Function call - Relative fractional error
+#   EIAerrorUpdateFrac(path =   path,
+#                      xq =     opt$xq,
+#                      tsteps = opt$EEU.tsteps,
+#                      ver =    opt$file_ver)
+  
+  # Function call - Long Term projections
+  EIAerrorUpdateLT(op.FC.high = op.FC.high,
+                     op.FC.ref =  op.FC.ref,
+                     op.FC.low =  op.FC.low,
+                     gp.FC.high = gp.FC.high,
+                     gp.FC.ref =  gp.FC.ref,
+                     gp.FC.low =  gp.FC.low,
+                     path =       path,
+                     xq =         opt$xq,
+                     ver =        opt$file_ver)
 }
 
 # Load EIA error CDF matrices (Eoil & Egas and EoilFrac & EgasFrac)
 # load(file.path(path$data, paste("EIAerror_", opt$file_ver, ".rda", sep = "")))
 # load(file.path(path$data, paste("EIAerrorFrac_", opt$file_ver, ".rda", sep = "")))
+# load(file.path(path$data, paste("EIAerrorLT_", opt$file_ver, ".rda", sep = "")))
 
 
 # 2.11 Decline curve analysis update --------------------------------------
@@ -428,38 +442,38 @@ if(opt$DCA.update == TRUE) {
             tend =            opt$tstart,
             full.fit =        FALSE)
   
-  # Function call - without tstart/tstop limits
-  DCAupdate(minProdRec =      opt$minProdRec,
-            minDayProd =      opt$minDayProd,
-            diff.bin.cutoff = opt$diff.bin.cutoff,
-            bin =             opt$bin,
-            DCAplot =         opt$DCAplot,
-            n.stopB.min =     opt$n.stopB.min,
-            n.startT.search = opt$n.startT.search,
-            b.start.oil =     opt$b.start.oil,
-            Di.start.oil =    opt$Di.start.oil,
-            lower.oil =       opt$lower.oil,
-            upper.oil =       opt$upper.oil,
-            b.start.gas =     opt$b.start.gas,
-            Di.start.gas =    opt$Di.start.gas,
-            lower.gas =       opt$lower.gas,
-            upper.gas =       opt$upper.gas,
-            field =           field,
-            ver =             opt$file_ver,
-            path =            path,
-            p =               p,
-            Cp.start.oil =    opt$Cp.start.oil,
-            c1.start.oil =    opt$c1.start.oil,
-            Qlower.oil =      opt$Qlower.oil,
-            Qupper.oil =      opt$Qupper.oil,
-            Cp.start.gas =    opt$Cp.start.gas,
-            c1.start.gas =    opt$c1.start.gas,
-            Qlower.gas =      opt$Qlower.gas,
-            Qupper.gas =      opt$Qupper.gas,
-            tstart =          opt$DCA.tstart,
-            tstop =           opt$DCA.tstop,
-            tend =            opt$tstart,
-            full.fit =        TRUE)
+#   # Function call - without tstart/tstop limits
+#   DCAupdate(minProdRec =      opt$minProdRec,
+#             minDayProd =      opt$minDayProd,
+#             diff.bin.cutoff = opt$diff.bin.cutoff,
+#             bin =             opt$bin,
+#             DCAplot =         opt$DCAplot,
+#             n.stopB.min =     opt$n.stopB.min,
+#             n.startT.search = opt$n.startT.search,
+#             b.start.oil =     opt$b.start.oil,
+#             Di.start.oil =    opt$Di.start.oil,
+#             lower.oil =       opt$lower.oil,
+#             upper.oil =       opt$upper.oil,
+#             b.start.gas =     opt$b.start.gas,
+#             Di.start.gas =    opt$Di.start.gas,
+#             lower.gas =       opt$lower.gas,
+#             upper.gas =       opt$upper.gas,
+#             field =           field,
+#             ver =             opt$file_ver,
+#             path =            path,
+#             p =               p,
+#             Cp.start.oil =    opt$Cp.start.oil,
+#             c1.start.oil =    opt$c1.start.oil,
+#             Qlower.oil =      opt$Qlower.oil,
+#             Qupper.oil =      opt$Qupper.oil,
+#             Cp.start.gas =    opt$Cp.start.gas,
+#             c1.start.gas =    opt$c1.start.gas,
+#             Qlower.gas =      opt$Qlower.gas,
+#             Qupper.gas =      opt$Qupper.gas,
+#             tstart =          opt$DCA.tstart,
+#             tstop =           opt$DCA.tstop,
+#             tend =            opt$tstart,
+#             full.fit =        TRUE)
 }
 
 # Load DCA fits mo (oil) and mg (gas) as well as full fits (mof and mgf)
@@ -689,6 +703,22 @@ if (opt$load.prior == TRUE) {
            gp <- matrix(rep(eia.hp$GP[(nrow(eia.hp)-opt$MC.tsteps+1):nrow(eia.hp)],
                             times = opt$nrun),
                         nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
+         },
+         
+         # If using long-term EIA based forecasts, ep.type = "d"
+         d = {
+           
+           # Run EIAsim
+           epsim <- EIAsimLT(nrun =    opt$nrun,
+                             Eoil.LT = Eoil.LT,
+                             Egas.LT = Egas.LT)
+           
+           # Extract objects from list
+           op <- epsim$op
+           gp <- epsim$gp
+           
+           # Remove list
+           remove(epsim)
          })
   
   
