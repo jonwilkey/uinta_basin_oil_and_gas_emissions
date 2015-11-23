@@ -147,6 +147,15 @@ drillCapCostUpdate <- function(path, basis, ver) {
   # Drop outlier
   ratio <- ratio[ratio < 10]
   
+#   temp <- fitdist(ratio, "norm")
+#   
+#   # Plot of density fit
+#   pdf(file.path(path$plot, "Figure xx Rc normal fit.pdf"))
+#   denscomp(temp, xlab = expression(R[C]), ylab = "Probability Density", main = NA, addlegend = F, fitlty = 2, fitcol = "grey25", xlim = c(0, 2))
+#   rug(ratio)
+#   legend("topright", "Fit", lty = 2, col = "grey25")
+#   dev.off()
+  
   # Get mean and standard deviation
   complCR <- c(mean(ratio), sd(ratio))
   names(complCR) <- c("mean", "sd")
