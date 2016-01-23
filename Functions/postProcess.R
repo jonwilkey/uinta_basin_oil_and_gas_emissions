@@ -115,11 +115,11 @@ for (i in 1:ncol(Drilled.q)) {
   rCO2.q[,i] <-    quantile(rCO2[,i],                      opt$quant)
   rCH4.q[,i] <-    quantile(rCH4[,i],                      opt$quant)
   rVOC.q[,i] <-    quantile(rVOC[,i],                      opt$quant)
-  jobs.q[,i] <-    quantile(jobs[,i],                      opt$quant)
-  roy.q[,i]  <-    quantile(roy.oil.UT[,i]+roy.gas.UT[,i], opt$quant)
-  ST.q[,i]   <-    quantile(st.oil[,i]+st.gas[,i],         opt$quant)
-  PT.q[,i]   <-    quantile(PT[,i],                        opt$quant)
-  CTstate.q[,i] <- quantile(CTstate[,i],                   opt$quant)
+#   jobs.q[,i] <-    quantile(jobs[,i],                      opt$quant)
+#   roy.q[,i]  <-    quantile(roy.oil.UT[,i]+roy.gas.UT[,i], opt$quant)
+#   ST.q[,i]   <-    quantile(st.oil[,i]+st.gas[,i],         opt$quant)
+#   PT.q[,i]   <-    quantile(PT[,i],                        opt$quant)
+#   CTstate.q[,i] <- quantile(CTstate[,i],                   opt$quant)
 #   w.pw.q[,i] <-    quantile(w.pw[,i],    opt$quant)
 #   w.disp.q[,i] <-  quantile(w.disp[,i],  opt$quant)
 #   w.evap.q[,i] <-  quantile(w.evap[,i],  opt$quant)
@@ -136,14 +136,14 @@ for (i in 1:ncol(Drilled.q)) {
 # Global plotting options -------------------------------------------------
 
 # Set line colors for quantiles used in quant
-qlinecolor <- rainbow(length(opt$quant)) # gray(1:5/7)  #rep("grey", length(opt$quant))  #rainbow(length(opt$quant))
-qlinetype <-  rep(1,5)#2:6
-qlinewidth <- rep(1,5)
+qlinecolor <- gray(1:5/7) # gray(1:5/7)  #rep("grey", length(opt$quant))  #rainbow(length(opt$quant))
+qlinetype <-  2:6#rep(1,5)#
+qlinewidth <- rep(2,5)
 
 # Set line options for actual lines (for cross-validation plots)
 alinecolor <- "black"
 alinetype <-  1
-alinewidth <- 2#3
+alinewidth <- 3#2
 
 # Set line options for forecast lines (for price plots)
 forlinecolor <- c("grey50", "grey75", "grey25")
@@ -924,22 +924,27 @@ if(opt$plist$plot[j] == TRUE) {
        ylim = c(0.9*min(rCO2.q),
                 1.1*max(CO2.q)),
        col = qlinecolor[1],
-       lty = qlinetype[1],
+       lty = 1,
        lwd = qlinewidth[1],
        xlab = "Time (months)",
        ylab = "CO2e Emissions (metric tons)")#,
        #main = "Total CO2e Emissions")
   #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
-  lines(opt$tsteps, rCO2.q[1,], col = qlinecolor[1], lty = 1)
+  lines(opt$tsteps, rCO2.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, CO2.q[i,], col = qlinecolor[i], lty = 2)
-    lines(opt$tsteps, rCO2.q[i,], col = qlinecolor[i], lty = 1)
+    lines(opt$tsteps, CO2.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
+    lines(opt$tsteps, rCO2.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
   
   # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
+  legend("topleft",
+         c("90%", "70%", "50%", "30%", "10%"),
+         ncol = 2,
+         col = qlinecolor,
+         lty = qlinetype,
+         lwd = qlinewidth)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -964,22 +969,27 @@ if(opt$plist$plot[j] == TRUE) {
        ylim = c(0.9*min(rCH4.q),
                 1.1*max(CH4.q)),
        col = qlinecolor[1],
-       lty = qlinetype[1],
+       lty = 1,
        lwd = qlinewidth[1],
        xlab = "Time (months)",
        ylab = "CH4 Emissions (metric tons)")#,
        #main = "Total CH4 Emissions")
   #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
-  lines(opt$tsteps, rCH4.q[1,], col = qlinecolor[1], lty = 1)
+  lines(opt$tsteps, rCH4.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, CH4.q[i,], col = qlinecolor[i], lty = 2)
-    lines(opt$tsteps, rCH4.q[i,], col = qlinecolor[i], lty = 1)
+    lines(opt$tsteps, CH4.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
+    lines(opt$tsteps, rCH4.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
   
   # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
+  legend("topleft",
+         c("90%", "70%", "50%", "30%", "10%"),
+         ncol = 2,
+         col = qlinecolor,
+         lty = qlinetype,
+         lwd = qlinewidth)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -1014,7 +1024,7 @@ if(opt$plist$plot[j] == TRUE) {
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, VOC.q[i,], col = qlinecolor[i],  lty = 1,            lwd = qlinewidth[i])
+    lines(opt$tsteps, VOC.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
     lines(opt$tsteps, rVOC.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
   
@@ -1872,7 +1882,156 @@ if(opt$plist$plot[j] == TRUE) {
 # Increment counter
 j <- j+1
 
-# Emission totals Barplot -------------------------------------------------
+
+# CO2 Emission totals Barplot ---------------------------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  tCO2 <- NULL
+  
+  # Median emissions activity fractions
+  nfCO2.med <-  apply(nfCO2, 2, median)  # CO2 emissions fractions by activity for new wells
+  pfCO2.med <-  apply(pfCO2, 2, median)  # CO2 emissions fractions by activity for prior wells
+  rnfCO2.med <- apply(rnfCO2, 2, median) # CO2 emissions fractions by activity for new wells with reductions
+  rpfCO2.med <- apply(rpfCO2, 2, median) # CO2 emissions fractions by activity for prior wells with reductions
+  
+  # Median emissions from new vs. prior wells for CO2s
+  fnvp.CO2 <-  median(fnvp[, 3])
+  rfnvp.CO2 <- median(rfnvp[, 3])
+  
+  # Conversion factor
+  fconv <-  fnvp.CO2*(nfCO2.med)+(1-fnvp.CO2)*(pfCO2.med)
+  rfconv <- rfnvp.CO2*(rnfCO2.med)+(1-rfnvp.CO2)*(rpfCO2.med)
+  
+  # Get total median CO2 production by year for (a) base and (b) reduced emissions
+  for(i in seq(from = 12, to = 60, by = 12)-11) {
+    
+    tCO2 <- cbind(tCO2, (sum(apply(CO2[,  i:(i+11)], 2, median))*fconv))
+    tCO2 <- cbind(tCO2, (sum(apply(rCO2[, i:(i+11)], 2, median))*rfconv))
+  }
+  
+  # Sum together small stuff
+  ind <- c(3, 5, 7, 8)
+  tCO2 <- rbind(tCO2, colSums(tCO2[ind,]))
+  tCO2 <- tCO2[-ind, ]
+  
+  # Names
+  fCO2.names <- c("Drill", "Completion", "Gas Production", "Gas Transmission", "Other")
+  fCO2.lab <- c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5")
+  fCO2.xlab <- c("Year (2010 - 2014)")
+  
+  # Barplot
+  barplot(height = tCO2/1e6,
+          names.arg = fCO2.lab,
+          las = 2,
+          ylim = c(0, 7.5),
+          xlab = fCO2.xlab,
+          ylab = "CO2e Emissions (1E+09 kg / yr)",
+          legend.text = fCO2.names,
+          args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
+  
+  abline(h = seq(1, 6, 1), col = "lightgrey")
+  box()
+  
+  # Barplot
+  barplot(height = tCO2/1e6,
+          add = TRUE,
+          names.arg = fCO2.lab,
+          las = 2,
+          ylim = c(0, 7.5),
+          xlab = fCO2.xlab,
+          ylab = "CO2e Emissions (1E+09 kg / yr)",
+          legend.text = fCO2.names,
+          args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# CH4 Emission totals Barplot ---------------------------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  tCH4 <- NULL
+  
+  # Median emissions activity fractions
+  nfCH4.med <-  apply(nfCH4, 2, median)  # CH4 emissions fractions by activity for new wells
+  pfCH4.med <-  apply(pfCH4, 2, median)  # CH4 emissions fractions by activity for prior wells
+  rnfCH4.med <- apply(rnfCH4, 2, median) # CH4 emissions fractions by activity for new wells with reductions
+  rpfCH4.med <- apply(rpfCH4, 2, median) # CH4 emissions fractions by activity for prior wells with reductions
+  
+  # Median emissions from new vs. prior wells for CH4s
+  fnvp.CH4 <-  median(fnvp[, 3])
+  rfnvp.CH4 <- median(rfnvp[, 3])
+  
+  # Conversion factor
+  fconv <-  fnvp.CH4*(nfCH4.med)+(1-fnvp.CH4)*(pfCH4.med)
+  rfconv <- rfnvp.CH4*(rnfCH4.med)+(1-rfnvp.CH4)*(rpfCH4.med)
+  
+  # Get total median CH4 production by year for (a) base and (b) reduced emissions
+  for(i in seq(from = 12, to = 60, by = 12)-11) {
+    
+    tCH4 <- cbind(tCH4, (sum(apply(CH4[,  i:(i+11)], 2, median))*fconv))
+    tCH4 <- cbind(tCH4, (sum(apply(rCH4[, i:(i+11)], 2, median))*rfconv))
+  }
+  
+  # Sum together small stuff
+  ind <- c(3, 5, 7, 8)
+  tCH4 <- rbind(tCH4, colSums(tCH4[ind,]))
+  tCH4 <- tCH4[-ind, ]
+  
+  # Names
+  fCH4.names <- c("Drill", "Completion", "Gas Production", "Gas Transmission", "Other")
+  fCH4.lab <- c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5")
+  fCH4.xlab <- c("Year (2010 - 2014)")
+  
+  # Barplot
+  barplot(height = tCH4/1e4,
+          names.arg = fCH4.lab,
+          las = 2,
+          ylim = c(0, 35),
+          xlab = fCH4.xlab,
+          ylab = "CH4 Emissions (1E+07 kg / yr)",
+          legend.text = fCH4.names,
+          args.legend = list(x = 12.3, y = 34.75, ncol = 3, cex = 1/opt$defFontSize))
+  
+  abline(h = seq(5, 30, 5), col = "lightgrey")
+  box()
+  
+  # Barplot
+  barplot(height = tCH4/1e4,
+          add = TRUE,
+          names.arg = fCH4.lab,
+          las = 2,
+          ylim = c(0, 35),
+          xlab = fCH4.xlab,
+          ylab = "CH4 Emissions (1E+07 kg / yr)",
+          legend.text = fCH4.names,
+          args.legend = list(x = 12.3, y = 34.75, ncol = 3, cex = 1/opt$defFontSize))
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# VOC Emission totals Barplot ---------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
