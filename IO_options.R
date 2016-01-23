@@ -38,7 +38,7 @@ opt$save.name <- "results xvalid 10yr 1k eCDF oil v3.rda"
 # v4: Cross-validate - train 1984-2004, predict 2005-2014
 
 # Enter number of overall simulation iterations
-opt$nrun <- 1e3
+opt$nrun <- 1e4
 
 # Is model run for cross-validation? (turns on/off plots of actual values in
 # postProcess script)
@@ -760,7 +760,7 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("33 CO2 emissions barplot",      T), # Total CO2 emissions barplot showing contribution from emissions sources
                    c("34 CH4 emissions barplot",      T), # Total CH4 emissions barplot showing contribution from emissions sources
                    c("35 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources
-                   c("36 Production fraction n vs e", F)
+                   c("36 Production fraction n vs e", F)  # Fraction of production from new wells vs. old wells
 )
 
 # Convert to data.frame and adjust column names
