@@ -136,8 +136,6 @@ opt$DOGM.update         <- F # Turns *.dbf files from DOGM () into single file (
 opt$schedule.update     <- F # Generates CDF for field numbers, lease type, well type, and well depth. Extracts actual drilling and production history from production.rda.
 opt$EIAprice.update     <- F # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
 opt$lease.update        <- F # Fits lease operating cost model to EIA lease operating cost data.
-opt$corptax.update      <- F # Generates corporate income tax coversion factor CDFs
-opt$ptax.update         <- F # Updates property tax statistics
 opt$drillmodel.update   <- F # Fits drilling schedule model to energy prices
 opt$GBMfit.update       <- F # Fits GBM parameters "v" and "mu" to energy prices
 opt$EIAforecast.update  <- F # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
@@ -145,7 +143,6 @@ opt$EIAerror.update     <- F # Generates CDFs for error in EIA AEO forecasts
 opt$DCA.update          <- F # Fits decline curves
 opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
-opt$water.update        <- F # Generates all CDFs and linear regression models for water balance terms
 opt$rework.update       <- F # Generates CDF for well reworks
 opt$DCAlnorm.update     <- F # Fits log-normal/normal distributions to DCA coefficients and then finds trendlines in those distribution parameters
 
@@ -291,50 +288,6 @@ opt$LU.tstop  <- as.Date("2009-12-01") # End of LOC data range (annual data)
 opt$LOCbasis <- 214.537
 
 
-# 2.5 corpIncomeUpdate Options --------------------------------------------
-
-# Input data for corpIncomeUpdate function
-NTI  <- c(66341510, 209171843, 220215146, 302038397, 195463794) # Net taxable income (NTI) from UT State Tax Comission.
-year <- c(2009, 2010, 2011, 2012, 2013)                         # Year associated with each element in NTI (2009-2011)
-cpi  <- c(214.537, 218.056, 224.939, 229.594, 232.957)          # CPI annual average values from 2004 to 2012
-
-# Make NTI data.frame and remove component vectors
-opt$NTI <- data.frame(year, NTI, cpi); remove(NTI, year, cpi)
-
-
-# 2.6 propertyTaxUpdate Options -------------------------------------------
-
-# Start stop points of training period
-opt$PTU.tstart <- 2000#as.year(opt$train.start)
-opt$PTU.tstop <-  2014#as.year(opt$train.stop)
-
-# Property taxes collected (Duchesne + Uintah) - by year
-year <- c(2000:2014)
-PTI  <- c(1749689+2579728,   # 2000
-          2221385+3449316,   # 2001
-          1773249+4054227,   # 2002
-          1739101+4276125,   # 2003
-          2407040+5985003,   # 2004
-          3640044+8241224,   # 2005
-          5358662+12895362,  # 2006
-          5209014+13235218,  # 2007
-          5801276+19261688,  # 2008
-          6266650+20711119,  # 2009
-          6196678+21712696,  # 2010
-          8755478+24128270,  # 2011
-          11784048+27819523, # 2012
-          12214363+25656391, # 2013
-          17922072+31581069) # 2014
-
-# CPI annual average values from 2000 to 2014
-cpi <- c(172.200, 177.100, 179.900, 184.000, 188.900, 195.300, 201.600,
-         207.342, 215.303, 214.537, 218.056, 224.939, 229.594, 232.957,
-         236.736)
-
-# Make PTI data.frame and remove component vectors
-opt$PTI <- data.frame(year, PTI, cpi); remove(year, PTI, cpi)
-
-
 # 2.7 drillingModelUpdate Options -----------------------------------------
 
 # Note - uses opt$min.well.depth option set in Section 1.0
@@ -425,6 +378,7 @@ remove(year, oil, gas, loil, lgas, hoil, hgas, n)
 # opt$EIAbasis  <- 215.303 # Annual average CPI for whatever dollar year is used above
 opt$EIAbasis  <- 232.957 # Annual average CPI for whatever dollar year is used above
 
+
 # 2.10 EIAerrorUpdate Options ---------------------------------------------
 
 # Time step options
@@ -497,19 +451,6 @@ opt$Q.cdf.gas.np    <- c(10e3,  10e3)  # Same as above but for gas
 # 2.14 drillCapCostUpdate Options -----------------------------------------
 # 
 # There are no options that need to be set for this function specifically
-
-
-# 2.15 waterUpdate Options ------------------------------------------------
-
-opt$f_mud       <- 1    # Assumed volume ratio of (water used to mix with drilling mud) / (volume of borehole)
-opt$f_cem       <- 4.97 # Water to cement ratio in (gal/sack), value of 4.97 is used for API Class G cement
-opt$rcut.pw.oil <- 100  # Maximum ratio of produced water to oil production to be included in CDF for produced water from oil wells
-opt$rcut.pw.gas <- 10   # Maximum ratio of produced water to gas production to be included in CDF for produced water from gas wells
-opt$rcut.disp   <- 0.6  # Maximum ratio of disposal water to produced water to be included in CDF for disposal water
-
-# Time step options
-opt$WU.tstart <- opt$train.start
-opt$WU.tstop  <- opt$train.stop
 
 
 # 2.16 reworkUpdate Options -----------------------------------------------
@@ -631,35 +572,6 @@ opt$mc.DCeq.type <- "b"
 opt$grFrac <- 0.8
 
 
-# 3.3.3 royalty Options ---------------------------------------------------
-
-# Royatly rates for Federal, Indian, State, and Fee type leases (in that order).
-# Second command adds names to each element to match.
-opt$royaltyRate <-        c(0.1250, 0.1667, 0.1250, 0.1250)
-names(opt$royaltyRate) <- c("federal", "indian", "state", "fee")
-
-
-# 3.3.4 stax Options ------------------------------------------------------
-
-# Severance Tax Inputs
-opt$st.con    <- 0.002 # Conservation fee rate
-opt$st.low    <- 0.030 # Low ST rate for oil/gas for values <= cutoff value threshold
-opt$st.high   <- 0.050 # High ST rate for oil/gas for values > cutoff value threshold
-opt$st.ocut   <- 13    # Oil cutoff value threshold ($/bbl) for switch from low to high ST rate
-opt$st.gcut   <- 1.5   # Gas cutoff value threshold ($/MCF) for switch from low to high ST rate
-opt$st.skip   <- 6     # Number of timesteps from date well is drilled to exempt from ST
-opt$strip.oil <- 20*30 # Oil production volume (bbl/month) below which a well is classified as a stripper well
-opt$strip.gas <- 60*30 # Gas production volume (MCF/month) below which a well is classified as a stripper well
-
-
-# 3.3.6 ctax Options ------------------------------------------------------
-
-# Corporate income tax rates (fraction of net earnings paid in corporate income
-# taxes)
-opt$CIrate.state <- 0.05 # State
-opt$CIrate.fed   <- 0.35 # Federal
-
-
 # Emission Factors --------------------------------------------------------
 
 # Emission factor category names and units
@@ -706,20 +618,11 @@ opt$EFred <- data.frame(cat =  c("prod", "proc", "transm", "compl", "drill", "pU
                         date = as.Date(c(rep("2012-11-01", 3), rep("2015-01-01", 4))))                # Effective date
 
 
-# 3.3.X Employment Options ------------------------------------------------
-
-# RIMS II multiplier for oil and gas industry
-opt$RIMSmultiplier <- 2.2370
-
-# CPI basis for RIMS II multiplier (2004 dollars)
-opt$RIMS.cpi <- 188.9
-
-
 # 4.1 postProcess Options -------------------------------------------------
 
 # Export options
-opt$exportFlag <- T                           # If true, will plot to PDF located in path$plot directory
-opt$prefix <-     "Fig- "                     # Any text here will be added in front of the name given in the table below
+opt$exportFlag <- F                        # If true, will plot to PDF located in path$plot directory
+opt$prefix <-     "Fig- "                  # Any text here will be added in front of the name given in the table below
 opt$affix  <-     " -predict -5yr -v1.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
@@ -749,18 +652,13 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("22 CDFs for Well Depth",        F), # CDFs for well depth by well type
                    c("23 LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
                    c("24 Enery Price History",        F), # FPP history for oil and gas from EIA data
-                   c("25 NTI CDF",                    F), # CDF for net taxable income as fraction of revenue
-                   c("26 Property Taxes CDF",         F), # CDF for property taxes as fraction of revenue
-                   c("27 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
-                   c("28 Models for Water Terms",     F), # CDFs and linear regression models for water balance terms
-                   c("29 Water Balance Results",      F), # Results of water balance calculations for each term in WB eq.
-                   c("30 CDF for Well Reworks",       F), # CDFs for well reworks
-                   c("31 EIA AEO Relative Error",     F), # Boxplot of EIA AEO relative errors as f(prediction year)
-                   c("32 Total Royalties and Taxes",  F), # Total royalties and taxes (severance, property, and corporate income)
-                   c("33 CO2 emissions barplot",      T), # Total CO2 emissions barplot showing contribution from emissions sources
-                   c("34 CH4 emissions barplot",      T), # Total CH4 emissions barplot showing contribution from emissions sources
-                   c("35 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources
-                   c("36 Production fraction n vs e", F)  # Fraction of production from new wells vs. old wells
+                   c("25 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
+                   c("26 CDF for Well Reworks",       F), # CDFs for well reworks
+                   c("27 EIA AEO Relative Error",     F), # Boxplot of EIA AEO relative errors as f(prediction year)
+                   c("28 CO2 emissions barplot",      T), # Total CO2 emissions barplot showing contribution from emissions sources
+                   c("29 CH4 emissions barplot",      T), # Total CH4 emissions barplot showing contribution from emissions sources
+                   c("30 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources
+                   c("31 Production fraction n vs e", F)  # Fraction of production from new wells vs. old wells
 )
 
 # Convert to data.frame and adjust column names

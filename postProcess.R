@@ -49,24 +49,6 @@ if(opt$crossvalid == T) {
                         gas = (all.p$gas-new.p$gas))
 }
 
-# Calculate total government take (royalties and taxes)
-# take <- roy.oil+roy.gas+st.oil+st.gas+CTfed+CTstate+PT
-
-# Annual summation function
-aSum <- function(input) {
-  
-  result <- NULL
-  
-  temp <- seq(1, 49, 12)
-  
-  for (i in temp) {
-    
-    result <- c(result, sum(input[i:(i + 11)])) 
-  }
-  
-  return(result)
-}
-
 
 # Quantiles ---------------------------------------------------------------
 
@@ -84,52 +66,22 @@ VOC.q <-     Drilled.q
 rCO2.q <-    Drilled.q
 rCH4.q <-    Drilled.q
 rVOC.q <-    Drilled.q
-jobs.q <-    Drilled.q
-roy.q  <-    Drilled.q
-ST.q   <-    Drilled.q
-PT.q   <-    Drilled.q
-CTstate.q <- Drilled.q
-# w.pw.q <-    Drilled.q
-# w.disp.q <-  Drilled.q
-# w.evap.q <-  Drilled.q
-# w.rec.q <-   Drilled.q
-# w.dw.q <-    Drilled.q
-# w.fw.q <-    Drilled.q
-# w.inj.q <-   Drilled.q
-# w.in.q <-    Drilled.q
-# w.r.q <-     Drilled.q
-# take.q <-    Drilled.q
 
 # For each timestep, get quantiles
 for (i in 1:ncol(Drilled.q)) {
-  Drilled.q[,i] <- quantile(Drilled[,i],                   opt$quant)
-  oil.q[,i] <-     quantile(osim[,i],                      opt$quant)
-  gas.q[,i] <-     quantile(gsim[,i],                      opt$quant)
-  poil.q[,i] <-    quantile(posim[,i],                     opt$quant)
-  pgas.q[,i] <-    quantile(pgsim[,i],                     opt$quant)
-  op.q[,i] <-      quantile(op[,i],                        opt$quant)
-  gp.q[,i] <-      quantile(gp[,i],                        opt$quant)
-  CO2.q[,i] <-     quantile(CO2[,i],                       opt$quant)
-  CH4.q[,i] <-     quantile(CH4[,i],                       opt$quant)
-  VOC.q[,i] <-     quantile(VOC[,i],                       opt$quant)
-  rCO2.q[,i] <-    quantile(rCO2[,i],                      opt$quant)
-  rCH4.q[,i] <-    quantile(rCH4[,i],                      opt$quant)
-  rVOC.q[,i] <-    quantile(rVOC[,i],                      opt$quant)
-#   jobs.q[,i] <-    quantile(jobs[,i],                      opt$quant)
-#   roy.q[,i]  <-    quantile(roy.oil.UT[,i]+roy.gas.UT[,i], opt$quant)
-#   ST.q[,i]   <-    quantile(st.oil[,i]+st.gas[,i],         opt$quant)
-#   PT.q[,i]   <-    quantile(PT[,i],                        opt$quant)
-#   CTstate.q[,i] <- quantile(CTstate[,i],                   opt$quant)
-#   w.pw.q[,i] <-    quantile(w.pw[,i],    opt$quant)
-#   w.disp.q[,i] <-  quantile(w.disp[,i],  opt$quant)
-#   w.evap.q[,i] <-  quantile(w.evap[,i],  opt$quant)
-#   w.rec.q[,i] <-   quantile(w.rec[,i],   opt$quant)
-#   w.dw.q[,i] <-    quantile(w.dw[,i],    opt$quant)
-#   w.fw.q[,i] <-    quantile(w.fw[,i],    opt$quant)
-#   w.inj.q[,i] <-   quantile(w.inj[,i],   opt$quant)
-#   w.in.q[,i] <-    quantile(w.in[,i],    opt$quant)
-#   w.r.q[,i] <-     quantile(w.r[,i],     opt$quant)
-#   take.q[,i] <-    quantile(take[,i],    opt$quant)
+  Drilled.q[,i] <- quantile(Drilled[,i], opt$quant)
+  oil.q[,i] <-     quantile(osim[,i],    opt$quant)
+  gas.q[,i] <-     quantile(gsim[,i],    opt$quant)
+  poil.q[,i] <-    quantile(posim[,i],   opt$quant)
+  pgas.q[,i] <-    quantile(pgsim[,i],   opt$quant)
+  op.q[,i] <-      quantile(op[,i],      opt$quant)
+  gp.q[,i] <-      quantile(gp[,i],      opt$quant)
+  CO2.q[,i] <-     quantile(CO2[,i],     opt$quant)
+  CH4.q[,i] <-     quantile(CH4[,i],     opt$quant)
+  VOC.q[,i] <-     quantile(VOC[,i],     opt$quant)
+  rCO2.q[,i] <-    quantile(rCO2[,i],    opt$quant)
+  rCH4.q[,i] <-    quantile(rCH4[,i],    opt$quant)
+  rVOC.q[,i] <-    quantile(rVOC[,i],    opt$quant)
 }
 
 
@@ -153,7 +105,8 @@ forlinewidth <- c(1,1,1)
 # Plot counter
 j <- 1
 
-# Oil prices simulated vs actual ------------------------------------------
+
+# 01 - Oil prices simulated vs actual -------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -216,7 +169,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Gas prices simulated vs actual ------------------------------------------
+# 02 - Gas prices simulated vs actual -------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -297,7 +250,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Drilling schedule simulated vs actual -----------------------------------
+# 03 - Drilling schedule simulated vs actual ------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -353,7 +306,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Drilling fit vs actual --------------------------------------------------
+# 04 - Drilling fit vs actual ---------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -446,7 +399,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Drilling fit cross-validation --------------------------------------------------
+# 05 - Drilling fit cross-validation --------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -528,7 +481,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Boxplots of decline curve coefficients by field -------------------------
+# 06 - Boxplots of decline curve coefficients by field --------------------
 if(opt$plist$plot[j] == TRUE) {
 
   # If exporting to PDF
@@ -550,7 +503,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# CDF for decline curve coefficients --------------------------------------
+# 07 - CDF for decline curve coefficients ---------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -573,7 +526,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Total oil production simulated vs actual --------------------------------
+# 08 - otal oil production simulated vs actual ----------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -629,7 +582,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Total oil production from new wells simulated vs actual -----------------
+# 09 - Total oil production from new wells simulated vs actual ------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -685,7 +638,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Total oil production from existing wells simulated vs actual ------------
+# 10 - Total oil production from existing wells simulated vs actual -------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -741,7 +694,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Total gas production simulated vs actual --------------------------------
+# 11 - Total gas production simulated vs actual ---------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -797,7 +750,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Total gas production from new wells simulated vs actual -----------------
+# 12 - Total gas production from new wells simulated vs actual ------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -853,7 +806,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Total gas production from existing wells simulated vs actual -------------
+# 13 - Total gas production from existing wells simulated vs actual -------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -909,7 +862,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# CO2e Emissions ----------------------------------------------------------
+# 14 - CO2e Emissions -----------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -954,7 +907,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# CH4 Emissions -----------------------------------------------------------
+# 15 - CH4 Emissions ------------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -999,7 +952,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# VOC Emissions -----------------------------------------------------------
+# 16 - VOC Emissions ------------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1044,7 +997,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Field Fractions ---------------------------------------------------------
+# 17 - Field Fractions ----------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1076,7 +1029,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Field Fractions - OW ----------------------------------------------------
+# 18 - Field Fractions - OW -----------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1108,7 +1061,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Field Fractions - GW ----------------------------------------------------
+# 19 - Field Fractions - GW -----------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1143,7 +1096,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Well Capital Cost -------------------------------------------------------
+# 20 - Well Capital Cost --------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1178,7 +1131,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Surface Lease Ownership -------------------------------------------------
+# 21 - Surface Lease Ownership --------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1215,7 +1168,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Well Depth -------------------------------------------------
+# 22 - Well Depth ---------------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1246,7 +1199,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Lease Capital & Operating Costs Fit ---------------------------------------
+# 23 - Lease Capital & Operating Costs Fit --------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1355,7 +1308,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Energy FPP History -------------------------------------------------
+# 24 - Energy FPP History -------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1386,57 +1339,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# NTI CDF ---------------------------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Plot
-  plot(x = qnorm(p = opt$xq, mean = corpNTIfrac["mean"], sd = corpNTIfrac["sd"]),
-       y = opt$xq,
-       type = "l",
-       xlab = "NTI Revenue Fraction (dimensionless)",
-       ylab = "Cumulative Probability",
-       main = "CDF for NTI as Fraction of Revenue")
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
-
-
-# Property Tax CDF ---------------------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Plot
-  plot(x = qnorm(p = opt$xq, mean = pTaxRate["mean"], sd = pTaxRate["sd"]),
-       y = opt$xq,
-       type = "l",
-       xlab = "Property Tax Revenue Fraction (dimensionless)",
-       ylab = "Cumulative Probability",
-       main = "CDF for Property Taxes as Fraction of Revenue")
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
-
-
-# EIA AEO Error CDFs -------------------------------------------------------
+# 25 - EIA AEO Error CDFs -------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1495,261 +1398,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Water balance terms CDFs and regression models ----------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # CDF of produced water from oil wells
-  plot(cdf ~ pw.oil, data = cdf.water,
-       type = "l",
-       xlab = "Ratio of (Produced Water) / (Oil Production)",
-       ylab = "Cumulative Probability",
-       main = "CDF of Produced Water Ratio for Oil Wells")
-  
-  # CDF of produced water from gas wells
-  plot(cdf ~ pw.gas, data = cdf.water,
-       type = "l",
-       xlab = "Ratio of (Produced Water) / (Gas Production)",
-       ylab = "Cumulative Probability",
-       main = "CDF of Produced Water Ratio for Gas Wells")
-  
-  # CDF of disposal water vs produced water
-  plot(cdf ~ disp, data = cdf.water,
-       type = "l",
-       xlab = "Ratio of (Disposal Well Water) / (Produced Water)",
-       ylab = "Cumulative Probability",
-       main = "CDF of Disposal Well Water Ratio")
-  
-  # CDF of evaporation water vs produced water
-  plot(cdf ~ evap, data = cdf.water,
-       type = "l",
-       xlab = "Ratio of (Evaporation Pond Water) / (Produced Water)",
-       ylab = "Cumulative Probability",
-       main = "CDF of Evaporation Pond Water Ratio")
-  
-  # CDF of fracking water by well type
-  plot(cdf ~ fw.ow, data = cdf.water,
-       col = "blue",
-       type = "l",
-       xlab = "Hydraulic Fracturing Water Usage (bbl)",
-       ylab = "Cumulative Probability",
-       main = "CDF of Hydraulic Fracturing Water Usage by Well Type")
-  
-  # Add line for gas wells
-  lines(cdf~fw.gw, data = cdf.water, col = "red")
-  
-  # Add legend
-  legend("bottomright", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue", "red"))
-  
-  # CDF for flooding water vs oil production
-  plot(cdf ~ inj, data = cdf.water,
-       type = "l",
-       xlab = "Ratio of (Flooding Water) / (Oil Production)",
-       ylab = "Cumulative Probability",
-       main = "CDF of Water Flooding Ratio")
-  
-  # Linear regression model for drilling water usage
-  plot(water~depth, data = water.lm$dw.lm$model,
-       xlab = "Well Depth (ft)",
-       ylab = "Drilling Water Usage (bbl)",
-       main = "Drilling (Mud and Cement) Water Usage Model")
-  lines(water.lm$dw.lm$model$depth, fitted(water.lm$dw.lm), col = "blue")
-  legend("topleft", c("Data", "Fit"), pch = c(1, NA), lty = c(NA, 1), col = c("black", "blue"))
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
-
-
-# Water balance results ---------------------------------------------------
-
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Produced water - Main plot with largest quantile result
-  plot(opt$tsteps, w.pw.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.pw.q),
-                1.1*max(w.pw.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Produced Water (bbl)",
-       main = "Total Produced Water")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.pw.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Disposal water - Main plot with largest quantile result
-  plot(opt$tsteps, w.disp.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.disp.q),
-                1.1*max(w.disp.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Disposal Well Water (bbl)",
-       main = "Total Disposal Well Water")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.disp.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Evaporation water - Main plot with largest quantile result
-  plot(opt$tsteps, w.evap.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.evap.q),
-                1.1*max(w.evap.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Water Evaporated in Ponds (bbl)",
-       main = "Total Evaporation Pond Water")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.evap.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Water recycle - Main plot with largest quantile result
-  plot(opt$tsteps, w.rec.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.rec.q),
-                1.1*max(w.rec.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Water Recycled (bbl)",
-       main = "Total Water Recycle")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.rec.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Drilling water - Main plot with largest quantile result
-  plot(opt$tsteps, w.dw.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.dw.q),
-                1.1*max(w.dw.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Drilling Water Usage (bbl)",
-       main = "Total Drilling Water Usage")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.dw.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Fracking water - Main plot with largest quantile result
-  plot(opt$tsteps, w.fw.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.fw.q),
-                1.1*max(w.fw.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Hydraulic Fracturing Water Usage (bbl)",
-       main = "Total Hydraulic Fracturing Water Usage")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.fw.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Water Flooding - Main plot with largest quantile result
-  plot(opt$tsteps, w.inj.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.inj.q),
-                1.1*max(w.inj.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Water Flooding (bbl)",
-       main = "Total Water Flooding")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.inj.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Water In - Main plot with largest quantile result
-  plot(opt$tsteps, w.in.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.in.q),
-                1.1*max(w.in.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Water In (bbl)",
-       main = "Total Water In")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.in.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # Water Intensity Ratio - Main plot with largest quantile result
-  plot(opt$tsteps, w.r.q[1,],
-       type = "l",
-       ylim = c(0.9*min(w.r.q),
-                1.1*max(w.r.q)),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Water Intensity Ratio (water_in / oil)",
-       main = "Water Intensity Ratio")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, w.r.q[i,], col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = c(qlinecolor), lty = 1)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
-
-
-# CDF Well Reworks --------------------------------------------------------
+# 26 - CDF Well Reworks ---------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1782,7 +1431,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# EIA AEO Relative Error --------------------------------------------------
+# 27 - EIA AEO Relative Error ---------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1848,42 +1497,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Government Take ---------------------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, take.q[1,]/1e6,
-       type = "l",
-       ylim = c(min(take.q)/1e6,
-                max(take.q)/1e6),
-       col = qlinecolor[1],
-       lty = qlinetype[1],
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "Total Royalties and Taxes (1e6 USD)")#,
-       #main = "Total Royalties and Taxes from Oil and Gas")
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {lines(opt$tsteps, take.q[i,]/1e6, col = qlinecolor[i])}
-  
-  # Legend
-  legend("topleft", c("90%", "70%", "50%", "30%", "10%"), ncol = 2, col = qlinecolor, lty = 1)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
-
-
-# CO2 Emission totals Barplot ---------------------------------------------
+# 28 - CO2 Emission totals Barplot ----------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1957,7 +1571,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# CH4 Emission totals Barplot ---------------------------------------------
+# 29 - CH4 Emission totals Barplot ----------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -2031,7 +1645,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# VOC Emission totals Barplot ---------------------------------------------
+# 30 - VOC Emission totals Barplot ----------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -2105,7 +1719,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# Production ratio new wells vs. existing wells ---------------------------
+# 31 - Production ratio new wells vs. existing wells ----------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF

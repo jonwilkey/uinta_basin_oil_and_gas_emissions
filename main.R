@@ -65,23 +65,12 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "sim_lease.R",
                               "sim_rework.R",
                               "sim_dupRework.R",
-                              "sim_NTIfrac.R",
-                              "sim_pTaxfrac.R",
                               "sim_tdrill.R",
-                              "sim_water.R",
-                              "sim_wcost.R",
                               "sim_wellType.R",
                               "productionsim.R",
                               "priorProdReworkAdjust.R",
-                              "royalty.R",
-                              "stax.R",
-                              "ctax.R",
-                              "ptax.R",
                               "Ecalc.R",
-                              "LECcalc.R",
                               "LOCcalc.R",
-                              "RIMS.R",
-                              "water.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
@@ -222,51 +211,7 @@ if(opt$lease.update == TRUE) {
 load(file.path(path$data, paste("leaseCost_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.5 Corporate income tax conversion factor CDF generation ---------------
-
-# Run function if opt$corptax.update flag is set to "TRUE"
-if(opt$corptax.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "corpIncomeUpdate.R"))
-  
-  # Function call
-  corpIncomeUpdate(production = production,
-                   path =       path,
-                   basis =      opt$cpi,
-                   ver =        opt$file_ver,
-                   NTI =        opt$NTI,
-                   eia.hp =     eia.hp)
-}
-
-# Load net taxable income statistics (corpNTIfrac)
-load(file.path(path$data, paste("corpNTIfrac_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.6 Property tax update -------------------------------------------------
-
-# Run function if opt$ptax.update flag is set to "TRUE"
-if(opt$ptax.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "propertyTaxUpdate.R"))
-  
-  # Function call
-  propertyTaxUpdate(p =      p,
-                    path =   path,
-                    basis =  opt$cpi,
-                    ver =    opt$file_ver,
-                    PTI =    opt$PTI,
-                    eia.hp = eia.hp,
-                    tstart = opt$PTU.tstart,
-                    tstop =  opt$PTU.tstop)
-}
-
-# Load property tax statistics (pTaxRate)
-load(file.path(path$data, paste("pTaxRate_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.7 Drilling Schedule Model lm() fit update -----------------------------
+# 2.5 Drilling Schedule Model lm() fit update -----------------------------
 
 # Run function if opt$drillmodel.update flag is set to "TRUE"
 if(opt$drillmodel.update == TRUE) {
@@ -288,7 +233,7 @@ if(opt$drillmodel.update == TRUE) {
 load(file.path(path$data, paste("drillModel_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.8 GBM parameter fit update --------------------------------------------
+# 2.6 GBM parameter fit update --------------------------------------------
 
 # Run function if opt$GBMfit.update flag is set to "TRUE"
 if(opt$GBMfit.update == TRUE) {
@@ -308,7 +253,7 @@ if(opt$GBMfit.update == TRUE) {
 load(file.path(path$data, paste("GBMfit_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.9 EIA Forecast Update -------------------------------------------------
+# 2.7 EIA Forecast Update -------------------------------------------------
 
 # Run function if opt$EIAforecast.update flag is set to "TRUE"
 if(opt$EIAforecast.update == TRUE) {
@@ -361,7 +306,7 @@ load(file.path(path$data, paste("EIAforecast_low_",  opt$file_ver, ".rda", sep =
 load(file.path(path$data, paste("EIAforecast_high_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.10 EIA Error Analysis Update ------------------------------------------
+# 2.8 EIA Error Analysis Update ------------------------------------------
 
 # Run function if opt$EIAerror.update flag is set to "TRUE"
 if(opt$EIAerror.update == TRUE) {
@@ -401,7 +346,7 @@ if(opt$EIAerror.update == TRUE) {
 # load(file.path(path$data, paste("EIAerrorLT_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.11 Decline curve analysis update --------------------------------------
+# 2.9 Decline curve analysis update --------------------------------------
 
 # Run function if opt$DCA.update flag is set to "TRUE"
 if(opt$DCA.update == TRUE) {
@@ -442,38 +387,38 @@ if(opt$DCA.update == TRUE) {
             tend =            opt$tstart,
             full.fit =        FALSE)
   
-#   # Function call - without tstart/tstop limits
-#   DCAupdate(minProdRec =      opt$minProdRec,
-#             minDayProd =      opt$minDayProd,
-#             diff.bin.cutoff = opt$diff.bin.cutoff,
-#             bin =             opt$bin,
-#             DCAplot =         opt$DCAplot,
-#             n.stopB.min =     opt$n.stopB.min,
-#             n.startT.search = opt$n.startT.search,
-#             b.start.oil =     opt$b.start.oil,
-#             Di.start.oil =    opt$Di.start.oil,
-#             lower.oil =       opt$lower.oil,
-#             upper.oil =       opt$upper.oil,
-#             b.start.gas =     opt$b.start.gas,
-#             Di.start.gas =    opt$Di.start.gas,
-#             lower.gas =       opt$lower.gas,
-#             upper.gas =       opt$upper.gas,
-#             field =           field,
-#             ver =             opt$file_ver,
-#             path =            path,
-#             p =               p,
-#             Cp.start.oil =    opt$Cp.start.oil,
-#             c1.start.oil =    opt$c1.start.oil,
-#             Qlower.oil =      opt$Qlower.oil,
-#             Qupper.oil =      opt$Qupper.oil,
-#             Cp.start.gas =    opt$Cp.start.gas,
-#             c1.start.gas =    opt$c1.start.gas,
-#             Qlower.gas =      opt$Qlower.gas,
-#             Qupper.gas =      opt$Qupper.gas,
-#             tstart =          opt$DCA.tstart,
-#             tstop =           opt$DCA.tstop,
-#             tend =            opt$tstart,
-#             full.fit =        TRUE)
+  # Function call - without tstart/tstop limits
+  DCAupdate(minProdRec =      opt$minProdRec,
+            minDayProd =      opt$minDayProd,
+            diff.bin.cutoff = opt$diff.bin.cutoff,
+            bin =             opt$bin,
+            DCAplot =         opt$DCAplot,
+            n.stopB.min =     opt$n.stopB.min,
+            n.startT.search = opt$n.startT.search,
+            b.start.oil =     opt$b.start.oil,
+            Di.start.oil =    opt$Di.start.oil,
+            lower.oil =       opt$lower.oil,
+            upper.oil =       opt$upper.oil,
+            b.start.gas =     opt$b.start.gas,
+            Di.start.gas =    opt$Di.start.gas,
+            lower.gas =       opt$lower.gas,
+            upper.gas =       opt$upper.gas,
+            field =           field,
+            ver =             opt$file_ver,
+            path =            path,
+            p =               p,
+            Cp.start.oil =    opt$Cp.start.oil,
+            c1.start.oil =    opt$c1.start.oil,
+            Qlower.oil =      opt$Qlower.oil,
+            Qupper.oil =      opt$Qupper.oil,
+            Cp.start.gas =    opt$Cp.start.gas,
+            c1.start.gas =    opt$c1.start.gas,
+            Qlower.gas =      opt$Qlower.gas,
+            Qupper.gas =      opt$Qupper.gas,
+            tstart =          opt$DCA.tstart,
+            tstop =           opt$DCA.tstop,
+            tend =            opt$tstart,
+            full.fit =        TRUE)
 }
 
 # Load DCA fits mo (oil) and mg (gas) as well as full fits (mof and mgf)
@@ -481,7 +426,7 @@ load(file.path(path$data, paste("DCA_fits_", opt$file_ver, ".rda", sep = "")))
 load(file.path(path$data, paste("DCA_fits_full_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.13 DCA CDF Update ------------------------------------------------------
+# 2.10 DCA CDF Update ------------------------------------------------------
 
 # Run function if opt$DCA.CDF.update flag is set to "TRUE"
 if(opt$DCA.CDF.update == TRUE) {
@@ -530,51 +475,7 @@ load(file.path(path$data, paste("DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")
 load(file.path(path$data, paste("Q_DCA_CDF_coef_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.14 Drilling and Completion Capital Cost Model Update -------------------
-
-# Run function if opt$drillCapCost.update flag is set to "TRUE"
-if(opt$drillCapCost.update == TRUE) {
-  
-  # Source function to load
-  source(file.path(path$fun, "drillCapCostUpdate.R"))
-  
-  drillCapCostUpdate(path =  path,
-                     basis = opt$cpi,
-                     ver =   opt$file_ver)
-}
-
-# Load drilling cost data (drillCost.data), fit (drillCost.fit), and completion
-# cost ratio (complCR)
-load(file.path(path$data, paste("drillCost_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.15 Water balance data analysis and update -----------------------------
-
-# Run function if opt$water.update flag is set to "TRUE"
-if(opt$water.update == TRUE) {
-  
-  # Load function
-  source(file.path(path$fun, "waterUpdate.R"))
-  
-  # Function call
-  waterUpdate(path =        path,
-              p =           p,
-              tstart =      opt$WU.tstart,
-              tstop =       opt$WU.tstop,
-              xq =          opt$xq,
-              f_mud =       opt$f_mud,
-              f_cem =       opt$f_cem,
-              rcut.pw.oil = opt$rcut.pw.oil,
-              rcut.pw.gas = opt$rcut.pw.gas,
-              rcut.disp =   opt$rcut.disp,
-              ver =         opt$file_ver)
-}
-
-# Load water balance term CDFs (cdf.water) and regression models (water.lm)
-# load(file.path(path$data, paste("water_models_", opt$file_ver, ".rda", sep = "")))
-
-
-# 2.16 Rework CDF analysis and update -------------------------------------
+# 2.11 Rework CDF analysis and update -------------------------------------
 
 # Run function if opt$rework.update flag is set to "TRUE"
 if(opt$rework.update == TRUE) {
@@ -595,7 +496,7 @@ if(opt$rework.update == TRUE) {
 load(file.path(path$data, paste("rework_", opt$file_ver, ".rda", sep = "")))
 
 
-# 2.17 DCA Coefficient Distribution Fitting -------------------------------
+# 2.12 DCA Coefficient Distribution Fitting -------------------------------
 
 # Run function if opt$rework.update flag is set to "TRUE"
 if(opt$DCAlnorm.update == TRUE) {
@@ -771,51 +672,32 @@ if (opt$load.prior == TRUE) {
   # the memory usage for all the objects in the for-loop
   
   # Preallocate results matrices
-  osim <-       matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
-  gsim <-       osim # osim/gsim total oil/gas production (bbl or MCF)
-  posim <-      osim # total oil production (bbl) from prior wells
-  pgsim <-      osim # total gas production (MCF) from prior wells
-  roy.oil <-    osim # royalty totals from oil production
-  roy.gas <-    osim # royalty totals from gas production
-  roy.oil.UT <- osim # royalty totals from oil production paid to the state of UT
-  roy.gas.UT <- osim # royalty totals from gas production paid to the state of UT
-  st.oil <-     osim # severance tax totals from oil production
-  st.gas <-     osim # severance tax totals from gas production
-  PT <-         osim # property tax totals
-  CTstate <-    osim # corporate state income tax totals
-  CTfed <-      osim # corporate federal income tax totals
-  CO2 <-        osim # CO2 emission totals (metric tons)
-  CH4 <-        osim # CH4 emission totals (metric tons)
-  VOC <-        osim # VOC emission totals (metric tons)
-  rCO2 <-       osim # Reduced CO2 emission totals (metric tons)
-  rCH4 <-       osim # Reduced CH4 emission totals (metric tons)
-  rVOC <-       osim # Reduced VOC emission totals (metric tons)
-#   w.pw <-       osim # Produced water totals (bbl)
-#   w.disp <-     osim # Total water disposed of via injection wells (bbl)
-#   w.evap <-     osim # Total water evaporated in ponds (bbl)
-#   w.rec <-      osim # Water recycle totals (bbl)
-#   w.dw <-       osim # Total water usage for drilling (mud and cement - bbl)
-#   w.fw <-       osim # Total water usage for hydraulic fracturing (bbl)
-#   w.inj <-      osim # Total water usage for water flooding (bbl)
-#   w.in <-       osim # Total water coming into system (bbl)
-#   w.r <-        osim # Ratio of (water in) / (oil production)
-  jobs <-       osim # Jobs created as result of spending by oil and gas industry
-  nfCO2 <-      matrix(0, nrow = opt$nrun, ncol = 8) # New well emission source fractions for CO2
-  nfCH4 <-      nfCO2                                # New well emission source fractions for CH4
-  nfVOC <-      nfCO2                                # New well emission source fractions for VOC
-  pfCO2 <-      nfCO2                                # Prior well emission source fractions for CO2
-  pfCH4 <-      nfCO2                                # Prior well emission source fractions for CH4
-  pfVOC <-      nfCO2                                # Prior well emission source fractions for VOC
-  rnfCO2 <-     nfCO2                                # Reduced new well emission source fractions for CO2
-  rnfCH4 <-     nfCO2                                # Reduced new well emission source fractions for CH4
-  rnfVOC <-     nfCO2                                # Reduced new well emission source fractions for VOC
-  rpfCO2 <-     nfCO2                                # Reduced prior well emission source fractions for CO2
-  rpfCH4 <-     nfCO2                                # Reduced prior well emission source fractions for CH4
-  rpfVOC <-     nfCO2                                # Reduced prior well emission source fractions for VOC
-  foil <-       matrix(0, nrow = opt$nrun, ncol = 2) # Fraction of base emissions from oil wells
-  NSPSred <-    matrix(0, nrow = opt$nrun, ncol = 4) # Fraction of NSPS reductions
-  fnvp <-       matrix(0, nrow = opt$nrun, ncol = 3) # Fraction of emissions from new wells vs. prior wells
-  rfnvp <-      fnvp                                 # Reduced fraction of emissions from new wells vs. prior wells
+  osim <-    matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
+  gsim <-    osim # osim/gsim total oil/gas production (bbl or MCF)
+  posim <-   osim # total oil production (bbl) from prior wells
+  pgsim <-   osim # total gas production (MCF) from prior wells
+  CO2 <-     osim # CO2 emission totals (metric tons)
+  CH4 <-     osim # CH4 emission totals (metric tons)
+  VOC <-     osim # VOC emission totals (metric tons)
+  rCO2 <-    osim # Reduced CO2 emission totals (metric tons)
+  rCH4 <-    osim # Reduced CH4 emission totals (metric tons)
+  rVOC <-    osim # Reduced VOC emission totals (metric tons)
+  nfCO2 <-   matrix(0, nrow = opt$nrun, ncol = 8) # New well emission source fractions for CO2
+  nfCH4 <-   nfCO2                                # New well emission source fractions for CH4
+  nfVOC <-   nfCO2                                # New well emission source fractions for VOC
+  pfCO2 <-   nfCO2                                # Prior well emission source fractions for CO2
+  pfCH4 <-   nfCO2                                # Prior well emission source fractions for CH4
+  pfVOC <-   nfCO2                                # Prior well emission source fractions for VOC
+  rnfCO2 <-  nfCO2                                # Reduced new well emission source fractions for CO2
+  rnfCH4 <-  nfCO2                                # Reduced new well emission source fractions for CH4
+  rnfVOC <-  nfCO2                                # Reduced new well emission source fractions for VOC
+  rpfCO2 <-  nfCO2                                # Reduced prior well emission source fractions for CO2
+  rpfCH4 <-  nfCO2                                # Reduced prior well emission source fractions for CH4
+  rpfVOC <-  nfCO2                                # Reduced prior well emission source fractions for VOC
+  foil <-    matrix(0, nrow = opt$nrun, ncol = 2) # Fraction of base emissions from oil wells
+  NSPSred <- matrix(0, nrow = opt$nrun, ncol = 4) # Fraction of NSPS reductions
+  fnvp <-    matrix(0, nrow = opt$nrun, ncol = 3) # Fraction of emissions from new wells vs. prior wells
+  rfnvp <-   fnvp                                 # Reduced fraction of emissions from new wells vs. prior wells
   
   # Progress Bar (since this next for-loop takes a while)
   pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
@@ -917,37 +799,9 @@ if (opt$load.prior == TRUE) {
                                 tend =               wsim$tend,
                                 DCAlnormFit =        DCAlnormFit))
     
-    # Pick net taxable income fraction
-    wsim$NTIfrac <- sim_NTIfrac(times = nrow(wsim), corpNTIfrac = corpNTIfrac)
-    wpri$NTIfrac <- sim_NTIfrac(times = nrow(wpri), corpNTIfrac = corpNTIfrac)
-    
-    # Pick property tax fraction
-    wsim$pTaxfrac <- sim_pTaxfrac(times = nrow(wsim), pTaxRate = pTaxRate)
-    wpri$pTaxfrac <- sim_pTaxfrac(times = nrow(wpri), pTaxRate = pTaxRate)
-    
-    # Calculate well drilling and completion capital cost for new wells
-    wsim <- cbind(wsim, sim_wcost(type =          "new",
-                                  depth =         wsim$depth,
-                                  drillCost.fit = drillCost.fit,
-                                  complCR =       complCR,
-                                  rework =        wsim$rework,
-                                  prior =         wsim$prior))
-    
-    # Calculate well drilling and completion capital cost for existing wells
-    wpri <- cbind(wpri, sim_wcost(type =          "prior",
-                                  depth =         wpri$depth,
-                                  drillCost.fit = drillCost.fit,
-                                  complCR =       complCR,
-                                  rework =        wpri$rework,
-                                  prior =         TRUE))
-    
     # Pick emission factors
     wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
     wpri <- cbind(wpri, sim_EF(times = nrow(wpri), EF = opt$EF))
-    
-#     # Pick water factors
-#     wsim <- cbind(wsim, sim_water(wellType = wsim$wellType, cdf.water = cdf.water))
-#     wpri <- cbind(wpri, sim_water(wellType = wpri$wellType, cdf.water = cdf.water))
     
     
     # 3.3.2 Production simulation ------------------------------------------
@@ -964,16 +818,7 @@ if (opt$load.prior == TRUE) {
                                   ppri =      ppri)
     
     
-    # 3.3.9 Lease costs --------------------------------------------------
-    
-    # Calculate the capital cost for lease equipment
-    wsim$LEC <- LECcalc(wsim =          wsim[,c("prior","rework","tDrill","wellType","depth")],
-                        LOC.oil.equip = LOC.oil.equip,
-                        LOC.gas.equip = LOC.gas.equip,
-                        op =            op[i,],
-                        gp =            gp[i,],
-                        osim =          psim$osim,
-                        gsim =          psim$gsim)
+    # 3.3.3 Lease operating costs -----------------------------------------
     
     # Calculate the operating cost for lease equipment
     LOC <- LOCcalc(wsim =       rbind(wsim[,c("wellType", "depth")],
@@ -986,7 +831,7 @@ if (opt$load.prior == TRUE) {
                    gsim =       rbind(psim$gsim, apri$gas))
     
     
-    # 3.3.X Production correction -----------------------------------------
+    # 3.3.4 Production correction -----------------------------------------
     
     OSIM <- rbind(psim$osim, apri$oil)
     GSIM <- rbind(psim$gsim, apri$gas)
@@ -1010,73 +855,7 @@ if (opt$load.prior == TRUE) {
     apri$gas <-  GSIM[(nrow(psim$gsim)+1):nrow(GSIM),]
     
     
-    # 3.3.3 Royalties -----------------------------------------------------
-    
-    # Calculate royalty for oil production
-    t.roy.oil <- royalty(royaltyRate = opt$royaltyRate,
-                         ep =          op[i,],
-                         lease =       c(wsim$lease, wpri$lease),
-                         psim =        rbind(psim$osim, apri$oil))
-    
-    # Calculate royalty for gas production
-    t.roy.gas <- royalty(royaltyRate = opt$royaltyRate,
-                         ep =          gp[i,],
-                         lease =       c(wsim$lease, wpri$lease),
-                         psim =        rbind(psim$gsim, apri$gas))
-    
-    
-    # 3.3.4 Severance Taxes ----------------------------------------------
-    
-    # Calculate ST for oil production
-    t.st.oil <- stax(type =    "oil",
-                     tDrill =  c(wsim$tDrill, wpri$tDrill),
-                     psim =    rbind(psim$osim, apri$oil),
-                     rsim =    t.roy.oil,
-                     ep =      op[i,],
-                     st.low =  opt$st.low,
-                     st.high = opt$st.high,
-                     st.con =  opt$st.con,
-                     st.cut =  opt$st.ocut,
-                     st.skip = opt$st.skip,
-                     strip =   opt$strip.oil)
-    
-    # Calculate ST for gas production
-    t.st.gas <- stax(type =    "gas",
-                     tDrill =  c(wsim$tDrill, wpri$tDrill),
-                     psim =    rbind(psim$gsim, apri$gas),
-                     rsim =    t.roy.gas,
-                     ep =      gp[i,],
-                     st.low =  opt$st.low,
-                     st.high = opt$st.high,
-                     st.con =  opt$st.con,
-                     st.cut =  opt$st.gcut,
-                     st.skip = opt$st.skip,
-                     strip =   opt$strip.gas)
-    
-    
-    # 3.3.5 Property taxes -----------------------------------------------
-    
-    # Calculate property taxes
-    t.PT <- ptax(OP =       op[i,],
-                 GP =       gp[i,],
-                 osim =     rbind(psim$osim, apri$oil),
-                 gsim =     rbind(psim$gsim, apri$gas),
-                 pTaxfrac = c(wsim$pTaxfrac, wpri$pTaxfrac))
-    
-    
-    # 3.3.6 Corporate income taxes ---------------------------------------
-    
-    # Run corporate income tax calculation
-    CT <- ctax(OP =           op[i,],
-               GP =           gp[i,],
-               osim =         rbind(psim$osim, apri$oil),
-               gsim =         rbind(psim$gsim, apri$gas),
-               NTIfrac =      c(wsim$NTIfrac, wpri$NTIfrac),
-               CIrate.state = opt$CIrate.state,
-               CIrate.fed =   opt$CIrate.fed)
-    
-    
-    # 3.3.7 Emissions ----------------------------------------------------
+    # 3.3.5 Emissions ----------------------------------------------------
     
     # Calculate emissions from new wells
     ETsim <- Ecalc(osim =      psim$osim,
@@ -1095,43 +874,13 @@ if (opt$load.prior == TRUE) {
                    MC.tsteps = opt$MC.tsteps)
     
     
-#     # 3.3.8 Water Balance ------------------------------------------------
-#     
-#     # Calculate water balance
-#     WB <- water(wsim =     rbind(wsim[,c("tDrill", "pw","disp","evap","frack","inj")],
-#                                  wpri[,c("tDrill", "pw","disp","evap","frack","inj")]),
-#                 osim =     rbind(psim$osim, apri$oil),
-#                 gsim =     rbind(psim$gsim, apri$gas),
-#                 wellType = c(wsim$wellType, wpri$wellType),
-#                 depth =    c(wsim$depth, wpri$depth),
-#                 dw.lm =    water.lm$dw.lm)
-    
-    
-    # 3.3.9 Jobs ---------------------------------------------------------
-    
-    # RIMS II model employment estimate
-    jobs.RIMS <- RIMS(multiplier = opt$RIMSmultiplier,
-                      wsim =       wsim,
-                      LOC =        LOC,
-                      tsteps =     opt$MC.tsteps,
-                      RIMS.cpi =   opt$RIMS.cpi,
-                      cpi =        opt$cpi)
-    
-    
-    # 3.3.x Get totals for MC run i --------------------------------------
+    # 3.3.6 Get totals for MC run i --------------------------------------
     
     # Calculate column sums for each results matrix generated to get totals
     osim[i, ] <-    colSums(psim$osim[which(wsim$prior == F),])
     gsim[i, ] <-    colSums(psim$gsim[which(wsim$prior == F),])
     posim[i, ] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
     pgsim[i, ] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
-    roy.oil[i, ] <- colSums(t.roy.oil)
-    roy.gas[i, ] <- colSums(t.roy.gas)
-    st.oil[i, ] <-  colSums(t.st.oil)
-    st.gas[i, ] <-  colSums(t.st.gas)
-    PT[i, ] <-      colSums(t.PT)
-    CTstate[i, ] <- colSums(CT$state)
-    CTfed[i, ] <-   colSums(CT$fed)
     CO2[i, ] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
     CH4[i, ] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
     VOC[i, ] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
@@ -1154,21 +903,6 @@ if (opt$load.prior == TRUE) {
     fnvp[i, ] <-    c(sum(ETsim$CO2)/sum(CO2[i, ]),   sum(ETsim$CH4)/sum(CH4[i, ]),   sum(ETsim$VOC)/sum(VOC[i, ]))
     rfnvp[i, ] <-   c(sum(ETsim$rCO2)/sum(rCO2[i, ]), sum(ETsim$rCH4)/sum(rCH4[i, ]), sum(ETsim$rVOC)/sum(rVOC[i, ]))
     NSPSred[i, ] <- c(ETsim$NSPSred, ETpri$NSPSred)
-#     w.pw[i, ] <-    WB$pw
-#     w.disp[i, ] <-  WB$disp
-#     w.evap[i, ] <-  WB$evap
-#     w.rec[i, ] <-   WB$recycle
-#     w.dw[i, ] <-    WB$dw
-#     w.fw[i, ] <-    WB$fw
-#     w.inj[i, ] <-   WB$inj
-#     w.in[i, ] <-    WB$wtr.in
-#     w.r[i, ] <-     WB$wtr.r
-    jobs[i, ] <-    jobs.RIMS
-    
-    # Calculate taxes and royalties for just the state of Utah
-    ind <- which(wsim$lease == "state")
-    roy.oil.UT[i, ] <- colSums(t.roy.oil[ind, ])
-    roy.gas.UT[i, ] <- colSums(t.roy.oil[ind, ])
     
     # Update progress bar
     Sys.sleep(1e-3)
@@ -1187,13 +921,6 @@ if (opt$load.prior == TRUE) {
                   "gsim",
                   "posim",
                   "pgsim",
-                  "roy.oil",
-                  "roy.gas",
-                  "st.oil",
-                  "st.gas",
-                  "PT",
-                  "CTstate",
-                  "CTfed",
                   "CO2",
                   "CH4",
                   "VOC",
@@ -1221,10 +948,7 @@ if (opt$load.prior == TRUE) {
                   "Drilled",
                   "ppri",
                   "prior.Info",
-                  "pi.skip",
-                  "jobs",
-                  "roy.oil.UT",
-                  "roy.gas.UT"))
+                  "pi.skip"))
   }
   
   # Print stop time for MC simulation section
@@ -1243,4 +967,4 @@ if (opt$load.prior == TRUE) {
 # 4.1 Post processing -----------------------------------------------------
 
 # Run processing script to generate plots of results
-source(file.path(path$fun, "postProcess.R"))
+source("postProcess.R")
