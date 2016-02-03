@@ -20,14 +20,7 @@ Please complete the following steps to setup the model:
 13. After entering all the information, click the **Create Project** button.
 14. Open the script `main.R`, located in the local repository directory you created previously. This is the main script for the model.
 15. Under the section of the scripts labeled `#1.1 Paths`, change the paths for each of the directories listed to the location on your computer where you downloaded (a) the repository and (b) the shared Dropbox folder's contents. After altering the paths, save the script.
-16. Download and install the packages necessary to run the model. A list of the packages used is given under the section header `1.3 Packages`. You can install packages using the following command in the R console (window in lower left of RStudio):
-
-   ```  
-   install.packages("package_name")  
-   ```  
-
-   Alternatively, you can use the menu option **Tools > Install Packages...** and then enter the names of the packages you wish to install.  
-
+16. Download and install the packages necessary to run the model. A list of the packages used is given under the section header `1.3 Packages`. You can install packages using the command `install.packages("package_name")` in the R console. Alternatively, you can use the menu option **Tools > Install Packages...** and then enter the names of the packages you wish to install.
 17. All modeling options are contained in the script `IO_options.R`, located in the local repository directory. Alter the input options as desired, and save the script.
 18. You can now run the script using the menu option **Code > Source** or any of its keyboard shortcuts and variations.
 
