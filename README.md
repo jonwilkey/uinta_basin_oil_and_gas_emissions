@@ -26,7 +26,7 @@ Please complete the following steps to setup the model:
 install.packages("package_name")
 ```
 
-Alternatively, you can use the menu option **Tools > Install Packages...** and then enter the names of the packages you wish to install.
+   Alternatively, you can use the menu option **Tools > Install Packages...** and then enter the names of the packages you wish to install.
 
 17. All modeling options are contained in the script `IO_options.R`, located in the local repository directory. Alter the input options as desired, and save the script.
 18. You can now run the script using the menu option **Code > Source** or any of its keyboard shortcuts and variations.
