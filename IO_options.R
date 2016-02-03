@@ -35,7 +35,7 @@ opt$save.name <- "results xvalid 10yr 1k eCDF oil v3.rda"
 # v1: Prediction -     train 1984-2014, predict 2015-2019
 # v2: Cross-validate - train 1984-2009, predict 2010-2014
 # v3: Cross-validate - train 1984-2004, predict 2005-2014
-# v4: Cross-validate - train 1984-2004, predict 2005-2014
+# v4: Cross-validate - train 1984-1994, predict 1995-2014
 
 # Enter number of overall simulation iterations
 opt$nrun <- 1e4

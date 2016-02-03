@@ -37,6 +37,6 @@ The following table lists the version history of the results saved in the prepar
 | Version | Notes                                               |
 |---------|-----------------------------------------------------|
 | v1      | Prediction - train 1984-2014, predict 2015-2019     |
-| v2      | Cross-validate - train 1984-2009, predict 2010-2014 |
-| v3      | Cross-validate - train 1984-2004, predict 2005-2014 |
-| v4      | Cross-validate - train 1984-2004, predict 2005-2014 |
+| v2      | Cross validate - train 1984-2009, predict 2010-2014 |
+| v3      | Cross validate - train 1984-2004, predict 2005-2014 |
+| v4      | Cross validate - train 1984-1994, predict 1995-2014 |
