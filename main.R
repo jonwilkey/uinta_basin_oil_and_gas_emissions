@@ -22,8 +22,8 @@ path <- NULL
 
 # Path switch - replace with the path directory for your local copy of the Git
 # repository and Dropbox files.
-pwd.drop <- "C:/Users/Jon Wilkey/"
-pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
+pwd.drop <- "C:/Users/jonwi/"
+pwd.git  <- "C:/Users/jonwi/Documents/R/"
   
 # Define paths.
 # "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
@@ -32,13 +32,13 @@ pwd.git  <- "C:/Users/Jon Wilkey/Documents/R/"
 # "plot" is the directory for saving plot *.pdf files.
 # "work" is the working directory where main.R and IO_options.R are located.
 # "fun"  is the directory for all *.R functions.
-path$raw  <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Raw Data", sep = "")
-path$data <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Prepared Data", sep = "")
-path$look <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Lookup Tables", sep = "")
-path$plot <-    paste(pwd.drop, "Dropbox/CLEAR/DOGM Data/Plots", sep = "")
-path$work <-    paste(pwd.git,  "ub_oilandgas/", sep = "")
-path$fun  <-    paste(pwd.git,  "ub_oilandgas/Functions", sep = "")
-path$plotfun <- paste(pwd.git,  "ub_oilandgas/Functions/Plotting", sep = "")
+path$raw  <-    paste(pwd.drop, "Dropbox/UBOG/Raw Data", sep = "")
+path$data <-    paste(pwd.drop, "Dropbox/UBOG/Prepared Data", sep = "")
+path$look <-    paste(pwd.drop, "Dropbox/UBOG/Lookup Tables", sep = "")
+path$plot <-    paste(pwd.drop, "Dropbox/UBOG/Plots", sep = "")
+path$work <-    paste(pwd.git,  "ub_o-g_emissions", sep = "")
+path$fun  <-    paste(pwd.git,  "ub_o-g_emissions/Functions", sep = "")
+path$plotfun <- paste(pwd.git,  "ub_o-g_emissions/Functions/Plotting", sep = "")
 
 # Remove temporary path objects
 remove(pwd.drop, pwd.git)
@@ -71,6 +71,7 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "priorProdReworkAdjust.R",
                               "Ecalc.R",
                               "LOCcalc.R",
+                              "sim_E_wc.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
@@ -101,8 +102,9 @@ library(xtable)
 # Don't want strings 'typed' as factors but as characters
 options(stringsAsFactors=FALSE)
 
-# Run script "IO_options.R" to load user defined input/output options
+# Run scripts to load user defined input/output options
 source("IO_options.R")
+source("EF_options.R")
 
 # Set seed for random number generation (for reproducibility)
 set.seed(1)
@@ -316,33 +318,33 @@ if(opt$EIAerror.update == TRUE) {
   source(file.path(path$fun, "EIAerrorUpdateFrac.R"))
   source(file.path(path$fun, "EIAerrorUpdateLT.R"))
   
-#   # Function call - Relative error w/ directionality
-#   EIAerrorUpdate(path =   path,
-#                  xq =     opt$xq,
-#                  tsteps = opt$EEU.tsteps,
-#                  ver =    opt$file_ver)
+  # Function call - Relative error w/ directionality
+  EIAerrorUpdate(path =   path,
+                 xq =     opt$xq,
+                 tsteps = opt$EEU.tsteps,
+                 ver =    opt$file_ver)
+
+  # Function call - Relative fractional error
+  EIAerrorUpdateFrac(path =   path,
+                     xq =     opt$xq,
+                     tsteps = opt$EEU.tsteps,
+                     ver =    opt$file_ver)
   
-#   # Function call - Relative fractional error
-#   EIAerrorUpdateFrac(path =   path,
-#                      xq =     opt$xq,
-#                      tsteps = opt$EEU.tsteps,
-#                      ver =    opt$file_ver)
-  
-  # Function call - Long Term projections
-  EIAerrorUpdateLT(op.FC.high = op.FC.high,
-                     op.FC.ref =  op.FC.ref,
-                     op.FC.low =  op.FC.low,
-                     gp.FC.high = gp.FC.high,
-                     gp.FC.ref =  gp.FC.ref,
-                     gp.FC.low =  gp.FC.low,
-                     path =       path,
-                     xq =         opt$xq,
-                     ver =        opt$file_ver)
+  # # Function call - Long Term projections
+  # EIAerrorUpdateLT(op.FC.high = op.FC.high,
+  #                    op.FC.ref =  op.FC.ref,
+  #                    op.FC.low =  op.FC.low,
+  #                    gp.FC.high = gp.FC.high,
+  #                    gp.FC.ref =  gp.FC.ref,
+  #                    gp.FC.low =  gp.FC.low,
+  #                    path =       path,
+  #                    xq =         opt$xq,
+  #                    ver =        opt$file_ver)
 }
 
 # Load EIA error CDF matrices (Eoil & Egas and EoilFrac & EgasFrac)
-# load(file.path(path$data, paste("EIAerror_", opt$file_ver, ".rda", sep = "")))
-# load(file.path(path$data, paste("EIAerrorFrac_", opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("EIAerror_", opt$file_ver, ".rda", sep = "")))
+load(file.path(path$data, paste("EIAerrorFrac_", opt$file_ver, ".rda", sep = "")))
 # load(file.path(path$data, paste("EIAerrorLT_", opt$file_ver, ".rda", sep = "")))
 
 
@@ -523,6 +525,25 @@ if(opt$DCAlnorm.update == TRUE) {
 # Load fitted distribution data.frame (DCAlnormFit)
 load(file.path(path$data, paste("DCAlnormFit_", opt$file_ver, ".rda", sep = "")))
 
+
+# 2.13 UDAQ Emissions Inventory Data --------------------------------------
+
+# Run function if opt$rework.update flag is set to "TRUE"
+if(opt$emission.update == TRUE) {
+  
+  # Load function
+  source(file.path(path$fun, "emissionUpdate.R"))
+  
+  # Function call
+  emissionUpdate(path =    path,
+                 ver =     opt$file_ver,
+                 wc.ctrl = eopt$wc.ctrl)
+}
+
+# Load emissions inventory data.frame (OGEI)
+# - wc.fuel.CDF: CDF for fuel usage during well completion
+# - wc.ctrl.prob: Probability and efficiency of well completion flaring
+load(file.path(path$data, paste("emissionUpdate_", opt$file_ver, ".rda", sep = "")))
 
 
 # Transition to MC simulation ---------------------------------------------
@@ -802,6 +823,17 @@ if (opt$load.prior == TRUE) {
     # Pick emission factors
     wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
     wpri <- cbind(wpri, sim_EF(times = nrow(wpri), EF = opt$EF))
+    
+    # Pick well completion emissions
+    wsim <- cbind(wsim, sim_E_wc(wc.fuel.CDF =  wc.fuel.CDF,
+                                 wc.ctrl.prob = wc.ctrl.prob,
+                                 wc.EF =        eopt$wc.EF,
+                                 times =        nrow(wsim)))
+    
+    wpri <- cbind(wpri, sim_E_wc(wc.fuel.CDF =  wc.fuel.CDF,
+                                 wc.ctrl.prob = wc.ctrl.prob,
+                                 wc.EF =        eopt$wc.EF,
+                                 times =        nrow(wpri)))
     
     
     # 3.3.2 Production simulation ------------------------------------------

@@ -19,7 +19,7 @@ Please complete the following steps to setup the model:
 12. A local copy of the server repository will be created by Git on your computer in a folder of your choice. The name of that folder will be whatever you enter in the **Project directory name** dialogue box (by default it's the same name as the bitbucket.org project name: ub_o-g_emissions). The folder will be located as a subdirectory of whatever folder you point to in the **Create project as subdirectory of** dialogue box. By default it's a subdirectory of ~/R, which is the R folder generated in your home directory when you first run R (or install any packages in R).
 13. After entering all the information, click the **Create Project** button.
 14. Open the script `main.R`, located in the local repository directory you created previously. This is the main script for the model.
-15. Under the section of the scripts labeled `#1.1 Paths`, change the paths for each of the directories listed to the location on your computer where you downloaded (a) the repository and (b) the shared Dropbox folder's contents. After altering the paths, save the script.
+15. Under the section of the scripts labeled `1.1 Paths`, change the paths for each of the directories listed to the location on your computer where you downloaded (a) the repository and (b) the shared Dropbox folder's contents. After altering the paths, save the script.
 16. Download and install the packages necessary to run the model. A list of the packages used is given under the section header `1.3 Packages`. You can install packages using the command `install.packages("package_name")` in the R console. Alternatively, you can use the menu option **Tools > Install Packages...** and then enter the names of the packages you wish to install.
 17. All modeling options are contained in the script `IO_options.R`, located in the local repository directory. Alter the input options as desired, and save the script.
 18. You can now run the script using the menu option **Code > Source** or any of its keyboard shortcuts and variations.
@@ -36,7 +36,5 @@ The following table lists the version history of the results saved in the prepar
 
 | Version | Notes                                               |
 |---------|-----------------------------------------------------|
-| v1      | Prediction - train 1984-2014, predict 2015-2019     |
-| v2      | Cross validate - train 1984-2009, predict 2010-2014 |
-| v3      | Cross validate - train 1984-2004, predict 2005-2014 |
-| v4      | Cross validate - train 1984-1994, predict 1995-2014 |
+| v1      | Cross validate - train 1984-2009, predict 2010-2014 |
+| v2      | Prediction - train 1984-2014, predict 2015-2019     |
