@@ -26,8 +26,9 @@
 
 # This function randomly picks the fuel usage for completing a well, as well as 
 # whether or not the emissions from completion are controlled (and to what 
-# extent). Based on the selected fuel and control types, the total well
-# completion emissions are calculated.
+# extent). Based on the selected fuel and control types, the total well 
+# completion emissions are calculated using the emissions calculation function
+# calc_E_wc.R
 
 
 # Function ----------------------------------------------------------------
@@ -41,11 +42,9 @@ sim_E_wc <- function(wc.fuel.CDF, wc.ctrl.prob, wc.EF, times) {
   red <- wc.ctrl.prob$red[findInterval(runif(times), c(0, wc.ctrl.prob$cprob))]
   
   # Calculate completion emissions
-  E.wc <- data.frame(em.pm10 = fuel * wc.EF$EF.pm10 * (1 - red) / 2000,
-                     em.pm25 = fuel * wc.EF$EF.pm25 * (1 - red) / 2000,
-                     em.nox  = fuel * wc.EF$EF.nox  * (1 - red) / 2000,
-                     em.voc  = fuel * wc.EF$EF.voc  * (1 - red) / 2000,
-                     em.co   = fuel * wc.EF$EF.co   * (1 - red) / 2000)
+  E.wc <- calc_E_wc(fuel =  fuel,
+                    red =   red,
+                    wc.EF = wc.EF)
   
   # Return the tDrill vector
   return(E.wc)

@@ -111,7 +111,7 @@ opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
 opt$rework.update       <- F # Generates CDF for well reworks
 opt$DCAlnorm.update     <- F # Fits log-normal/normal distributions to DCA coefficients and then finds trendlines in those distribution parameters
-opt$emission.update     <- T # Loads UDAQ emissions inventory database, creates single data.frame
+opt$emission.update     <- F # Loads UDAQ emissions inventory database, creates single data.frame
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
@@ -573,7 +573,7 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("05 Drill model cross-valid",    F), # (ONLY IF RUNNING CROSS-VALIDATION) Drilling model cross-validation
                    c("06 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("07 DCA Coefficients - CDF",     F), # CDF DCA coefficients
-                   c("08 Total Oil Production",       F), # Total oil production simulated vs actual
+                   c("08 Total Oil Production",       T), # Total oil production simulated vs actual
                    c("09 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
                    c("10 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
                    c("11 Total Gas Production",       F), # Total gas production simulated vs actual
