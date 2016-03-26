@@ -650,6 +650,14 @@ if (opt$load.prior == TRUE) {
            
            # Remove list
            remove(epsim)
+         },
+         
+         # If using user specified price path, ep.type = "e"
+         e = {
+           
+           # Define op and gp using user specified price matrices in opt
+           op <- opt$uppo
+           gp <- opt$uppg
          })
   
   
