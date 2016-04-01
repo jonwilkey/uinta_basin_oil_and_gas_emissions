@@ -1,0 +1,713 @@
+---
+title:  "OGEI Data Analysis"
+date:   "March 31, 2016"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    fig_width: 6.5
+    fig_height: 6.5
+    fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# 1.1 Paths ---------------------------------------------------------------
+
+# Predefine list object "path" for holding directory path listings
+path <- NULL
+
+# Path switch - replace with the path directory for your local copy of the Git
+# repository and Dropbox files.
+pwd.drop <- "C:/Users/jonwi/"
+pwd.git  <- "C:/Users/jonwi/Documents/R/"
+  
+# Define paths.
+# "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
+# "data" is prepared data files (typically *.rda).
+# "look" is lookup tables. 
+# "plot" is the directory for saving plot *.pdf files.
+# "work" is the working directory where main.R and IO_options.R are located.
+# "fun"  is the directory for all *.R functions.
+path$raw  <-    paste(pwd.drop, "Dropbox/UBOG/Raw Data", sep = "")
+path$data <-    paste(pwd.drop, "Dropbox/UBOG/Prepared Data", sep = "")
+path$look <-    paste(pwd.drop, "Dropbox/UBOG/Lookup Tables", sep = "")
+path$plot <-    paste(pwd.drop, "Dropbox/UBOG/Plots", sep = "")
+path$work <-    paste(pwd.git,  "ub_o-g_emissions", sep = "")
+path$fun  <-    paste(pwd.git,  "ub_o-g_emissions/Functions", sep = "")
+path$plotfun <- paste(pwd.git,  "ub_o-g_emissions/Functions/Plotting", sep = "")
+
+# Remove temporary path objects
+remove(pwd.drop, pwd.git)
+
+# Set working directory
+setwd(path$work)
+
+
+# 1.2 Functions -----------------------------------------------------------
+
+# List of functions used in this script to be loaded here
+flst <- file.path(path$fun, c("GBMsim.R",
+                              "EIAsim.R",
+                              "EIAsimLT.R",
+                              "drillsim.R",
+                              "priorProd.R",
+                              "priorInfo.R",
+                              "sim_tdelay.R",
+                              "sim_DCC.R",
+                              "sim_depth.R",
+                              "sim_EF.R",
+                              "sim_fieldnum.R",
+                              "sim_county.R",
+                              "sim_lease.R",
+                              "sim_rework.R",
+                              "sim_dupRework.R",
+                              "sim_tdrill.R",
+                              "sim_wellType.R",
+                              "productionsim.R",
+                              "priorProdReworkAdjust.R",
+                              "Ecalc.R",
+                              "LOCcalc.R",
+                              "calc_E_wc.R",
+                              "calc_E_rt.R",
+                              "calc_E_sh.R",
+                              "calc_E_dh.R",
+                              "calc_E_tank.R",
+                              "calc_E_truck.R",
+                              "calc_E_pctrl.R",
+                              "calc_E_ppump.R",
+                              "calc_E_fug.R",
+                              "sim_E_wc.R",
+                              "clipboard.R",
+                              "inf_adj.R",
+                              "CDFd.R",
+                              "CDFq.R",
+                              "asYear.R"))
+
+# Load each function in list then remove temporary file list variables
+for (f in flst) source(f); remove(f, flst)
+
+
+# 1.3 Packages -----------------------------------------------------------
+
+library(foreign)
+library(plyr)
+library(zoo)
+library(data.table)
+library(sqldf)
+library(minpack.lm)
+library(scatterplot3d)
+library(beepr)
+library(fitdistrplus)
+library(lhs)
+library(xtable)
+library(knitr)
+
+
+# 1.4 Options -------------------------------------------------------------
+
+# Don't want strings 'typed' as factors but as characters
+options(stringsAsFactors=FALSE)
+
+# Run scripts to load user defined input/output options
+source("IO_options.R")
+source("EF_options.R")
+
+# Set seed for random number generation (for reproducibility)
+set.seed(1)
+
+# 1.5 Load Data -----------------------------------------------------------
+
+# Load data sets used in analysis below
+load(file.path(path$data, paste("emissionUpdate_", opt$file_ver, ".rda", sep = "")))
+
+# File path for OGEI *.csv tables
+pOGEI <- file.path(path$raw, "OGEI")
+
+# Read in each OGEI table
+apis <-        read.csv(file.path(pOGEI, "apis.csv"))                  # API #'s associated with each facility ID
+comp.count <-  read.csv(file.path(pOGEI, "component_count.csv"))       # Component counts
+dehy <-        read.csv(file.path(pOGEI, "dehydrators.csv"))           # Dehydrators
+fac.list <-    read.csv(file.path(pOGEI, "facilities_list.csv"))       # Facilities list
+fugitives <-   read.csv(file.path(pOGEI, "fugitives.csv"))             # Fugitive emissions
+oper.info <-   read.csv(file.path(pOGEI, "operator_info.csv"))         # Operator information
+pneum.ctrl <-  read.csv(file.path(pOGEI, "pneumatic_controllers.csv")) # Pneumatic controllers
+pneum.pumps <- read.csv(file.path(pOGEI, "pneumatic_pumps.csv"))       # Pneumatic pumps
+prod.areas <-  read.csv(file.path(pOGEI, "production_areas.csv"))      # Production areas (keep?)
+rice.EF <-     read.csv(file.path(pOGEI, "rice_emission_factors.csv")) # RICE emission factors
+rice.turb <-   read.csv(file.path(pOGEI, "rice_turbines.csv"))         # RICE turbines
+sep.heat <-    read.csv(file.path(pOGEI, "separators_heaters.csv"))    # Separators and heaters
+tanks <-       read.csv(file.path(pOGEI, "tanks.csv"))                 # Tanks
+truck <-       read.csv(file.path(pOGEI, "truck_loading.csv"))         # Truck loading
+well.compl <-  read.csv(file.path(pOGEI, "well_completions.csv"))      # Well completions
+```
+
+# Introduction
+
+This report summarizes the data analysis performed on the OGEI database (dated March 30, 2016). The data analysis covers all of the inputs which will be used to perform equipment-based calculations in the R model. The primary data analysis method used is to create a cumulative probability table (CPT) by:
+
+1. Selecting the columns containing inputs variables needed for performing the equipment-based emissions calculations from each OGEI database table.
+2. Find all unique combinations of the selected input variables.
+3. Count the number or times each unique combination appears in the table.
+4. Calculate the cumulative probability for each combination.
+
+For example, if the input variables in a table were:
+
+```{r cptableExample01}
+a <- data.frame(input1 = c("a", "a", "a", "b", "b", "c"),
+                input2 = c(1, 1, 1, 2, 1, 3))
+kable(a, align = 'c')
+```
+
+Then the CPT for that table would be (cprob = cumulative probability):
+
+```{r cptableExample02}
+kable(data.frame(input1 = c("a", "b", "b", "c"),
+                 input2 = c(1, 2, 1, 3),
+                 count = c(3, 1, 1, 1),
+                 fraction = c(3, 1, 1, 1)/6,
+                 cprob = cumsum(c(3, 1, 1, 1)/6)),
+      digits = 3,
+      align = 'c')
+```
+
+The motivation for using a CPT is two-fold. First, CPTs fit with the rest of the Monte-Carlo simulation's structure (randomly picking a number between 0 and 1 and finding the corresponding value from a table or cumulative distribution function (CDF)). Second, CPTs safeguard against independently picking values for input variables that should be correlated. As an example of this second point, consider the emission factors reported by operators for RICE and turbines, which can be any combination of AP 42, NSPS JJJJ, stack test, or manufacturer specification (for each pollutant category). If each reported emission factor were described using a CDF, then during simulations random selections from each CDF might produce combinations that are never observed in the OGEI database (e.g. a low PM2.5 but high PM10 emission factor). Given the differences in emission factors between each unique RICE or turbine, treating all inputs for that equipment category in combination is a more representative approach.
+
+Finally, given that the Monte-Carlo simulation is based on a well-by-well analysis, we need a method to determine the well-by-well contribution to the reported emissions from a each facility in the OGEI database. Using the **operator_id** and **facility_id** keys in the database, the number of unique well API numbers associated with facility were determined from the **apis** table. Taking the inverse of this well count gives the average per-well contribution to the emissions at each operator/facility combination. This is reported in the tables below as **wfrac**, and during the Monte-Carlo simulation it the calculated emissions for each well will be = (emissions from randomly selected facility) * (wfrac for same facility).
+
+# Data Analysis Results
+
+A summary of the data analysis results for each equipment category are given in the following subsections.
+
+## Well Completion
+
+Input variables:
+```{r wc.names}
+names(eci$wc)[1:3]
+```
+
+Dimensions of **well_completions** table:
+
+* Original: `r nrow(well.compl)` rows
+* CPT:      `r nrow(eci$wc)` rows
+
+First 10 rows of CPT table:
+```{r head.wc.CPT}
+kable(eci$wc[1:10,], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.wc}
+summary(eci$wc[,c(1,3,4)])
+```
+
+Unique values of character string columns:
+
+* flare efficiency: `r unique(eci$wc$flare_efficiency)`
+
+CDF plot(s) for interesting input variables:
+
+```{r wc.fuel.cdf}
+plot(CDFq(well.compl$annual_diesel_usage, opt$xq),
+     type = "l",
+     xlab = "Annual Diesel Fuel Usage (gal)",
+     ylab = "Cumulative Probability",
+     main = "annual_diesel_usage CDF")
+```
+
+## RICE and Turbines
+
+Input variables (note: f[pollutant] column names indicate the numerical value of the emissions factor and u[pollutant] the units associated with that value):
+```{r rt.names}
+names(eci$rt)[1:27]
+```
+
+Dimensions of **rice_turbines** table:
+
+* Original: `r nrow(rice.turb)` rows
+* CPT:      `r nrow(eci$rt)` rows
+
+First 10 rows of CPT table:
+```{r head.rt.CPT}
+kable(eci$rt[1:10,  1: 6], digits = 3, align = 'c')
+kable(eci$rt[1:10,  7:12], digits = 3, align = 'c')
+kable(eci$rt[1:10, 13:18], digits = 3, align = 'c')
+kable(eci$rt[1:10, 19:24], digits = 3, align = 'c')
+kable(eci$rt[1:10, 25:29], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.rt}
+summary(eci$rt[,c(1:4,6:14,16,18,20,22,24,26,28)])
+```
+
+Unique values of character string columns:
+
+* control type: `r unique(eci$rt$control_type)`
+* upm10:        `r unique(eci$rt$upm10)`
+* upm25:        `r unique(eci$rt$upm25)`
+* usox:         `r unique(eci$rt$usox)`
+* unox:         `r unique(eci$rt$unox)`
+* uvoc:         `r unique(eci$rt$uvoc)`
+* uco:          `r unique(eci$rt$uco)`
+* uch2o:        `r unique(eci$rt$uch2o)`
+
+CDF plot(s) for interesting input variables:
+
+```{r rt.hp.cdf}
+plot(CDFq(rice.turb$horsepower, opt$xq),
+     type = "l",
+     xlab = "Site Rated Horsepower (hp)",
+     ylab = "Cumulative Probability",
+     main = "horsepower CDF")
+```
+
+```{r rt.op.cdf}
+plot(CDFq(rice.turb$annual_hours, opt$xq),
+     type = "l",
+     xlab = "Annual Hours of Operation (hr)",
+     ylab = "Cumulative Probability",
+     main = "annual_hours CDF")
+```
+
+```{r rt.volgas.cdf}
+plot(CDFq(rice.turb$total_combusted, opt$xq),
+     type = "l",
+     xlab = "Volume of Fuel Combusted (MMCF/yr)",
+     ylab = "Cumulative Probability",
+     main = "total_combusted CDF")
+```
+
+```{r rt.hhv.cdf}
+plot(CDFq(rice.turb$fuel_heating, opt$xq),
+     type = "l",
+     xlab = "Fuel Heating Value (Btu/CF)",
+     ylab = "Cumulative Probability",
+     main = "fuel_heating CDF")
+```
+
+```{r rt.ctrl.box}
+boxplot(rice.turb[,which(names(rice.turb) == "control_pm10"):
+                    which(names(rice.turb) == "control_ch2o")],
+        range = 0,
+        ylim = c(0,1),
+        xlab = "Pollutant Type",
+        ylab = "Control Percentage",
+        names = c("PM10", "PM2.5", "SOx", "NOx", "VOC", "CO", "CH2O"),
+        main = "Boxplot of control_[pollutant] values")
+```
+
+```{r rt.ef.ap42.box}
+
+temp <- data.frame(type = "PM10",
+                   factor = subset(rice.EF,
+                                   subset = (units == "lb/mmbtu" & pollutant == 0),
+                                   select = "factor"))
+temp <- rbind(temp,
+              data.frame(type = "PM2.5",
+                   factor = subset(rice.EF,
+                                   subset = (units == "lb/mmbtu" & pollutant == 1),
+                                   select = "factor")))
+temp <- rbind(temp,
+              data.frame(type = "SOx",
+                   factor = subset(rice.EF,
+                                   subset = (units == "lb/mmbtu" & pollutant == 2),
+                                   select = "factor")))
+temp <- rbind(temp,
+              data.frame(type = "NOx",
+                   factor = subset(rice.EF,
+                                   subset = (units == "lb/mmbtu" & pollutant == 3),
+                                   select = "factor")))
+temp <- rbind(temp,
+              data.frame(type = "VOC",
+                   factor = subset(rice.EF,
+                                   subset = (units == "lb/mmbtu" & pollutant == 4),
+                                   select = "factor")))
+temp <- rbind(temp,
+              data.frame(type = "CO",
+                   factor = subset(rice.EF,
+                                   subset = (units == "lb/mmbtu" & pollutant == 5),
+                                   select = "factor")))
+temp <- rbind(temp,
+              data.frame(type = "CH2O",
+                   factor = subset(rice.EF,
+                                   subset = (units == "lb/mmbtu" & pollutant == 6),
+                                   select = "factor")))
+
+boxplot(factor~type, temp,
+        range = 0,
+        log = "y",
+        xlab = "Pollutant Type",
+        ylab = "Emissions Factor (lb / MMBtu) - Log Scale",
+        main = "Boxplot of f[pollutant] values for AP-42 Emission Factors")
+```
+
+```{r rt.ef.JJJJ.box}
+
+temp <- data.frame(type = "NOX",
+                   factor = subset(rice.EF,
+                                   subset = (units == "g/hp-hr" & pollutant == 3),
+                                   select = "factor"))
+temp <- rbind(temp,
+              data.frame(type = "VOC",
+                   factor = subset(rice.EF,
+                                   subset = (units == "g/hp-hr" & pollutant == 4),
+                                   select = "factor")))
+temp <- rbind(temp,
+              data.frame(type = "CO",
+                   factor = subset(rice.EF,
+                                   subset = (units == "g/hp-hr" & pollutant == 5),
+                                   select = "factor")))
+temp <- rbind(temp,
+              data.frame(type = "CH2O",
+                   factor = subset(rice.EF,
+                                   subset = (units == "g/hp-hr" & pollutant == 6),
+                                   select = "factor")))
+
+temp <- temp[-which(temp$factor == 0),]
+
+boxplot(factor~type, temp,
+        range = 0,
+        log = "y",
+        xlab = "Pollutant Type",
+        ylab = "Emissions Factor (g / hp-hr) - Log Scale",
+        main = "Boxplot of f[pollutant] values for NSPS JJJJ Emission Factors")
+```
+
+## Separators and Heaters
+
+Input variables:
+```{r sh.names}
+names(eci$sh)[1:5]
+```
+
+Dimensions of **separators_heaters** table:
+
+* Original: `r nrow(sep.heat)` rows
+* CPT:      `r nrow(eci$sh)` rows
+
+First 10 rows of CPT table:
+```{r head.sh.CPT}
+kable(eci$sh[1:10, ], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.sh}
+summary(eci$sh[,c(1,2,4:6)])
+```
+
+Unique values of character string columns:
+
+* control status: `r unique(eci$sh$control_status)`
+
+CDF plot(s) for interesting input variables:
+
+```{r sh.heat.cdf}
+plot(CDFq(sep.heat$heat_duty, opt$xq),
+     type = "l",
+     xlab = "Heat Duty Rating (MMBtu / hr)",
+     ylab = "Cumulative Probability",
+     main = "heat_duty CDF")
+```
+
+```{r sh.op.cdf}
+plot(CDFq(sep.heat$hours_operation, opt$xq),
+     type = "l",
+     xlab = "Annual Hours of Operation (hr)",
+     ylab = "Cumulative Probability",
+     main = "hours_operation CDF")
+```
+
+## Dehydrators
+
+Input variables:
+```{r dh.names}
+names(eci$dh)[1:7]
+```
+
+Dimensions of **dehydrators** table:
+
+* Original: `r nrow(dehy)` rows
+* CPT:      `r nrow(eci$dh)` rows
+
+First 10 rows of CPT table:
+```{r head.dh.CPT}
+kable(eci$dh[1:10, ], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.dh}
+summary(eci$dh[,c(1,2,4:6)])
+```
+
+Unique values of character string columns:
+
+* control type: `r unique(eci$dh$control_type)`
+
+CDF plot(s) for interesting input variables:
+
+```{r dh.efvoc.cdf}
+plot(CDFq(dehy$factor_voc, opt$xq),
+     type = "l",
+     xlab = "VOC Emissions Factor (lb/hr)",
+     ylab = "Cumulative Probability",
+     main = "factor_voc CDF")
+```
+
+```{r dh.op.cdf}
+plot(CDFq(dehy$hours_operation, opt$xq),
+     type = "l",
+     xlab = "Annual Hours of Operation (hr)",
+     ylab = "Cumulative Probability",
+     main = "hours_operation CDF")
+```
+
+## Tanks
+
+Input variables:
+```{r tank.names}
+names(eci$tank)[1:8]
+```
+
+Dimensions of **tanks** table:
+
+* Original: `r nrow(tanks)` rows
+* CPT:      `r nrow(eci$tank)` rows
+
+First 10 rows of CPT table:
+```{r head.tank.CPT}
+kable(eci$tank[1:10, ], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.tank}
+summary(eci$tank[,c(2:9)])
+```
+
+Unique values of character string columns:
+
+* control type: `r unique(eci$tank$control_type)`
+
+CDF plot(s) for interesting input variables:
+
+```{r tank.voc.cdf}
+plot(tanks$total_voc, tanks$throughput_oil,
+     xlab = "Annual Oil Throughput (bbl / yr)",
+     ylab = "Total VOC Emissions (tons / yr)",
+     main = "Tank VOC Emissions vs. Oil Throughput")
+```
+
+Ideally, in the simulation I'd like to model tank VOC emissions as a function of oil throughput (as contributed by each well). However given the results shown above, that might not be possible, as there are several distinct trendlines through the data set. I haven't figured out yet what the correlation is between the slope of each line and any of the other columns in the **tanks** table. As is, we can randomly draw from the CPT table, and given our selection, we can apply whatever VOC emissions rate (ton VOC / bbl oil) goes along with tht selection.
+
+## Truck Loading
+
+Input variables:
+```{r truck.names}
+names(eci$truck)[1:6]
+```
+
+Dimensions of **truck_loading** table:
+
+* Original: `r nrow(truck)` rows
+* CPT:      `r nrow(eci$truck)` rows
+
+First 10 rows of CPT table:
+```{r head.truck.CPT}
+kable(eci$truck[1:10, ], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.truck}
+summary(eci$truck[,c(1:4,6,7)])
+```
+
+Unique values of character string columns:
+
+* control type: `r unique(eci$truck$control_type)`
+
+CDF plot(s) for interesting input variables:
+
+```{r truck.pvap.cdf}
+plot(CDFq(truck$vapor_pressure, opt$xq),
+     type = "l",
+     xlab = "Vapor Pressure (psia)",
+     ylab = "Cumulative Probability",
+     main = "vapor_pressure CDF")
+```
+
+```{r truck.mw.cdf}
+plot(CDFq(truck$molecular_weight, opt$xq),
+     type = "l",
+     xlab = "Molecular Weight (lb / lbmol)",
+     ylab = "Cumulative Probability",
+     main = "molecular_weight CDF")
+```
+
+```{r truck.t.cdf}
+plot(CDFq(truck$temp_r, opt$xq),
+     type = "l",
+     xlab = "Loading Temperature (deg. R)",
+     ylab = "Cumulative Probability",
+     main = "temp_r CDF")
+```
+
+## Pneumatic Controllers
+
+Input variables:
+```{r pctrl.names}
+names(eci$pctrl)[1:5]
+```
+
+Dimensions of **pneumatic_controllers** table:
+
+* Original: `r nrow(pneum.ctrl)` rows
+* CPT:      `r nrow(eci$pctrl)` rows
+
+First 10 rows of CPT table:
+```{r head.pctrl.CPT}
+kable(eci$pctrl[1:10, ], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.pctrl}
+summary(eci$pctrl)
+```
+
+There are no character string column types for this table.
+
+CDF plot(s) for interesting input variables:
+
+```{r pctrl.count.box}
+boxplot(pneum.ctrl[, 1:3],
+        range = 0,
+        names = c("High", "Intermittent", "Low"),
+        xlab = "Pneumatic Controller Bleed Type",
+        ylab = "Number of Devices",
+        main = "Pneumatic Controller Counts by Type")
+```
+
+```{r pctrl.op.cdf}
+plot(CDFq(pneum.ctrl$avg_hours, opt$xq),
+     type = "l",
+     xlab = "Annual Average Operating Hours per Device (hr)",
+     ylab = "Cumulative Probability",
+     main = "avg_hours CDF")
+```
+
+## Pneumatic Pumps
+
+Input variables:
+```{r ppump.names}
+names(eci$ppump)[1:7]
+```
+
+Dimensions of **pneumatic_pumps** table:
+
+* Original: `r nrow(pneum.pumps)` rows
+* CPT:      `r nrow(eci$ppump)` rows
+
+First 10 rows of CPT table:
+```{r head.ppump.CPT}
+kable(eci$ppump[1:10, ], digits = 3, align = 'c')
+```
+
+Summary of inputs (for numerical values):
+```{r num.ppump}
+summary(eci$ppump[,c(1,2,4:8)])
+```
+
+Unique values of character string columns:
+
+* control type: `r unique(eci$ppump$control_type)`
+
+CDF plot(s) for interesting input variables:
+
+```{r ppump.op.cdf}
+plot(CDFq(pneum.pumps$annual_operation, opt$xq),
+     type = "l",
+     xlab = "Annual Operating Hours (hr)",
+     ylab = "Cumulative Probability",
+     main = "annual_operation CDF")
+```
+
+```{r ppump.vent.cdf}
+plot(CDFq(pneum.pumps$vent_rate, opt$xq),
+     type = "l",
+     xlab = "Average Vent Rate (SCF / min)",
+     ylab = "Cumulative Probability",
+     main = "vent_rate CDF")
+```
+
+## Fugitives
+
+Input variables (for each of the four component types: gas, heavy oil, light oil, and water/oil):
+```{r fug.names}
+names(eci$fug$gas)[1:9]
+```
+
+Dimensions of **fugitives** table:
+
+* Original: `r nrow(fugitives)` rows
+* CPT:      `r nrow(eci$fug)` rows
+
+First 10 rows of CPT table for gas component:
+```{r head.fug.gas.CPT}
+kable(eci$fug$gas[1:10, ], digits = 3, align = 'c')
+```
+
+First 10 rows of CPT table for heavy oil component:
+```{r head.fug.hoil.CPT}
+kable(eci$fug$hoil[1:10, ], digits = 3, align = 'c')
+```
+
+First 10 rows of CPT table for light oil component:
+```{r head.fug.loil.CPT}
+kable(eci$fug$loil[1:10, ], digits = 3, align = 'c')
+```
+
+First 10 rows of CPT table for water/oil component:
+```{r head.fug.woil.CPT}
+kable(eci$fug$woil[1:10, ], digits = 3, align = 'c')
+```
+
+Summary of inputs for gas component:
+```{r num.fug.gas}
+summary(eci$fug$gas)
+```
+
+Summary of inputs for heavy oil component:
+```{r num.fug.hoil}
+summary(eci$fug$hoil)
+```
+
+Summary of inputs for light oil component:
+```{r num.fug.loil}
+summary(eci$fug$loil)
+```
+
+Summary of inputs for water/oil component:
+```{r num.fug.woil}
+summary(eci$fug$woil)
+```
+
+There are no character string column types for this table.
+
+CDF plot(s) for interesting input variables:
+
+```{r fug.op.cdf}
+plot(CDFq(fugitives$production_hours, opt$xq),
+     type = "l",
+     xlab = "Total Operating Hours (hr)",
+     ylab = "Cumulative Probability",
+     main = "production_hours CDF")
+```
+
+```{r fug.ef.cdf}
+plot(CDFq(fugitives$em_voc, opt$xq),
+     type = "l",
+     xlab = "VOCs Emission Factor (lb / hr)",
+     ylab = "Cumulative Probability",
+     main = "em_voc CDF")
+```
