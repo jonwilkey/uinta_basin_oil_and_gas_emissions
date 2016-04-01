@@ -8,8 +8,6 @@
 
 # heat.duty - heat duty rating of combustor (MMBtu/hr)
 
-# op - hours of operation per year (hr)
-
 # vgas.pilot - volume of gas for combustor pilot (SCF/yr)
 
 # tank.EF - emission factors for tanks (lb/MMCF), note that the combustor
@@ -28,7 +26,7 @@
 
 # Function ----------------------------------------------------------------
 
-calc_E_tank <- function(heat.duty, op, vgas.pilot, tank.EF) {
+calc_E_tank <- function(heat.duty, vgas.pilot, tank.EF) {
   
   # Calculate combustor and combustor pilot emissions for tank (in tons)
   E.tank <- data.frame(em.tank.voc = (vgas.pilot / 1e6 * tank.EF$voc.pilot) / 2000,
@@ -36,6 +34,7 @@ calc_E_tank <- function(heat.duty, op, vgas.pilot, tank.EF) {
                        em.tank.co =  (heat.duty * 8760 * tank.EF$co        + vgas.pilot / 1e6 * tank.EF$co.pilot)  / 2000)
   
   # Need to build something for tank VOC emissions
+  # Go with tank emissions being (oil + condensate) * (voc rate)
   
   # Return emissions result
   return(E.tank)

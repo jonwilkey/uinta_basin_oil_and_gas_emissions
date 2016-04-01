@@ -19,24 +19,10 @@ eopt <- NULL
 
 # Well Completions --------------------------------------------------------
 
-# Data Analysis
+# -- Data Analysis --
+# No inputs required
 
-# Flare control types - possible entries in this column (from drop down list)
-# and their corresponding EF reduction
-#.........................................................
-#                       Control Type            Reduction
-#.........................................................
-eopt$wc.ctrl <- rbind(c("No Control",             0.00),
-                      c("Flare Efficiency - 60%", 0.60),
-                      c("Flare Efficiency - 70%", 0.70),
-                      c("Flare Efficiency - 80%", 0.80),
-                      c("Flare Efficiency - 90%", 0.90),
-                      c("Flare Efficiency - 95%", 0.95))
-
-# Reformat into data.frame
-eopt$wc.ctrl <- data.frame(type = eopt$wc.ctrl[,1],
-                           red =  as.integer(eopt$wc.ctrl[,2]))
-
+# -- Calculation Inputs --
 # Emission Factors (lb/gal)
 eopt$wc.EF <- data.frame(pm10 = 0.00683829365079365,
                          pm25 = 0.00683829365079365,

@@ -545,13 +545,20 @@ if(opt$emission.update == TRUE) {
   
   # Function call
   emissionUpdate(path =    path,
-                 ver =     opt$file_ver,
-                 wc.ctrl = eopt$wc.ctrl)
+                 ver =     opt$file_ver)
 }
 
-# Load emissions inventory data.frame (OGEI)
-# - wc.fuel.CDF: CDF for fuel usage during well completion
-# - wc.ctrl.prob: Probability and efficiency of well completion flaring
+# Load emissions inventory probability tables list (eci). Inputs contained in
+# each table are for:
+# - eci$wc:    Well Completions
+# - eci$rt:    RICE & Turbines
+# - eci$sh:    Separators and Heaters
+# - eci$dh:    Dehydrators
+# - eci$tank:  Tanks
+# - eci$truck: Trucks
+# - eci$pctrl: Pneumatic Controllers
+# - eci$ppump: Pneumatic Pumps
+# - eci$fug:   Fugitive emissions
 load(file.path(path$data, paste("emissionUpdate_", opt$file_ver, ".rda", sep = "")))
 
 

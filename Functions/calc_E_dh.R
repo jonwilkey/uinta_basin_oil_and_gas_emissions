@@ -31,12 +31,12 @@
 
 calc_E_dh <- function(heat.duty, op, vgas.pilot, dh.EF) {
   
-  # Calculate separator and heater emissions (in tons)
+  # Calculate separator and heater emissions (in tons). Note that the second
+  # term in the em.dh.voc calculation is for the VOC emissions from the
+  # dehydrator. All other terms are either from the combustor or pilot.
   E.dh <- data.frame(em.dh.voc = (vgas.pilot / 1e6 * dh.EF$voc.pilot + dh.EF$voc * op)/2000,
                      em.dh.nox = (heat.duty * 8760 * dh.EF$nox       + vgas.pilot / 1e6 * dh.EF$nox.pilot) / 2000,
                      em.dh.co =  (heat.duty * 8760 * dh.EF$co        + vgas.pilot / 1e6 * dh.EF$co.pilot)  / 2000)
-  
-  # Need to build something to handle range of dehydrator VOCs
   
   # Return emissions result
   return(E.dh)
