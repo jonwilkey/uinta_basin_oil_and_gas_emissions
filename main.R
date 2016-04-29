@@ -80,12 +80,14 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "calc_E_pctrl.R",
                               "calc_E_ppump.R",
                               "calc_E_fug.R",
-                              "sim_E_wc.R",
+                              "sim_eq_EF.R",
+                              "eqEcalc.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
                               "CDFq.R",
-                              "asYear.R"))
+                              "asYear.R",
+                              "NAoverwrite.R"))
 
 # Load each function in list then remove temporary file list variables
 for (f in flst) source(f); remove(f, flst)
@@ -721,28 +723,72 @@ if (opt$load.prior == TRUE) {
   gsim <-    osim # osim/gsim total oil/gas production (bbl or MCF)
   posim <-   osim # total oil production (bbl) from prior wells
   pgsim <-   osim # total gas production (MCF) from prior wells
-  CO2 <-     osim # CO2 emission totals (metric tons)
-  CH4 <-     osim # CH4 emission totals (metric tons)
-  VOC <-     osim # VOC emission totals (metric tons)
-  rCO2 <-    osim # Reduced CO2 emission totals (metric tons)
-  rCH4 <-    osim # Reduced CH4 emission totals (metric tons)
-  rVOC <-    osim # Reduced VOC emission totals (metric tons)
-  nfCO2 <-   matrix(0, nrow = opt$nrun, ncol = 8) # New well emission source fractions for CO2
-  nfCH4 <-   nfCO2                                # New well emission source fractions for CH4
-  nfVOC <-   nfCO2                                # New well emission source fractions for VOC
-  pfCO2 <-   nfCO2                                # Prior well emission source fractions for CO2
-  pfCH4 <-   nfCO2                                # Prior well emission source fractions for CH4
-  pfVOC <-   nfCO2                                # Prior well emission source fractions for VOC
-  rnfCO2 <-  nfCO2                                # Reduced new well emission source fractions for CO2
-  rnfCH4 <-  nfCO2                                # Reduced new well emission source fractions for CH4
-  rnfVOC <-  nfCO2                                # Reduced new well emission source fractions for VOC
-  rpfCO2 <-  nfCO2                                # Reduced prior well emission source fractions for CO2
-  rpfCH4 <-  nfCO2                                # Reduced prior well emission source fractions for CH4
-  rpfVOC <-  nfCO2                                # Reduced prior well emission source fractions for VOC
-  foil <-    matrix(0, nrow = opt$nrun, ncol = 2) # Fraction of base emissions from oil wells
-  NSPSred <- matrix(0, nrow = opt$nrun, ncol = 4) # Fraction of NSPS reductions
-  fnvp <-    matrix(0, nrow = opt$nrun, ncol = 3) # Fraction of emissions from new wells vs. prior wells
-  rfnvp <-   fnvp                                 # Reduced fraction of emissions from new wells vs. prior wells
+  
+  # Activity-based emissions results
+  aE <- list(CO2 =     osim,                                 # CO2 emission totals (metric tons)
+             CH4 =     osim,                                 # CH4 emission totals (metric tons)
+             VOC =     osim,                                 # VOC emission totals (metric tons)
+             rCO2 =    osim,                                 # Reduced CO2 emission totals (metric tons)
+             rCH4 =    osim,                                 # Reduced CH4 emission totals (metric tons)
+             rVOC =    osim,                                 # Reduced VOC emission totals (metric tons)
+             nfCO2 =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for CO2
+             nfCH4 =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for CH4
+             nfVOC =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for VOC
+             pfCO2 =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for CO2
+             pfCH4 =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for CH4
+             pfVOC =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for VOC
+             rnfCO2 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for CO2
+             rnfCH4 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for CH4
+             rnfVOC =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for VOC
+             rpfCO2 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for CO2
+             rpfCH4 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for CH4
+             rpfVOC =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for VOC
+             foil =    matrix(0, nrow = opt$nrun, ncol = 2), # Fraction of base emissions from oil wells
+             NSPSred = matrix(0, nrow = opt$nrun, ncol = 4), # Fraction of NSPS reductions
+             fnvp =    matrix(0, nrow = opt$nrun, ncol = 3), # Fraction of emissions from new wells vs. prior wells
+             rfnvp =   matrix(0, nrow = opt$nrun, ncol = 3)) # Reduced fraction of emissions from new wells vs. prior wells
+  
+  # Equipment-based emissions results
+  eE <- list(pm10  = osim, # Emissions totals for each species
+             pm25  = osim,
+             sox   = osim,
+             nox   = osim,
+             voc   = osim,
+             co    = osim,
+             ch2o  = osim,
+             
+             fpm10 = list(wc    = osim,  # Fraction of emissions from each type of equipment for each species
+                          rt    = osim,  # wc    = well completion
+                          sh    = osim), # rt    = RICE and Turbines
+                                         # sh    = Separators and Heaters
+             fpm25 = list(wc    = osim,  # dh    = Dehydrators
+                          rt    = osim,  # tank  = Tanks
+                          sh    = osim), # truck = Truck Loading
+                                         # pctrl = Pneumatic Controllers
+             fsox  = list(rt    = osim,  # ppump = Pneumatic Pumps
+                          sh    = osim), # fug   = Fugitive Emissions
+             
+             fnox  = list(wc    = osim,
+                          rt    = osim,
+                          sh    = osim,
+                          dh    = osim,
+                          tank  = osim),
+             
+             fvoc  = list(wc    = osim,
+                          rt    = osim,
+                          sh    = osim,
+                          dh    = osim,
+                          tank  = osim,
+                          truck = osim,
+                          pctrl = osim,
+                          ppump = osim,
+                          fug   = osim),
+             
+             fco   = list(wc    = osim,
+                          rt    = osim,
+                          sh    = osim,
+                          dh    = osim,
+                          tank  = osim))
   
   # Progress Bar (since this next for-loop takes a while)
   pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
@@ -844,20 +890,13 @@ if (opt$load.prior == TRUE) {
                                 tend =               wsim$tend,
                                 DCAlnormFit =        DCAlnormFit))
     
-    # Pick emission factors
+    # Pick activity-based emission factors
     wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
     wpri <- cbind(wpri, sim_EF(times = nrow(wpri), EF = opt$EF))
     
-    # Pick well completion emissions
-    wsim <- cbind(wsim, sim_E_wc(wc.fuel.CDF =  wc.fuel.CDF,
-                                 wc.ctrl.prob = wc.ctrl.prob,
-                                 wc.EF =        eopt$wc.EF,
-                                 times =        nrow(wsim)))
-    
-    wpri <- cbind(wpri, sim_E_wc(wc.fuel.CDF =  wc.fuel.CDF,
-                                 wc.ctrl.prob = wc.ctrl.prob,
-                                 wc.EF =        eopt$wc.EF,
-                                 times =        nrow(wpri)))
+    # Pick CPT rows for equipment-based emissions calculations
+    wsim <- cbind(wsim, sim_eq_EF(times = nrow(wsim), eci = eci))
+    wpri <- cbind(wpri, sim_eq_EF(times = nrow(wpri), eci = eci))
     
     
     # 3.3.2 Production simulation ------------------------------------------
@@ -911,7 +950,7 @@ if (opt$load.prior == TRUE) {
     apri$gas <-  GSIM[(nrow(psim$gsim)+1):nrow(GSIM),]
     
     
-    # 3.3.5 Emissions ----------------------------------------------------
+    # 3.3.5 Activity-Based Emissions -------------------------------------
     
     # Calculate emissions from new wells
     ETsim <- Ecalc(osim =      psim$osim,
@@ -930,35 +969,102 @@ if (opt$load.prior == TRUE) {
                    MC.tsteps = opt$MC.tsteps)
     
     
-    # 3.3.6 Get totals for MC run i --------------------------------------
+    # 3.3.6 Equipment-Based Emissions ------------------------------------
+    
+    # Get column numbers of subset of wsim & wpri which are required for
+    # emissions calculation
+    ind.wsim <- c(which(names(wsim) == "tDrill"),
+                  which(names(wsim) == "eqEF.wc"):which(names(wsim) == "eqEF.fug.woil"))
+    ind.wpri <- c(which(names(wpri) == "tDrill"),
+                  which(names(wpri) == "eqEF.wc"):which(names(wpri) == "eqEF.fug.woil"))
+    
+    # Calculate emissions from both new wells and existing wells
+    eqETsim <- eqEcalc(wsim =      rbind(wsim[, ind.wsim], wpri[, ind.wpri]),
+                       MC.tsteps = opt$MC.tsteps,
+                       osim =      rbind(psim$osim, apri$oil),
+                       gsim =      rbind(psim$gsim, apri$gas),
+                       eci =       eci,
+                       eopt =      eopt)
+    
+    
+    # 3.3.7 Get totals for MC run i --------------------------------------
     
     # Calculate column sums for each results matrix generated to get totals
     osim[i, ] <-    colSums(psim$osim[which(wsim$prior == F),])
     gsim[i, ] <-    colSums(psim$gsim[which(wsim$prior == F),])
     posim[i, ] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
     pgsim[i, ] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
-    CO2[i, ] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
-    CH4[i, ] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
-    VOC[i, ] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
-    rCO2[i, ] <-    colSums(rbind(ETsim$rCO2, ETpri$rCO2))
-    rCH4[i, ] <-    colSums(rbind(ETsim$rCH4, ETpri$rCH4))
-    rVOC[i, ] <-    colSums(rbind(ETsim$rVOC, ETpri$rVOC))
-    nfCO2[i, ] <-   ETsim$fET$co2
-    nfCH4[i, ] <-   ETsim$fET$ch4
-    nfVOC[i, ] <-   ETsim$fET$voc
-    pfCO2[i, ] <-   ETpri$fET$co2
-    pfCH4[i, ] <-   ETpri$fET$ch4
-    pfVOC[i, ] <-   ETpri$fET$voc
-    rnfCO2[i, ] <-  ETsim$rfET$co2
-    rnfCH4[i, ] <-  ETsim$rfET$ch4
-    rnfVOC[i, ] <-  ETsim$rfET$voc
-    rpfCO2[i, ] <-  ETpri$rfET$co2
-    rpfCH4[i, ] <-  ETpri$rfET$ch4
-    rpfVOC[i, ] <-  ETpri$rfET$voc
-    foil[i, ] <-    c(ETsim$foil, ETpri$foil)
-    fnvp[i, ] <-    c(sum(ETsim$CO2)/sum(CO2[i, ]),   sum(ETsim$CH4)/sum(CH4[i, ]),   sum(ETsim$VOC)/sum(VOC[i, ]))
-    rfnvp[i, ] <-   c(sum(ETsim$rCO2)/sum(rCO2[i, ]), sum(ETsim$rCH4)/sum(rCH4[i, ]), sum(ETsim$rVOC)/sum(rVOC[i, ]))
-    NSPSred[i, ] <- c(ETsim$NSPSred, ETpri$NSPSred)
+    
+    # Activity-based emissions summations and calculations
+    aE$CO2[i, ] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
+    aE$CH4[i, ] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
+    aE$VOC[i, ] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
+    aE$rCO2[i, ] <-    colSums(rbind(ETsim$rCO2, ETpri$rCO2))
+    aE$rCH4[i, ] <-    colSums(rbind(ETsim$rCH4, ETpri$rCH4))
+    aE$rVOC[i, ] <-    colSums(rbind(ETsim$rVOC, ETpri$rVOC))
+    aE$nfCO2[i, ] <-   ETsim$fET$co2
+    aE$nfCH4[i, ] <-   ETsim$fET$ch4
+    aE$nfVOC[i, ] <-   ETsim$fET$voc
+    aE$pfCO2[i, ] <-   ETpri$fET$co2
+    aE$pfCH4[i, ] <-   ETpri$fET$ch4
+    aE$pfVOC[i, ] <-   ETpri$fET$voc
+    aE$rnfCO2[i, ] <-  ETsim$rfET$co2
+    aE$rnfCH4[i, ] <-  ETsim$rfET$ch4
+    aE$rnfVOC[i, ] <-  ETsim$rfET$voc
+    aE$rpfCO2[i, ] <-  ETpri$rfET$co2
+    aE$rpfCH4[i, ] <-  ETpri$rfET$ch4
+    aE$rpfVOC[i, ] <-  ETpri$rfET$voc
+    aE$foil[i, ] <-    c(ETsim$foil, ETpri$foil)
+    aE$fnvp[i, ] <-    c(sum(ETsim$CO2)/sum(aE$CO2[i, ]),
+                         sum(ETsim$CH4)/sum(aE$CH4[i, ]),
+                         sum(ETsim$VOC)/sum(aE$VOC[i, ]))
+    aE$rfnvp[i, ] <-   c(sum(ETsim$rCO2)/sum(aE$rCO2[i, ]),
+                         sum(ETsim$rCH4)/sum(aE$rCH4[i, ]),
+                         sum(ETsim$rVOC)/sum(aE$rVOC[i, ]))
+    aE$NSPSred[i, ] <- c(ETsim$NSPSred, ETpri$NSPSred)
+    
+    # Equipment-based emissions totals are already calculated, just assign to
+    # results list eE
+    eE$pm10[i, ] <- eqETsim$pm10
+    eE$pm25[i, ] <- eqETsim$pm25
+    eE$sox [i, ] <- eqETsim$sox
+    eE$nox [i, ] <- eqETsim$nox
+    eE$voc [i, ] <- eqETsim$voc
+    eE$co  [i, ] <- eqETsim$co
+    eE$ch2o[i, ] <- eqETsim$ch2o
+    
+    eE$fpm10$wc[i, ] <- eqETsim$fpm10$wc
+    eE$fpm10$rt[i, ] <- eqETsim$fpm10$rt
+    eE$fpm10$sh[i, ] <- eqETsim$fpm10$sh
+    
+    eE$fpm25$wc[i, ] <- eqETsim$fpm25$wc
+    eE$fpm25$rt[i, ] <- eqETsim$fpm25$rt
+    eE$fpm25$sh[i, ] <- eqETsim$fpm25$sh
+    
+    eE$fsox$rt[i, ] <- eqETsim$fsox$rt
+    eE$fsox$sh[i, ] <- eqETsim$fsox$sh
+    
+    eE$fnox$wc  [i, ] <- eqETsim$fnox$wc
+    eE$fnox$rt  [i, ] <- eqETsim$fnox$rt
+    eE$fnox$sh  [i, ] <- eqETsim$fnox$sh
+    eE$fnox$dh  [i, ] <- eqETsim$fnox$dh
+    eE$fnox$tank[i, ] <- eqETsim$fnox$tank
+    
+    eE$fvoc$wc   [i, ] <- eqETsim$fvoc$wc
+    eE$fvoc$rt   [i, ] <- eqETsim$fvoc$rt
+    eE$fvoc$sh   [i, ] <- eqETsim$fvoc$sh
+    eE$fvoc$dh   [i, ] <- eqETsim$fvoc$dh
+    eE$fvoc$tank [i, ] <- eqETsim$fvoc$tank
+    eE$fvoc$truck[i, ] <- eqETsim$fvoc$truck
+    eE$fvoc$pctrl[i, ] <- eqETsim$fvoc$pctrl
+    eE$fvoc$ppump[i, ] <- eqETsim$fvoc$ppump
+    eE$fvoc$fug  [i, ] <- eqETsim$fvoc$fug
+    
+    eE$fco$wc   [i, ] <- eqETsim$fco$wc
+    eE$fco$rt   [i, ] <- eqETsim$fco$rt
+    eE$fco$sh   [i, ] <- eqETsim$fco$sh
+    eE$fco$dh   [i, ] <- eqETsim$fco$dh
+    eE$fco$tank [i, ] <- eqETsim$fco$tank
     
     # Update progress bar
     Sys.sleep(1e-3)
@@ -977,28 +1083,8 @@ if (opt$load.prior == TRUE) {
                   "gsim",
                   "posim",
                   "pgsim",
-                  "CO2",
-                  "CH4",
-                  "VOC",
-                  "rCO2",
-                  "rCH4",
-                  "rVOC",
-                  "nfCO2",
-                  "nfCH4",
-                  "nfVOC",
-                  "pfCO2",
-                  "pfCH4",
-                  "pfVOC",
-                  "rnfCO2",
-                  "rnfCH4",
-                  "rnfVOC",
-                  "rpfCO2",
-                  "rpfCH4",
-                  "rpfVOC",
-                  "foil",
-                  "fnvp",
-                  "rfnvp",
-                  "NSPSred",
+                  "aE",
+                  "eE",
                   "op",
                   "gp",
                   "Drilled",

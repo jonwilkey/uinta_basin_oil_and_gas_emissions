@@ -14,14 +14,14 @@
 
 # sh.EF - emission factors for separators and heaters (lb/MMCF)
 
-# low.nox - T/F indicating whether or not low-NOx burners are used
-
 # nox.red - NOx reduction fraction for using low-NOx burners
+
+# wfrac - how much each individual well contributes to emissions at full site
 
 
 # Outputs -----------------------------------------------------------------
 
-# E.sh - Emissions for separators and heaters (in tons)
+# E.sh - Emissions for separators and heaters (in tons/yr)
 
 
 # Description -------------------------------------------------------------
@@ -32,23 +32,16 @@
 
 # Function ----------------------------------------------------------------
 
-calc_E_sh <- function(heat.duty, op, heat.value, sh.EF, low.nox, nox.red) {
+calc_E_sh <- function(heat.duty, op, heat.value, sh.EF, nox.red, wfrac) {
   
-  # Calculate separator and heater emissions (in tons)
-  E.sh <- data.frame(em.sh.pm10 = heat.duty * op / heat.value * sh.EF$pm10 / 2000, # CHANGE ME TO MONTHLY BASIS
-                     em.sh.pm25 = heat.duty * op / heat.value * sh.EF$pm25 / 2000,
-                     em.sh.sox  = heat.duty * op / heat.value * sh.EF$sox  / 2000,
-                     em.sh.nox  = heat.duty * op / heat.value * sh.EF$nox  / 2000,
-                     em.sh.voc  = heat.duty * op / heat.value * sh.EF$voc  / 2000,
-                     em.sh.co   = heat.duty * op / heat.value * sh.EF$co   / 2000)
+  # Calculate separator and heater emissions (in tons/yr)
+  E.sh <- data.frame(em.sh.pm10 = heat.duty * op / heat.value * sh.EF$pm10 / 2000 * wfrac,
+                     em.sh.pm25 = heat.duty * op / heat.value * sh.EF$pm25 / 2000 * wfrac,
+                     em.sh.sox  = heat.duty * op / heat.value * sh.EF$sox  / 2000 * wfrac,
+                     em.sh.nox  = heat.duty * op / heat.value * sh.EF$nox * (1 - nox.red) / 2000 * wfrac,
+                     em.sh.voc  = heat.duty * op / heat.value * sh.EF$voc  / 2000 * wfrac,
+                     em.sh.co   = heat.duty * op / heat.value * sh.EF$co   / 2000 * wfrac)
   
-  # If low-NOx burner is in use
-  if (low.nox == TRUE) {
-    
-    # Reduce NOx emissions
-    E.sh$em.sh.nox <- E.sh$em.sh.nox * (1 - nox.red)
-  }
-  
-  # Return emissions result
+  # Return emissions result, omitting any NAs
   return(E.sh)
 }

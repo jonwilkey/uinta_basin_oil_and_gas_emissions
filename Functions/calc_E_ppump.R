@@ -14,6 +14,8 @@
 
 # m.voc - VOC weight fraction
 
+# wfrac - how much each individual well contributes to emissions at full site
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -27,10 +29,10 @@
 
 # Function ----------------------------------------------------------------
 
-calc_E_ppump <- function(vent.rate, MW, op, m.voc) {
+calc_E_ppump <- function(vent.rate, MW, op, m.voc, wfrac) {
   
   # Calculate emissions
-  VOC <- vent.rate * 60 / 379 * MW * op * m.voc / 2000
+  VOC <- vent.rate * 60 / 379 * MW * op * m.voc / 2000 * wfrac
   
   # Return emissions result
   return(VOC)

@@ -12,6 +12,8 @@
 
 # pctrl.ef - emission factors for each type of pneumatic control bleed rate
 
+# wfrac - how much each individual well contributes to emissions at full site
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -25,12 +27,12 @@
 
 # Function ----------------------------------------------------------------
 
-calc_E_pctrl <- function(op, nHB, nIB, nLB, pctrl.ef) {
+calc_E_pctrl <- function(op, nHB, nIB, nLB, pctrl.ef, wfrac) {
   
   # Calculate VOC emissions
-  VOC <- op * (nHB * pctrl.ef$HB.voc +
-               nIB * pctrl.ef$IB.voc +
-               nLB * pctrl.ef$LB.voc)
+  VOC <- (nHB * pctrl.ef$HB.voc +
+          nIB * pctrl.ef$IB.voc +
+          nLB * pctrl.ef$LB.voc) * op * wfrac
   
   # Return emissions result
   return(VOC)

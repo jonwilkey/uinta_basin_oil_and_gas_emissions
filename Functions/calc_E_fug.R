@@ -15,30 +15,38 @@
 
 # op - total operating hours
 
+# wfrac - how much each individual well contributes to emissions at full site
+
+# type - component type (gas, hoil, loil, or woil)
+
 
 # Outputs -----------------------------------------------------------------
 
-# VOC - VOC emissions total from fugitive sources
+# VOC - VOC emissions total from fugitive sources for given component type
+# (ton/yr)
 
 
 # Description -------------------------------------------------------------
 
-# This function calculates fugitive emissions
+# This function calculates fugitive emissions for the specified component
 
 
 # Function ----------------------------------------------------------------
 
-calc_E_fug <- function(eq, fug.EF, op) {
+calc_E_fug <- function(valves, pumpseals, others, connectors, flanges,
+                       open.lines, fug.EF, op, wfrac, type) {
   
   # Determine total fugitive emissions factor
-  ef <- eq[1,1]*sum(fug.EF[,1]*eq[2:nrow(eq),1]) +
-        eq[1,2]*sum(fug.EF[,2]*eq[2:nrow(eq),2]) +
-        eq[1,3]*sum(fug.EF[,3]*eq[2:nrow(eq),3]) +
-        eq[1,4]*sum(fug.EF[,4]*eq[2:nrow(eq),4])
+  ef <- valves     * fug.EF["Valves",           type] +
+        pumpseals  * fug.EF["Pumps",            type] +
+        others     * fug.EF["Others",           type] +
+        connectors * fug.EF["Connectors",       type] +
+        flanges    * fug.EF["Flanges",          type] +
+        open.lines * fug.EF["Open-Ended Lines", type]
   
-  # Calculate emissions
-  VOC <- op * ef / 2000
+  # Calculate VOC emissions (ton/yr)
+  VOC <- op * ef / 2000 * wfrac
   
   # Return emissions result
-  return(ef)
+  return(VOC)
 }

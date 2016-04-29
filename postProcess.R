@@ -60,28 +60,50 @@ poil.q <-    Drilled.q
 pgas.q <-    Drilled.q
 op.q <-      Drilled.q
 gp.q <-      Drilled.q
-CO2.q <-     Drilled.q
-CH4.q <-     Drilled.q
-VOC.q <-     Drilled.q
-rCO2.q <-    Drilled.q
-rCH4.q <-    Drilled.q
-rVOC.q <-    Drilled.q
+
+# Activity-based emissions
+aE$CO2.q <-  Drilled.q
+aE$CH4.q <-  Drilled.q
+aE$VOC.q <-  Drilled.q
+aE$rCO2.q <- Drilled.q
+aE$rCH4.q <- Drilled.q
+aE$rVOC.q <- Drilled.q
+
+# Equipment-based emissions
+eE$pm10.q <- Drilled.q
+eE$pm25.q <- Drilled.q
+eE$sox.q <-  Drilled.q
+eE$nox.q <-  Drilled.q
+eE$voc.q <-  Drilled.q
+eE$co.q <-   Drilled.q
+eE$ch2o.q <- Drilled.q
 
 # For each timestep, get quantiles
 for (i in 1:ncol(Drilled.q)) {
-  Drilled.q[,i] <- quantile(Drilled[,i], opt$quant)
-  oil.q[,i] <-     quantile(osim[,i],    opt$quant)
-  gas.q[,i] <-     quantile(gsim[,i],    opt$quant)
-  poil.q[,i] <-    quantile(posim[,i],   opt$quant)
-  pgas.q[,i] <-    quantile(pgsim[,i],   opt$quant)
-  op.q[,i] <-      quantile(op[,i],      opt$quant)
-  gp.q[,i] <-      quantile(gp[,i],      opt$quant)
-  CO2.q[,i] <-     quantile(CO2[,i],     opt$quant)
-  CH4.q[,i] <-     quantile(CH4[,i],     opt$quant)
-  VOC.q[,i] <-     quantile(VOC[,i],     opt$quant)
-  rCO2.q[,i] <-    quantile(rCO2[,i],    opt$quant)
-  rCH4.q[,i] <-    quantile(rCH4[,i],    opt$quant)
-  rVOC.q[,i] <-    quantile(rVOC[,i],    opt$quant)
+  Drilled.q[, i] <- quantile(Drilled[, i], opt$quant)
+  oil.q    [, i] <- quantile(osim   [, i], opt$quant)
+  gas.q    [, i] <- quantile(gsim   [, i], opt$quant)
+  poil.q   [, i] <- quantile(posim  [, i], opt$quant)
+  pgas.q   [, i] <- quantile(pgsim  [, i], opt$quant)
+  op.q     [, i] <- quantile(op     [, i], opt$quant)
+  gp.q     [, i] <- quantile(gp     [, i], opt$quant)
+  
+  # Activity-based emissions
+  aE$CO2.q [, i] <- quantile(aE$CO2 [, i], opt$quant)
+  aE$CH4.q [, i] <- quantile(aE$CH4 [, i], opt$quant)
+  aE$VOC.q [, i] <- quantile(aE$VOC [, i], opt$quant)
+  aE$rCO2.q[, i] <- quantile(aE$rCO2[, i], opt$quant)
+  aE$rCH4.q[, i] <- quantile(aE$rCH4[, i], opt$quant)
+  aE$rVOC.q[, i] <- quantile(aE$rVOC[, i], opt$quant)
+  
+  # Equipment-based emissions
+  eE$pm10.q[, i] <- quantile(eE$pm10[, i], opt$quant)
+  eE$pm25.q[, i] <- quantile(eE$pm25[, i], opt$quant)
+  eE$sox.q [, i] <- quantile(eE$sox [, i], opt$quant)
+  eE$nox.q [, i] <- quantile(eE$nox [, i], opt$quant)
+  eE$voc.q [, i] <- quantile(eE$voc [, i], opt$quant)
+  eE$co.q  [, i] <- quantile(eE$co  [, i], opt$quant)
+  eE$ch2o.q[, i] <- quantile(eE$ch2o[, i], opt$quant)
 }
 
 
@@ -89,7 +111,7 @@ for (i in 1:ncol(Drilled.q)) {
 
 # Set line colors for quantiles used in quant
 qlinecolor <- gray(1:5/7) # gray(1:5/7)  #rep("grey", length(opt$quant))  #rainbow(length(opt$quant))
-qlinetype <-  2:6#rep(1,5)#
+qlinetype <-  2:6#rep(1,5)#2:6
 qlinewidth <- rep(2,5)
 
 # Set line options for actual lines (for cross-validation plots)
@@ -872,10 +894,10 @@ if(opt$plist$plot[j] == TRUE) {
   par(cex = opt$defFontSize)
   
   # Main plot with largest quantile result
-  plot(opt$tsteps, CO2.q[1,],
+  plot(opt$tsteps, aE$CO2.q[1,],
        type = "l",
-       ylim = c(0.9*min(rCO2.q),
-                1.1*max(CO2.q)),
+       ylim = c(0.9*min(aE$rCO2.q),
+                1.1*max(aE$CO2.q)),
        col = qlinecolor[1],
        lty = 1,
        lwd = qlinewidth[1],
@@ -883,12 +905,12 @@ if(opt$plist$plot[j] == TRUE) {
        ylab = "CO2e Emissions (metric tons)")#,
        #main = "Total CO2e Emissions")
   #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
-  lines(opt$tsteps, rCO2.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+  lines(opt$tsteps, aE$rCO2.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, CO2.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, rCO2.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$CO2.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$rCO2.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
   
   # Legend
@@ -917,10 +939,10 @@ if(opt$plist$plot[j] == TRUE) {
   par(cex = opt$defFontSize)
   
   # Main plot with largest quantile result
-  plot(opt$tsteps, CH4.q[1,],
+  plot(opt$tsteps, aE$CH4.q[1,],
        type = "l",
-       ylim = c(0.9*min(rCH4.q),
-                1.1*max(CH4.q)),
+       ylim = c(0.9*min(aE$rCH4.q),
+                1.1*max(aE$CH4.q)),
        col = qlinecolor[1],
        lty = 1,
        lwd = qlinewidth[1],
@@ -928,12 +950,12 @@ if(opt$plist$plot[j] == TRUE) {
        ylab = "CH4 Emissions (metric tons)")#,
        #main = "Total CH4 Emissions")
   #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
-  lines(opt$tsteps, rCH4.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+  lines(opt$tsteps, aE$rCH4.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, CH4.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, rCH4.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$CH4.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$rCH4.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
   
   # Legend
@@ -962,23 +984,23 @@ if(opt$plist$plot[j] == TRUE) {
   par(cex = opt$defFontSize)
   
   # Main plot with largest quantile result
-  plot(opt$tsteps, VOC.q[1,],
+  plot(opt$tsteps, aE$VOC.q[1,] * 1.10231,
        type = "l",
-       ylim = c(0.9*min(rVOC.q),
-                1.1*max(VOC.q)),
+       ylim = c(0.9*min(aE$rVOC.q),
+                1.1*max(aE$VOC.q)),
        col = qlinecolor[1],
        lty = 1,
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "VOC Emissions (metric tons/month)")#,
-       #main = "Total VOC Emissions")
-  #mtext("Solid Lines = Base Emissions, Dotted Lines = NSPS Emissions")
-  lines(opt$tsteps, rVOC.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+       ylab = "VOC Emissions (tons)",
+       main = "Total VOC Emissions (Activity-Based)")
+  mtext("Solid Lines = Base Emissions, Dotted Lines = NSPS Emissions")
+  lines(opt$tsteps, aE$rVOC.q[1,] * 1.10231, col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
   
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, VOC.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, rVOC.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$VOC.q[i,] * 1.10231,  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$rVOC.q[i,] * 1.10231, col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
   
   # Legend
@@ -1509,24 +1531,24 @@ if(opt$plist$plot[j] == TRUE) {
   tCO2 <- NULL
   
   # Median emissions activity fractions
-  nfCO2.med <-  apply(nfCO2, 2, median)  # CO2 emissions fractions by activity for new wells
-  pfCO2.med <-  apply(pfCO2, 2, median)  # CO2 emissions fractions by activity for prior wells
-  rnfCO2.med <- apply(rnfCO2, 2, median) # CO2 emissions fractions by activity for new wells with reductions
-  rpfCO2.med <- apply(rpfCO2, 2, median) # CO2 emissions fractions by activity for prior wells with reductions
+  nfCO2.med <-  apply(aE$nfCO2,  2, median) # CO2 emissions fractions by activity for new wells
+  pfCO2.med <-  apply(aE$pfCO2,  2, median) # CO2 emissions fractions by activity for prior wells
+  rnfCO2.med <- apply(aE$rnfCO2, 2, median) # CO2 emissions fractions by activity for new wells with reductions
+  rpfCO2.med <- apply(aE$rpfCO2, 2, median) # CO2 emissions fractions by activity for prior wells with reductions
   
   # Median emissions from new vs. prior wells for CO2s
-  fnvp.CO2 <-  median(fnvp[, 3])
-  rfnvp.CO2 <- median(rfnvp[, 3])
+  fnvp.CO2 <-  median(aE$fnvp[, 3])
+  rfnvp.CO2 <- median(aE$rfnvp[, 3])
   
   # Conversion factor
-  fconv <-  fnvp.CO2*(nfCO2.med)+(1-fnvp.CO2)*(pfCO2.med)
-  rfconv <- rfnvp.CO2*(rnfCO2.med)+(1-rfnvp.CO2)*(rpfCO2.med)
+  fconv <-  fnvp.CO2  * (nfCO2.med)  + (1 - fnvp.CO2)  * (pfCO2.med)
+  rfconv <- rfnvp.CO2 * (rnfCO2.med) + (1 - rfnvp.CO2) * (rpfCO2.med)
   
   # Get total median CO2 production by year for (a) base and (b) reduced emissions
   for(i in seq(from = 12, to = 60, by = 12)-11) {
     
-    tCO2 <- cbind(tCO2, (sum(apply(CO2[,  i:(i+11)], 2, median))*fconv))
-    tCO2 <- cbind(tCO2, (sum(apply(rCO2[, i:(i+11)], 2, median))*rfconv))
+    tCO2 <- cbind(tCO2, (sum(apply(aE$CO2[,  i:(i+11)], 2, median))*fconv))
+    tCO2 <- cbind(tCO2, (sum(apply(aE$rCO2[, i:(i+11)], 2, median))*rfconv))
   }
   
   # Sum together small stuff
@@ -1583,24 +1605,24 @@ if(opt$plist$plot[j] == TRUE) {
   tCH4 <- NULL
   
   # Median emissions activity fractions
-  nfCH4.med <-  apply(nfCH4, 2, median)  # CH4 emissions fractions by activity for new wells
-  pfCH4.med <-  apply(pfCH4, 2, median)  # CH4 emissions fractions by activity for prior wells
-  rnfCH4.med <- apply(rnfCH4, 2, median) # CH4 emissions fractions by activity for new wells with reductions
-  rpfCH4.med <- apply(rpfCH4, 2, median) # CH4 emissions fractions by activity for prior wells with reductions
+  nfCH4.med <-  apply(aE$nfCH4,  2, median) # CH4 emissions fractions by activity for new wells
+  pfCH4.med <-  apply(aE$pfCH4,  2, median) # CH4 emissions fractions by activity for prior wells
+  rnfCH4.med <- apply(aE$rnfCH4, 2, median) # CH4 emissions fractions by activity for new wells with reductions
+  rpfCH4.med <- apply(aE$rpfCH4, 2, median) # CH4 emissions fractions by activity for prior wells with reductions
   
   # Median emissions from new vs. prior wells for CH4s
-  fnvp.CH4 <-  median(fnvp[, 3])
-  rfnvp.CH4 <- median(rfnvp[, 3])
+  fnvp.CH4 <-  median(aE$fnvp[, 3])
+  rfnvp.CH4 <- median(aE$rfnvp[, 3])
   
   # Conversion factor
-  fconv <-  fnvp.CH4*(nfCH4.med)+(1-fnvp.CH4)*(pfCH4.med)
-  rfconv <- rfnvp.CH4*(rnfCH4.med)+(1-rfnvp.CH4)*(rpfCH4.med)
+  fconv <-  fnvp.CH4  * (nfCH4.med)  + (1 - fnvp.CH4)  * (pfCH4.med)
+  rfconv <- rfnvp.CH4 * (rnfCH4.med) + (1 - rfnvp.CH4) * (rpfCH4.med)
   
   # Get total median CH4 production by year for (a) base and (b) reduced emissions
   for(i in seq(from = 12, to = 60, by = 12)-11) {
     
-    tCH4 <- cbind(tCH4, (sum(apply(CH4[,  i:(i+11)], 2, median))*fconv))
-    tCH4 <- cbind(tCH4, (sum(apply(rCH4[, i:(i+11)], 2, median))*rfconv))
+    tCH4 <- cbind(tCH4, (sum(apply(aE$CH4[,  i:(i+11)], 2, median))*fconv))
+    tCH4 <- cbind(tCH4, (sum(apply(aE$rCH4[, i:(i+11)], 2, median))*rfconv))
   }
   
   # Sum together small stuff
@@ -1657,24 +1679,24 @@ if(opt$plist$plot[j] == TRUE) {
   tVOC <- NULL
   
   # Median emissions activity fractions
-  nfVOC.med <-  apply(nfVOC, 2, median)  # VOC emissions fractions by activity for new wells
-  pfVOC.med <-  apply(pfVOC, 2, median)  # VOC emissions fractions by activity for prior wells
-  rnfVOC.med <- apply(rnfVOC, 2, median) # VOC emissions fractions by activity for new wells with reductions
-  rpfVOC.med <- apply(rpfVOC, 2, median) # VOC emissions fractions by activity for prior wells with reductions
+  nfVOC.med <-  apply(aE$nfVOC,  2, median) # VOC emissions fractions by activity for new wells
+  pfVOC.med <-  apply(aE$pfVOC,  2, median) # VOC emissions fractions by activity for prior wells
+  rnfVOC.med <- apply(aE$rnfVOC, 2, median) # VOC emissions fractions by activity for new wells with reductions
+  rpfVOC.med <- apply(aE$rpfVOC, 2, median) # VOC emissions fractions by activity for prior wells with reductions
   
   # Median emissions from new vs. prior wells for VOCs
-  fnvp.VOC <-  median(fnvp[, 3])
-  rfnvp.VOC <- median(rfnvp[, 3])
+  fnvp.VOC <-  median(aE$fnvp[, 3])
+  rfnvp.VOC <- median(aE$rfnvp[, 3])
   
   # Conversion factor
-  fconv <-  fnvp.VOC*(nfVOC.med)+(1-fnvp.VOC)*(pfVOC.med)
-  rfconv <- rfnvp.VOC*(rnfVOC.med)+(1-rfnvp.VOC)*(rpfVOC.med)
+  fconv <-  fnvp.VOC  * (nfVOC.med)  + (1 - fnvp.VOC)  * (pfVOC.med)
+  rfconv <- rfnvp.VOC * (rnfVOC.med) + (1 - rfnvp.VOC) * (rpfVOC.med)
   
   # Get total median VOC production by year for (a) base and (b) reduced emissions
   for(i in seq(from = 12, to = 60, by = 12)-11) {
     
-    tVOC <- cbind(tVOC, (sum(apply(VOC[,  i:(i+11)], 2, median))*fconv))
-    tVOC <- cbind(tVOC, (sum(apply(rVOC[, i:(i+11)], 2, median))*rfconv))
+    tVOC <- cbind(tVOC, (sum(apply(aE$VOC[,  i:(i+11)], 2, median))*fconv))
+    tVOC <- cbind(tVOC, (sum(apply(aE$rVOC[, i:(i+11)], 2, median))*rfconv))
   }
   
   # Sum together small stuff
@@ -1773,6 +1795,91 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth[1:2],
            lty = qlinetype[1:2])
   }
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# 32 - EQ-Based PM10 Emissions --------------------------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  # Main plot with largest quantile result
+  plot(opt$tsteps, eE$pm10.q[1,],
+       type = "l",
+       ylim = c(0.9*min(eE$pm10.q),
+                1.1*max(eE$pm10.q)),
+       col = qlinecolor[1],
+       lty = 1,
+       lwd = qlinewidth[1],
+       xlab = "Time (months)",
+       ylab = "PM10 Emissions (tons)")
+  lines(opt$tsteps, eE$pm10.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {
+    lines(opt$tsteps, eE$pm10.q[i,], col = qlinecolor[i], lty = 1, lwd = qlinewidth[i])
+  }
+  
+  # Legend
+  legend("topleft",
+         c("90%", "70%", "50%", "30%", "10%"),
+         ncol = 2,
+         col = qlinecolor,
+         lty = qlinetype,
+         lwd = qlinewidth)
+  
+  # If exporting to PDF, close PDF
+  if(opt$exportFlag == TRUE) {dev.off()}
+}
+
+# Increment counter
+j <- j+1
+
+
+# 33 - EQ-Based VOC Emissions ---------------------------------------------
+if(opt$plist$plot[j] == TRUE) {
+  
+  # If exporting to PDF
+  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+  
+  # Set font size
+  par(cex = opt$defFontSize)
+  
+  # Main plot with largest quantile result
+  plot(opt$tsteps, eE$voc.q[1,],
+       type = "l",
+       ylim = c(0.9*min(eE$voc.q),
+                1.1*max(eE$voc.q)),
+       col = qlinecolor[1],
+       lty = 1,
+       lwd = qlinewidth[1],
+       xlab = "Time (months)",
+       ylab = "VOC Emissions (tons)",
+       main = "Total VOC Emissions (Equipment-Based)")
+  lines(opt$tsteps, eE$voc.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+  
+  # Other quantile lines
+  for (i in 2:length(opt$quant)) {
+    lines(opt$tsteps, eE$voc.q[i,], col = qlinecolor[i], lty = 1, lwd = qlinewidth[i])
+  }
+  
+  # Legend
+  legend("topleft",
+         c("90%", "70%", "50%", "30%", "10%"),
+         ncol = 2,
+         col = qlinecolor,
+         lty = 1,
+         lwd = qlinewidth)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}

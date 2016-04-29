@@ -68,7 +68,7 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred, MC.tsteps) {
   for (i in 1:ncol(Edrill.co2)) {
     
     # Drilling events
-    ind <- which(wsim$tDrill == i)
+    ind <- which(wsim$tDrill == i & !is.na(wsim$rework))
     Edrill.co2[ind,i] <- wsim$EFdrill.co2[ind]
     Edrill.ch4[ind,i] <- wsim$EFdrill.ch4[ind]
     Edrill.voc[ind,i] <- wsim$EFdrill.voc[ind]
@@ -79,7 +79,7 @@ Ecalc <- function (osim, gsim, wsim, tstart, edcut, EFred, MC.tsteps) {
     Ecompl.voc[ind,i] <- wsim$EFcompl.voc[ind]
     
     # Rework events
-    ind <- which(wsim$rework == i)
+    ind <- which(wsim$tDrill == i & is.na(wsim$rework))
     Erework.co2[ind,i] <- wsim$EFrework.co2[ind]
     Erework.ch4[ind,i] <- wsim$EFrework.ch4[ind]
     Erework.voc[ind,i] <- wsim$EFrework.voc[ind]

@@ -6,72 +6,98 @@
 
 # Inputs ------------------------------------------------------------------
 
-# fuel - quantity of oil used (gallons)
-
-# red - emissions reduction fraction (from flare control)
-
-# wc.EF - emission factors for well completion
+# rt - object containing row(s) from eci$rt cumulative probability table for
+# which emissions are to be calculated
 
 
 # Outputs -----------------------------------------------------------------
 
-# E.rt - Emissions for RICE and turbines (in tons/month)
+# E.rt - Emissions for RICE and turbines (in tons/yr)
 
 
 # Description -------------------------------------------------------------
 
 # This function calculates the total emissions from reciprocating internal 
-# combustion engines (RICE) and turbines. Emissions are calculated using either
-# (a) AP-42 Chapter 3, (b) NSPS Subpart JJJJ, or (c) a user specified input
+# combustion engines (RICE) and turbines. Emissions are calculated using either 
+# AP-42 Chapter 3 or NSPS Subpart JJJJ based on the units specified in the CPT
+# table.
 
 
 # Function ----------------------------------------------------------------
 
-calc_E_rt <- function(heat, type, rt.EF, red, hp, hr) {
+calc_E_rt <- function(rt) {
   
-  # Predefine results data.frame
-  result <- matrix(0, nrow = length(type), ncol = ncol(rt.EF))
-  
-  # Calculate AP-42 emissions
-  
-  # Get index of engine type numbers for which AP-42 applies
-  ind <- which(type <= 9)
-  
-  # If AP-42 engines exist
-  if (length(ind) > 0) {
+  # Calc function
+  calc <- function(units, fuel, HV, EF, red, hp, hr, wfrac) {
     
-    # For each element in ind
-    for (i in ind) {
-      
-      # Calculate emissions
-      result[i, ] <- as.numeric(heat[i] * rt.EF[type[i], ] * (1 - red[i]) / 2000)
-    }
+    result <- ifelse(test = units == "lb/mmbtu",
+                     yes =  fuel * HV * EF * (1 - red) / 2000 * wfrac,
+                     no =   (((hp * hr * EF) / 453.592) * (1 - red)) / 2000 * wfrac)
   }
   
-  # Repeat for NSPS Subpart JJJJ engines
-  
-  # Get index of engine type numbers for which AP-42 applies
-  ind <- which(type > 9)
-  
-  # If JJJJ engines exist
-  if (length(ind) > 0) {
-    
-    # For each element in ind
-    for (i in ind) {
-      
-      # Calculate emissions
-      result[i, ] <- as.numeric((((hp[i] * hr[i] * rt.EF[type[i], ]) / 453.592) * (1 - red[i])) / 2000)
-    }
-  }
-  
-  # Reformat result into data.frame
-  E.rt <- data.frame(em.rt.pm10 = result[,1],
-                     em.rt.pm25 = result[,2],
-                     em.rt.sox  = result[,3],
-                     em.rt.nox  = result[,4],
-                     em.rt.voc  = result[,5],
-                     em.rt.co   = result[,6],
-                     em.rt.ch2o = result[,7])
+  # Perform calculation for each pollutant
+  E.rt <- data.frame(em.rt.pm10 = calc(units = rt$upm10,
+                                       fuel =  rt$total_combusted,
+                                       HV =    rt$fuel_heating,
+                                       EF =    rt$fpm10,
+                                       red =   rt$control_pm10,
+                                       hp =    rt$horsepower,
+                                       hr =    rt$annual_hours,
+                                       wfrac = rt$wfrac),
+                     
+                     em.rt.pm25 = calc(units = rt$upm25,
+                                       fuel =  rt$total_combusted,
+                                       HV =    rt$fuel_heating,
+                                       EF =    rt$fpm25,
+                                       red =   rt$control_pm25,
+                                       hp =    rt$horsepower,
+                                       hr =    rt$annual_hours,
+                                       wfrac = rt$wfrac),
+                     
+                     em.rt.sox  = calc(units = rt$usox,
+                                       fuel =  rt$total_combusted,
+                                       HV =    rt$fuel_heating,
+                                       EF =    rt$fsox,
+                                       red =   rt$control_sox,
+                                       hp =    rt$horsepower,
+                                       hr =    rt$annual_hours,
+                                       wfrac = rt$wfrac),
+                     
+                     em.rt.nox  = calc(units = rt$unox,
+                                       fuel =  rt$total_combusted,
+                                       HV =    rt$fuel_heating,
+                                       EF =    rt$fnox,
+                                       red =   rt$control_nox,
+                                       hp =    rt$horsepower,
+                                       hr =    rt$annual_hours,
+                                       wfrac = rt$wfrac),
+                     
+                     em.rt.voc  = calc(units = rt$uvoc,
+                                       fuel =  rt$total_combusted,
+                                       HV =    rt$fuel_heating,
+                                       EF =    rt$fvoc,
+                                       red =   rt$control_voc,
+                                       hp =    rt$horsepower,
+                                       hr =    rt$annual_hours,
+                                       wfrac = rt$wfrac),
+                     
+                     em.rt.co   = calc(units = rt$uco,
+                                       fuel =  rt$total_combusted,
+                                       HV =    rt$fuel_heating,
+                                       EF =    rt$fco,
+                                       red =   rt$control_co,
+                                       hp =    rt$horsepower,
+                                       hr =    rt$annual_hours,
+                                       wfrac = rt$wfrac),
+                     
+                     em.rt.ch2o = calc(units = rt$uch2o,
+                                       fuel =  rt$total_combusted,
+                                       HV =    rt$fuel_heating,
+                                       EF =    rt$fch2o,
+                                       red =   rt$control_ch2o,
+                                       hp =    rt$horsepower,
+                                       hr =    rt$annual_hours,
+                                       wfrac = rt$wfrac))
   
   # Return emissions result
   return(E.rt)

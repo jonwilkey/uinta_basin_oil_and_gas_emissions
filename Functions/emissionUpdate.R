@@ -156,39 +156,6 @@ emissionUpdate <- function(path, ver) {
   # Write table to eci list
   eci$wc <- cptable(m)
   
-  # # Individual CDFs
-  # 
-  # # 1.1 --- Fuel Usage ---
-  # 
-  # # Determine CDF for diesel fuel usage (in gallons) for drilling each well
-  # eci$wc$fuel <- CDFq(vector = well.compl$annual_diesel_usage, xq = xq)
-  # 
-  # 
-  # # 1.2 --- Control ---
-  # 
-  # # Determine probability of each type of control flare being used
-  # 
-  # # Get list of all unique combinations of control flare efficiencies and their
-  # # associated % control values
-  # wc.ctrl <- data.frame(unique(well.compl[,c("flare_efficiency","pct_control")]))
-  # 
-  # # Change names
-  # names(wc.ctrl) <- c("type", "red")
-  # 
-  # # Define temporary vector
-  # temp <- NULL
-  # 
-  # # For each flare type (listed in wc.ctrl)
-  # for (i in wc.ctrl$type) {
-  #   
-  #   # Count fraction of entries in well.compl that have that control type
-  #   temp <- c(temp, length(which(well.compl$flare_efficiency == i))/nrow(well.compl))
-  # }
-  # 
-  # # Make cumulative probability data.frame
-  # eci$wc$ctrl <- data.frame(wc.ctrl,
-  #                           cprob = cumsum(temp))
-  
   
   # 2.0 RICE & Turbines ---------------------------------------------------
   
@@ -265,9 +232,13 @@ emissionUpdate <- function(path, ver) {
   # Add in wfrac using key
   m <- apimerge(sep.heat)
   
+  # Calculate fuel heating value
+  m$fuel_heat <- with(m, heat_duty * hours_operation / total_combusted)
+  
   # Select desired input columns
   m <- m[, c("heat_duty",
              "hours_operation",
+             "fuel_heat",
              "control_status",
              "percent_control",
              "wfrac")]
@@ -275,43 +246,8 @@ emissionUpdate <- function(path, ver) {
   # Calculate and write results to table to eci list
   eci$sh <- cptable(m)
   
-  # WARNING - 17 NA's in result
-  
-  # # Individual CDF version
-  # 
-  # # 3.1 --- Heat Duty Rating (MMBtu/hr) ---
-  # 
-  # # Calculate CDF
-  # eci$sh$heat <- CDFq(vector = sep.heat$heat_duty, xq = xq)
-  # 
-  # # 3.2 --- Hours of Operation (hr/yr)
-  # 
-  # # Calculate CDF
-  # eci$sh$op <- CDFq(vector = sep.heat$hours_operation, xq = xq)
-  # 
-  # # 3.3 --- Low NOx Control ---
-  # 
-  # # Determine probability of Low NOx burner being used
-  # 
-  # # Get list of all unique combinations of controls
-  # sh.ctrl <- data.frame(unique(sep.heat[,c("control_status","percent_control")]))
-  # 
-  # # Change names
-  # names(sh.ctrl) <- c("type", "red")
-  # 
-  # # Define temporary vector
-  # temp <- NULL
-  # 
-  # # For each control type
-  # for (i in sh.ctrl$type) {
-  #   
-  #   # Count fraction of entries that have that control type
-  #   temp <- c(temp, length(which(sep.heat$control_status == i))/nrow(sep.heat))
-  # }
-  # 
-  # # Make cumulative probability data.frame
-  # eci$sh$ctrl <- data.frame(sh.ctrl,
-  #                           cprob = cumsum(temp))
+  # WARNING - 17 NA's in result. Since NAs are possible, calculation overwrites
+  # any NA values as 0
   
   
   # 4.0 Dehydrators -------------------------------------------------------
@@ -332,6 +268,9 @@ emissionUpdate <- function(path, ver) {
   
   # Calculate and write results to table to eci list
   eci$dh <- cptable(m)
+  
+  # WARNING - 443 NA's in result (more than half of the CPT table is NA. Since
+  # NAs are possible, calculation overwrites any NA values as 0
   
   
   # 5.0 Tanks -------------------------------------------------------------

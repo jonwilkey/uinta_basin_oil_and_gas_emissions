@@ -79,7 +79,6 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "calc_E_pctrl.R",
                               "calc_E_ppump.R",
                               "calc_E_fug.R",
-                              "sim_E_wc.R",
                               "clipboard.R",
                               "inf_adj.R",
                               "CDFd.R",
@@ -493,7 +492,7 @@ Unique values of character string columns:
 CDF plot(s) for interesting input variables:
 
 ```{r tank.voc.cdf}
-plot(tanks$total_voc, tanks$throughput_oil,
+plot(tanks$throughput_oil, tanks$total_voc,
      xlab = "Annual Oil Throughput (bbl / yr)",
      ylab = "Total VOC Emissions (tons / yr)",
      main = "Tank VOC Emissions vs. Oil Throughput")
@@ -650,7 +649,10 @@ names(eci$fug$gas)[1:9]
 Dimensions of **fugitives** table:
 
 * Original: `r nrow(fugitives)` rows
-* CPT:      `r nrow(eci$fug)` rows
+* CPT:      Gas component has       `r nrow(eci$fug$gas)` rows,
+            Heavy Oil component has `r nrow(eci$fug$hoil)` rows,
+            Light Oil component has `r nrow(eci$fug$loil)` rows,
+            Water/Oil component has `r nrow(eci$fug$woil)` rows
 
 First 10 rows of CPT table for gas component:
 ```{r head.fug.gas.CPT}
