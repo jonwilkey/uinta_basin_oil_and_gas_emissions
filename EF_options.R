@@ -26,76 +26,153 @@ eopt <- NULL
 # Emission Factors (lb/gal)
 eopt$wc.EF <- data.frame(pm10 = 0.00683829365079365,
                          pm25 = 0.00683829365079365,
-                         nox =  0.314561507936508,
-                         voc =  0.218825396825397,
-                         co =   0.118530423280423)
+                         nox  = 0.314561507936508,
+                         voc  = 0.218825396825397,
+                         co   = 0.118530423280423)
+
+# Emission reductions
+eopt$r$wc <- data.frame(tDrill   = 30,
+                        tstep    = 30,
+                        red.pm10 = 0.5,
+                        red.pm25 = 0.5,
+                        red.nox  = 0.5,
+                        red.voc  = 0.5,
+                        red.co   = 0.5)
 
 
 # RICE & Turbines ---------------------------------------------------------
 
+# -- Data Analysis --
 # No inputs or calculation options (modeled directly from CPT table)
+
+
+# -- Calculation Inputs --
+# Emission reductions
+eopt$r$rt <- data.frame(tDrill   = 30,
+                        tstep    = 30,
+                        red.pm10 = 0.5,
+                        red.pm25 = 0.5,
+                        red.sox  = 0.5,
+                        red.nox  = 0.5,
+                        red.voc  = 0.5,
+                        red.co   = 0.5,
+                        red.ch2o = 0.5)
 
 
 # Separators and Heaters --------------------------------------------------
 
-# Data Analysis
+# -- Data Analysis --
 # No inputs required
 
+# -- Calculation Inputs --
 # Emission Factors (lb/MMCF)
 eopt$sh.EF <- data.frame(pm10 = 7.6,
                          pm25 = 7.6,
-                         sox =  0.6,
-                         nox =  100,
-                         voc =  5.5,
-                         co =   84)
+                         sox  = 0.6,
+                         nox  = 100,
+                         voc  = 5.5,
+                         co   = 84)
+
+# Emission reductions
+eopt$r$sh <- data.frame(tDrill   = 30,
+                        tstep    = 30,
+                        red.pm10 = 0.5,
+                        red.pm25 = 0.5,
+                        red.sox  = 0.5,
+                        red.nox  = 0.5,
+                        red.voc  = 0.5,
+                        red.co   = 0.5)
 
 
 # Dehydrators -------------------------------------------------------------
 
-# Data Analysis
+# -- Data Analysis --
+# No inputs required
 
-
+# -- Calculation Inputs --
 # Emission Factors (lb/MMCF)
-eopt$dh.EF <- data.frame(nox =       0.068,
-                         co =        0.31,
+eopt$dh.EF <- data.frame(nox       = 0.068,
+                         co        = 0.31,
                          voc.pilot = 5.5,
                          nox.pilot = 100,
-                         co.pilot =  84)
+                         co.pilot  = 84)
+
+# Emission reductions
+eopt$r$dh <- data.frame(tDrill   = 30,
+                        tstep    = 30,
+                        red.nox  = 0.5,
+                        red.voc  = 0.5,
+                        red.co   = 0.5)
 
 
 # Tanks -------------------------------------------------------------------
 
-# Data Analysis
+# -- Data Analysis --
+# No inputs required
 
-
+# -- Calculation Inputs --
 # Emission Factors (lb/MMCF)
-eopt$tank.EF <- data.frame(nox =       0.068,
-                           co =        0.31,
+eopt$tank.EF <- data.frame(nox       = 0.068,
+                           co        = 0.31,
                            voc.pilot = 5.5,
                            nox.pilot = 100,
-                           co.pilot =  84)
+                           co.pilot  = 84)
+
+# Emission reductions
+eopt$r$tank <- data.frame(tDrill   = 30,
+                          tstep    = 30,
+                          red.nox  = 0.5,
+                          red.voc  = 0.5,
+                          red.co   = 0.5,
+                          avoc     = 6) # Average annual VOC emissions (ton/yr) for reductions to apply
 
 
 # Truck Loading -----------------------------------------------------------
 
-# No inputs or calculation options (modeled directly from CPT table)
+# -- Data Analysis --
+# No inputs required
+
+# -- Calculation Inputs --
+# Emission reductions
+eopt$r$truck <- data.frame(tDrill   = 30,
+                           tstep    = 30,
+                           red.voc  = 0.5)
 
 
 # Pneumatic Controllers ---------------------------------------------------
 
+# -- Data Analysis --
+# No inputs required
+
+# -- Calculation Inputs --
 # Emission factors (ton/hr)
 eopt$pctrl.EF <- data.frame(HB.voc = 1.92  / 365 / 24,
                             IB.voc = 0.698 / 365 / 24,
                             LB.voc = 0.072 / 365 / 24)
 
+# Emission reductions
+eopt$r$pctrl <- data.frame(tDrill   = 30,
+                           tstep    = 30,
+                           red.voc  = 0.5)
+
 
 # Pneumatic Pumps ---------------------------------------------------------
 
-# No inputs or calculation options (modeled directly from CPT table)
+# -- Data Analysis
+# No inputs required
 
+# -- Calculation Inputs --
+# Emission reductions
+eopt$r$ppump <- data.frame(tDrill   = 30,
+                           tstep    = 30,
+                           red.voc  = 0.5)
 
 # Fugitive emissions ------------------------------------------------------
 
+# -- Data Analysis --
+# No inputs required
+
+# -- Calculation Inputs --
 # Emission factors
 #..............................................................................................
 #                    Service Type   Valves     Pumps    Others  Connectors  Flanges  Open-Ended Lines
@@ -126,3 +203,8 @@ eopt$fug.def.eq <- data.frame(gas =  c(0.25,   15,    0,   25, 1000,   25,    1)
                                             "Connectors",
                                             "Flanges",
                                             "Open-Ended Lines"))
+
+# Emission reductions
+eopt$r$fug <- data.frame(tDrill   = 30,
+                         tstep    = 30,
+                         red.voc  = 0.5)

@@ -27,7 +27,7 @@ opt$file_ver <- "v1"
 # opt$file_ver <- "v2"
 
 # Save run results?
-opt$save <- T
+opt$save <- F
 opt$save.name <- "results v1.rda"
 # opt$save.name <- "results v2.rda"
 
@@ -596,7 +596,7 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("13 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
                    c("14 CO2e Emissions",             F), # CO2 emissions
                    c("15 CH4 Emissions",              F), # CH4 emissions
-                   c("16 VOC Emissions",              T), # VOC emissions
+                   c("16 VOC Emissions",              F), # VOC emissions
                    c("17 Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
                    c("18 Field Fractions -OW",        F), # Same but just oil wells
                    c("19 Field Fractions -GW",        F), # Same but just gas wells
@@ -612,8 +612,13 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("29 CH4 emissions barplot",      F), # Total CH4 emissions barplot showing contribution from emissions sources
                    c("30 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources
                    c("31 Production fraction n vs e", F), # Fraction of production from new wells vs. old wells
-                   c("32 EQ-Based PM10 Emissions",    F), # Total PM10 emissions from equipment-based calculations
-                   c("33 EQ-Based VOC Emissions",     T)  # Total PM10 emissions from equipment-based calculations
+                   c("32 EQ-Based PM10 Emissions",    T), # Total PM10 emissions from equipment-based calculations
+                   c("33 EQ-Based PM25 Emissions",    T), # Total PM25 emissions from equipment-based calculations
+                   c("34 EQ-Based SOX Emissions",     T), # Total SOX emissions from equipment-based calculations
+                   c("35 EQ-Based NOX Emissions",     T), # Total NOX emissions from equipment-based calculations
+                   c("36 EQ-Based VOC Emissions",     T), # Total VOC emissions from equipment-based calculations
+                   c("37 EQ-Based CO Emissions",      T), # Total CO emissions from equipment-based calculations
+                   c("38 EQ-Based CH2O Emissions",    T)  # Total CH2O emissions from equipment-based calculations
 )
 
 # Convert to data.frame and adjust column names

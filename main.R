@@ -106,6 +106,7 @@ library(beepr)
 library(fitdistrplus)
 library(lhs)
 library(xtable)
+library(xlsx)
 
 
 # 1.4 Options -------------------------------------------------------------
@@ -790,6 +791,9 @@ if (opt$load.prior == TRUE) {
                           dh    = osim,
                           tank  = osim))
   
+  # Reduced equipment-based results
+  reE <- eE
+  
   # Progress Bar (since this next for-loop takes a while)
   pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
   
@@ -1025,46 +1029,88 @@ if (opt$load.prior == TRUE) {
     
     # Equipment-based emissions totals are already calculated, just assign to
     # results list eE
-    eE$pm10[i, ] <- eqETsim$pm10
-    eE$pm25[i, ] <- eqETsim$pm25
-    eE$sox [i, ] <- eqETsim$sox
-    eE$nox [i, ] <- eqETsim$nox
-    eE$voc [i, ] <- eqETsim$voc
-    eE$co  [i, ] <- eqETsim$co
-    eE$ch2o[i, ] <- eqETsim$ch2o
+    eE$pm10[i, ] <- eqETsim$eb$pm10
+    eE$pm25[i, ] <- eqETsim$eb$pm25
+    eE$sox [i, ] <- eqETsim$eb$sox
+    eE$nox [i, ] <- eqETsim$eb$nox
+    eE$voc [i, ] <- eqETsim$eb$voc
+    eE$co  [i, ] <- eqETsim$eb$co
+    eE$ch2o[i, ] <- eqETsim$eb$ch2o
     
-    eE$fpm10$wc[i, ] <- eqETsim$fpm10$wc
-    eE$fpm10$rt[i, ] <- eqETsim$fpm10$rt
-    eE$fpm10$sh[i, ] <- eqETsim$fpm10$sh
+    eE$fpm10$wc[i, ] <- eqETsim$eb$fpm10$wc
+    eE$fpm10$rt[i, ] <- eqETsim$eb$fpm10$rt
+    eE$fpm10$sh[i, ] <- eqETsim$eb$fpm10$sh
     
-    eE$fpm25$wc[i, ] <- eqETsim$fpm25$wc
-    eE$fpm25$rt[i, ] <- eqETsim$fpm25$rt
-    eE$fpm25$sh[i, ] <- eqETsim$fpm25$sh
+    eE$fpm25$wc[i, ] <- eqETsim$eb$fpm25$wc
+    eE$fpm25$rt[i, ] <- eqETsim$eb$fpm25$rt
+    eE$fpm25$sh[i, ] <- eqETsim$eb$fpm25$sh
     
-    eE$fsox$rt[i, ] <- eqETsim$fsox$rt
-    eE$fsox$sh[i, ] <- eqETsim$fsox$sh
+    eE$fsox$rt[i, ] <- eqETsim$eb$fsox$rt
+    eE$fsox$sh[i, ] <- eqETsim$eb$fsox$sh
     
-    eE$fnox$wc  [i, ] <- eqETsim$fnox$wc
-    eE$fnox$rt  [i, ] <- eqETsim$fnox$rt
-    eE$fnox$sh  [i, ] <- eqETsim$fnox$sh
-    eE$fnox$dh  [i, ] <- eqETsim$fnox$dh
-    eE$fnox$tank[i, ] <- eqETsim$fnox$tank
+    eE$fnox$wc  [i, ] <- eqETsim$eb$fnox$wc
+    eE$fnox$rt  [i, ] <- eqETsim$eb$fnox$rt
+    eE$fnox$sh  [i, ] <- eqETsim$eb$fnox$sh
+    eE$fnox$dh  [i, ] <- eqETsim$eb$fnox$dh
+    eE$fnox$tank[i, ] <- eqETsim$eb$fnox$tank
     
-    eE$fvoc$wc   [i, ] <- eqETsim$fvoc$wc
-    eE$fvoc$rt   [i, ] <- eqETsim$fvoc$rt
-    eE$fvoc$sh   [i, ] <- eqETsim$fvoc$sh
-    eE$fvoc$dh   [i, ] <- eqETsim$fvoc$dh
-    eE$fvoc$tank [i, ] <- eqETsim$fvoc$tank
-    eE$fvoc$truck[i, ] <- eqETsim$fvoc$truck
-    eE$fvoc$pctrl[i, ] <- eqETsim$fvoc$pctrl
-    eE$fvoc$ppump[i, ] <- eqETsim$fvoc$ppump
-    eE$fvoc$fug  [i, ] <- eqETsim$fvoc$fug
+    eE$fvoc$wc   [i, ] <- eqETsim$eb$fvoc$wc
+    eE$fvoc$rt   [i, ] <- eqETsim$eb$fvoc$rt
+    eE$fvoc$sh   [i, ] <- eqETsim$eb$fvoc$sh
+    eE$fvoc$dh   [i, ] <- eqETsim$eb$fvoc$dh
+    eE$fvoc$tank [i, ] <- eqETsim$eb$fvoc$tank
+    eE$fvoc$truck[i, ] <- eqETsim$eb$fvoc$truck
+    eE$fvoc$pctrl[i, ] <- eqETsim$eb$fvoc$pctrl
+    eE$fvoc$ppump[i, ] <- eqETsim$eb$fvoc$ppump
+    eE$fvoc$fug  [i, ] <- eqETsim$eb$fvoc$fug
     
-    eE$fco$wc   [i, ] <- eqETsim$fco$wc
-    eE$fco$rt   [i, ] <- eqETsim$fco$rt
-    eE$fco$sh   [i, ] <- eqETsim$fco$sh
-    eE$fco$dh   [i, ] <- eqETsim$fco$dh
-    eE$fco$tank [i, ] <- eqETsim$fco$tank
+    eE$fco$wc   [i, ] <- eqETsim$eb$fco$wc
+    eE$fco$rt   [i, ] <- eqETsim$eb$fco$rt
+    eE$fco$sh   [i, ] <- eqETsim$eb$fco$sh
+    eE$fco$dh   [i, ] <- eqETsim$eb$fco$dh
+    eE$fco$tank [i, ] <- eqETsim$eb$fco$tank
+    
+    # Repeat for reduced results
+    reE$pm10[i, ] <- eqETsim$re$pm10
+    reE$pm25[i, ] <- eqETsim$re$pm25
+    reE$sox [i, ] <- eqETsim$re$sox
+    reE$nox [i, ] <- eqETsim$re$nox
+    reE$voc [i, ] <- eqETsim$re$voc
+    reE$co  [i, ] <- eqETsim$re$co
+    reE$ch2o[i, ] <- eqETsim$re$ch2o
+    
+    reE$fpm10$wc[i, ] <- eqETsim$re$fpm10$wc
+    reE$fpm10$rt[i, ] <- eqETsim$re$fpm10$rt
+    reE$fpm10$sh[i, ] <- eqETsim$re$fpm10$sh
+    
+    reE$fpm25$wc[i, ] <- eqETsim$re$fpm25$wc
+    reE$fpm25$rt[i, ] <- eqETsim$re$fpm25$rt
+    reE$fpm25$sh[i, ] <- eqETsim$re$fpm25$sh
+    
+    reE$fsox$rt[i, ] <- eqETsim$re$fsox$rt
+    reE$fsox$sh[i, ] <- eqETsim$re$fsox$sh
+    
+    reE$fnox$wc  [i, ] <- eqETsim$re$fnox$wc
+    reE$fnox$rt  [i, ] <- eqETsim$re$fnox$rt
+    reE$fnox$sh  [i, ] <- eqETsim$re$fnox$sh
+    reE$fnox$dh  [i, ] <- eqETsim$re$fnox$dh
+    reE$fnox$tank[i, ] <- eqETsim$re$fnox$tank
+    
+    reE$fvoc$wc   [i, ] <- eqETsim$re$fvoc$wc
+    reE$fvoc$rt   [i, ] <- eqETsim$re$fvoc$rt
+    reE$fvoc$sh   [i, ] <- eqETsim$re$fvoc$sh
+    reE$fvoc$dh   [i, ] <- eqETsim$re$fvoc$dh
+    reE$fvoc$tank [i, ] <- eqETsim$re$fvoc$tank
+    reE$fvoc$truck[i, ] <- eqETsim$re$fvoc$truck
+    reE$fvoc$pctrl[i, ] <- eqETsim$re$fvoc$pctrl
+    reE$fvoc$ppump[i, ] <- eqETsim$re$fvoc$ppump
+    reE$fvoc$fug  [i, ] <- eqETsim$re$fvoc$fug
+    
+    reE$fco$wc   [i, ] <- eqETsim$re$fco$wc
+    reE$fco$rt   [i, ] <- eqETsim$re$fco$rt
+    reE$fco$sh   [i, ] <- eqETsim$re$fco$sh
+    reE$fco$dh   [i, ] <- eqETsim$re$fco$dh
+    reE$fco$tank [i, ] <- eqETsim$re$fco$tank
     
     # Update progress bar
     Sys.sleep(1e-3)
