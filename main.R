@@ -1131,6 +1131,7 @@ if (opt$load.prior == TRUE) {
                   "pgsim",
                   "aE",
                   "eE",
+                  "reE",
                   "op",
                   "gp",
                   "Drilled",
@@ -1144,15 +1145,26 @@ if (opt$load.prior == TRUE) {
                paste("Finished Monte-Carlo simulation at:", Sys.time()),
                paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))
   
-  # Print finished message and play sound - feel free to replace with your
-  # preferred sound, see help for function by typing "?beep" in console
-  beep(3)
   writeLines(c("",
-               "Model run complete"))
+               "Monte-Carlo simulation complete"))
 }
 
 
 # 4.1 Post processing -----------------------------------------------------
 
+# Notify user that post-processing has started
+writeLines(c("",
+             "Post-processing results",
+             paste("Start time:",Sys.time())))
+runstart <- Sys.time()
+
 # Run processing script to generate plots of results
 source("postProcess.R")
+
+# Notify user that post-processing has finished and play completion sound - feel
+# free to replace with your preferred sound, see help for function by typing
+# "?beep" in console
+beep(3)
+writeLines(c("",
+             paste("Finished post-processing at:", Sys.time()),
+             paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))

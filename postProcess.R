@@ -78,6 +78,39 @@ eE$voc.q <-  Drilled.q
 eE$co.q <-   Drilled.q
 eE$ch2o.q <- Drilled.q
 
+eE$fpm10.q$wc  <- Drilled.q
+eE$fpm10.q$rt  <- Drilled.q
+eE$fpm10.q$sh  <- Drilled.q
+
+eE$fpm25.q$wc  <- Drilled.q
+eE$fpm25.q$rt  <- Drilled.q
+eE$fpm25.q$sh  <- Drilled.q
+
+eE$fsox.q$rt   <- Drilled.q
+eE$fsox.q$sh   <- Drilled.q
+
+eE$fnox.q$wc   <- Drilled.q
+eE$fnox.q$rt   <- Drilled.q
+eE$fnox.q$sh   <- Drilled.q
+eE$fnox.q$dh   <- Drilled.q
+eE$fnox.q$tank <- Drilled.q
+
+eE$fvoc.q$wc    <- Drilled.q
+eE$fvoc.q$rt    <- Drilled.q
+eE$fvoc.q$sh    <- Drilled.q
+eE$fvoc.q$dh    <- Drilled.q
+eE$fvoc.q$tank  <- Drilled.q
+eE$fvoc.q$truck <- Drilled.q
+eE$fvoc.q$pctrl <- Drilled.q
+eE$fvoc.q$ppump <- Drilled.q
+eE$fvoc.q$fug   <- Drilled.q
+
+eE$fco.q$wc   <- Drilled.q
+eE$fco.q$rt   <- Drilled.q
+eE$fco.q$sh   <- Drilled.q
+eE$fco.q$dh   <- Drilled.q
+eE$fco.q$tank <- Drilled.q
+
 # Reduced equipment-based emissions
 reE$pm10.q <- Drilled.q
 reE$pm25.q <- Drilled.q
@@ -86,6 +119,39 @@ reE$nox.q <-  Drilled.q
 reE$voc.q <-  Drilled.q
 reE$co.q <-   Drilled.q
 reE$ch2o.q <- Drilled.q
+
+reE$fpm10.q$wc  <- Drilled.q
+reE$fpm10.q$rt  <- Drilled.q
+reE$fpm10.q$sh  <- Drilled.q
+
+reE$fpm25.q$wc  <- Drilled.q
+reE$fpm25.q$rt  <- Drilled.q
+reE$fpm25.q$sh  <- Drilled.q
+
+reE$fsox.q$rt   <- Drilled.q
+reE$fsox.q$sh   <- Drilled.q
+
+reE$fnox.q$wc   <- Drilled.q
+reE$fnox.q$rt   <- Drilled.q
+reE$fnox.q$sh   <- Drilled.q
+reE$fnox.q$dh   <- Drilled.q
+reE$fnox.q$tank <- Drilled.q
+
+reE$fvoc.q$wc    <- Drilled.q
+reE$fvoc.q$rt    <- Drilled.q
+reE$fvoc.q$sh    <- Drilled.q
+reE$fvoc.q$dh    <- Drilled.q
+reE$fvoc.q$tank  <- Drilled.q
+reE$fvoc.q$truck <- Drilled.q
+reE$fvoc.q$pctrl <- Drilled.q
+reE$fvoc.q$ppump <- Drilled.q
+reE$fvoc.q$fug   <- Drilled.q
+
+reE$fco.q$wc   <- Drilled.q
+reE$fco.q$rt   <- Drilled.q
+reE$fco.q$sh   <- Drilled.q
+reE$fco.q$dh   <- Drilled.q
+reE$fco.q$tank <- Drilled.q
 
 # For each timestep, get quantiles
 for (i in 1:ncol(Drilled.q)) {
@@ -122,114 +188,183 @@ for (i in 1:ncol(Drilled.q)) {
   reE$voc.q [, i] <- quantile(reE$voc [, i], opt$quant)
   reE$co.q  [, i] <- quantile(reE$co  [, i], opt$quant)
   reE$ch2o.q[, i] <- quantile(reE$ch2o[, i], opt$quant)
+  
+  # Emission by species and equipment type
+  eE$fpm10.q$wc[, i]   <- quantile(eE$fpm10$wc[, i],   opt$quant) # PM10 - Well completions
+  eE$fpm10.q$rt[, i]   <- quantile(eE$fpm10$rt[, i],   opt$quant) # PM10 - RICE & Turbines
+  eE$fpm10.q$sh[, i]   <- quantile(eE$fpm10$sh[, i],   opt$quant) # PM10 - Separators & Heaters
+  
+  eE$fpm25.q$wc[, i]   <- quantile(eE$fpm25$wc[, i],   opt$quant) # PM25 - Well completions
+  eE$fpm25.q$rt[, i]   <- quantile(eE$fpm25$rt[, i],   opt$quant) # PM25 - RICE & Turbines
+  eE$fpm25.q$sh[, i]   <- quantile(eE$fpm25$sh[, i],   opt$quant) # PM25 - Separators & Heaters
+  
+  eE$fsox.q$rt[, i]    <- quantile(eE$fsox$rt[, i],    opt$quant) # SOx - RICE & Turbines
+  eE$fsox.q$sh[, i]    <- quantile(eE$fsox$sh[, i],    opt$quant) # SOx - Separators & Heaters
+  
+  eE$fnox.q$wc[, i]    <- quantile(eE$fnox$wc[, i],    opt$quant) # NOx - Well completions
+  eE$fnox.q$rt[, i]    <- quantile(eE$fnox$rt[, i],    opt$quant) # NOx - RICE & Turbines
+  eE$fnox.q$sh[, i]    <- quantile(eE$fnox$sh[, i],    opt$quant) # NOx - Separators & Heaters
+  eE$fnox.q$dh[, i]    <- quantile(eE$fnox$dh[, i],    opt$quant) # NOx - Dehydrators
+  eE$fnox.q$tank[, i]  <- quantile(eE$fnox$tank[, i],  opt$quant) # NOx - Tanks
+  
+  eE$fvoc.q$wc[, i]    <- quantile(eE$fvoc$wc[, i],    opt$quant) # voc - Well completions
+  eE$fvoc.q$rt[, i]    <- quantile(eE$fvoc$rt[, i],    opt$quant) # voc - RICE & Turbines
+  eE$fvoc.q$sh[, i]    <- quantile(eE$fvoc$sh[, i],    opt$quant) # voc - Separators & Heaters
+  eE$fvoc.q$dh[, i]    <- quantile(eE$fvoc$dh[, i],    opt$quant) # voc - Dehydrators
+  eE$fvoc.q$tank[, i]  <- quantile(eE$fvoc$tank[, i],  opt$quant) # voc - Tanks
+  eE$fvoc.q$truck[, i] <- quantile(eE$fvoc$truck[, i], opt$quant) # voc - Truck Loading
+  eE$fvoc.q$pctrl[, i] <- quantile(eE$fvoc$pctrl[, i], opt$quant) # voc - Pneumatic Controllers
+  eE$fvoc.q$ppump[, i] <- quantile(eE$fvoc$ppump[, i], opt$quant) # voc - Pneumatic Pumps
+  eE$fvoc.q$fug[, i]   <- quantile(eE$fvoc$fug[, i],   opt$quant) # voc - Fugitives
+  
+  eE$fco.q$wc[, i]     <- quantile(eE$fco$wc[, i],     opt$quant) # CO - Well completions
+  eE$fco.q$rt[, i]     <- quantile(eE$fco$rt[, i],     opt$quant) # CO - RICE & Turbines
+  eE$fco.q$sh[, i]     <- quantile(eE$fco$sh[, i],     opt$quant) # CO - Separators & Heaters
+  eE$fco.q$dh[, i]     <- quantile(eE$fco$dh[, i],     opt$quant) # CO - Dehydrators
+  eE$fco.q$tank[, i]   <- quantile(eE$fco$tank[, i],   opt$quant) # CO - Tanks
+  
+  # Reduced emission by species and equipment type
+  reE$fpm10.q$wc[, i]   <- quantile(reE$fpm10$wc[, i],   opt$quant) # PM10 - Well completions
+  reE$fpm10.q$rt[, i]   <- quantile(reE$fpm10$rt[, i],   opt$quant) # PM10 - RICE & Turbines
+  reE$fpm10.q$sh[, i]   <- quantile(reE$fpm10$sh[, i],   opt$quant) # PM10 - Separators & Heaters
+  
+  reE$fpm25.q$wc[, i]   <- quantile(reE$fpm25$wc[, i],   opt$quant) # PM25 - Well completions
+  reE$fpm25.q$rt[, i]   <- quantile(reE$fpm25$rt[, i],   opt$quant) # PM25 - RICE & Turbines
+  reE$fpm25.q$sh[, i]   <- quantile(reE$fpm25$sh[, i],   opt$quant) # PM25 - Separators & Heaters
+  
+  reE$fsox.q$rt[, i]    <- quantile(reE$fsox$rt[, i],    opt$quant) # SOx - RICE & Turbines
+  reE$fsox.q$sh[, i]    <- quantile(reE$fsox$sh[, i],    opt$quant) # SOx - Separators & Heaters
+  
+  reE$fnox.q$wc[, i]    <- quantile(reE$fnox$wc[, i],    opt$quant) # NOx - Well completions
+  reE$fnox.q$rt[, i]    <- quantile(reE$fnox$rt[, i],    opt$quant) # NOx - RICE & Turbines
+  reE$fnox.q$sh[, i]    <- quantile(reE$fnox$sh[, i],    opt$quant) # NOx - Separators & Heaters
+  reE$fnox.q$dh[, i]    <- quantile(reE$fnox$dh[, i],    opt$quant) # NOx - Dehydrators
+  reE$fnox.q$tank[, i]  <- quantile(reE$fnox$tank[, i],  opt$quant) # NOx - Tanks
+  
+  reE$fvoc.q$wc[, i]    <- quantile(reE$fvoc$wc[, i],    opt$quant) # voc - Well completions
+  reE$fvoc.q$rt[, i]    <- quantile(reE$fvoc$rt[, i],    opt$quant) # voc - RICE & Turbines
+  reE$fvoc.q$sh[, i]    <- quantile(reE$fvoc$sh[, i],    opt$quant) # voc - Separators & Heaters
+  reE$fvoc.q$dh[, i]    <- quantile(reE$fvoc$dh[, i],    opt$quant) # voc - Dehydrators
+  reE$fvoc.q$tank[, i]  <- quantile(reE$fvoc$tank[, i],  opt$quant) # voc - Tanks
+  reE$fvoc.q$truck[, i] <- quantile(reE$fvoc$truck[, i], opt$quant) # voc - Truck Loading
+  reE$fvoc.q$pctrl[, i] <- quantile(reE$fvoc$pctrl[, i], opt$quant) # voc - Pneumatic Controllers
+  reE$fvoc.q$ppump[, i] <- quantile(reE$fvoc$ppump[, i], opt$quant) # voc - Pneumatic Pumps
+  reE$fvoc.q$fug[, i]   <- quantile(reE$fvoc$fug[, i],   opt$quant) # voc - Fugitives
+  
+  reE$fco.q$wc[, i]     <- quantile(reE$fco$wc[, i],     opt$quant) # CO - Well completions
+  reE$fco.q$rt[, i]     <- quantile(reE$fco$rt[, i],     opt$quant) # CO - RICE & Turbines
+  reE$fco.q$sh[, i]     <- quantile(reE$fco$sh[, i],     opt$quant) # CO - Separators & Heaters
+  reE$fco.q$dh[, i]     <- quantile(reE$fco$dh[, i],     opt$quant) # CO - Dehydrators
+  reE$fco.q$tank[, i]   <- quantile(reE$fco$tank[, i],   opt$quant) # CO - Tanks
 }
 
 
 # Excel Export ------------------------------------------------------------
 
-# Function to calculate equipment specific emissoin quantiles for each species
-export2excel <- function(spec.x, f.x, first = FALSE, name) {
+# Export equipment-based emissions results to Excel?
+if(opt$xls.export == T) {
   
-  # Multiply total emissions by emission fractions for given equipment type
-  equip <- spec.x * f.x
-  
-  # Apply quantile across columns (i.e. time steps)
-  temp <- t(apply(X = equip, MARGIN = 2, FUN = quantile, probs = rev(opt$quant)))
-  
-  if(first == TRUE) {
+  # Function to calculate equipment specific emissoin quantiles for each species
+  export2excel <- function(fspec, first = FALSE, name) {
     
-    # Write to Excel
-    write.xlsx(x = data.frame(Date = opt$tsteps,
-                              temp),
-               file = file.path(path$data, paste("Equipment-based emission results ",
-                                                 opt$file_ver, ".xlsx", sep = "")),
-               sheetName = name, row.names = F)
-  } else {
+    # Apply quantile across columns (i.e. time steps)
+    temp <- t(apply(X = fspec, MARGIN = 2, FUN = quantile, probs = rev(opt$quant)))
     
-    # Write to Excel and append
-    write.xlsx(x = data.frame(Date = opt$tsteps,
-                              temp),
-               file = file.path(path$data, paste("Equipment-based emission results ",
-                                                 opt$file_ver, ".xlsx", sep = "")),
-               sheetName = name, row.names = F, append = T)
+    if(first == TRUE) {
+      
+      # Write to Excel
+      write.xlsx(x = data.frame(Date = opt$tsteps,
+                                temp),
+                 file = file.path(path$data, paste(opt$xls.name,
+                                                   opt$file_ver, ".xlsx", sep = "")),
+                 sheetName = name, row.names = F)
+    } else {
+      
+      # Write to Excel and append
+      write.xlsx(x = data.frame(Date = opt$tsteps,
+                                temp),
+                 file = file.path(path$data, paste(opt$xls.name,
+                                                   opt$file_ver, ".xlsx", sep = "")),
+                 sheetName = name, row.names = F, append = T)
+    }
   }
+  
+  # Run export function on each equipment/species/base|reduction combination
+  
+  # Well completions
+  export2excel(fspec = eE$fpm10$wc,    name = "wc-PM10", first = T) # PM10
+  export2excel(fspec = reE$fpm10$wc,   name = "rwc-PM10")           # PM10 - reduced
+  export2excel(fspec = eE$fpm25$wc,    name = "wc-PM25")            # PM25
+  export2excel(fspec = reE$fpm25$wc,   name = "rwc-PM25")           # PM25 - reduced
+  export2excel(fspec = eE$fnox$wc,     name = "wc-NOx")             # NOX
+  export2excel(fspec = reE$fnox$wc,    name = "rwc-NOx")            # NOX  - reduced
+  export2excel(fspec = eE$fvoc$wc,     name = "wc-VOC")             # VOC
+  export2excel(fspec = reE$fvoc$wc,    name = "rwc-VOC")            # VOC  - reduced
+  export2excel(fspec = eE$fco$wc,      name = "wc-CO")              # CO
+  export2excel(fspec = reE$fco$wc,     name = "rwc-CO")             # CO   - reduced
+  
+  # RICE & Turbines
+  export2excel(fspec = eE$fpm10$rt,    name = "rt-PM10")  # PM10
+  export2excel(fspec = reE$fpm10$rt,   name = "rrt-PM10") # PM10 - reduced
+  export2excel(fspec = eE$fpm25$rt,    name = "rt-PM25")  # PM25
+  export2excel(fspec = reE$fpm25$rt,   name = "rrt-PM25") # PM25 - reduced
+  export2excel(fspec = eE$fsox$rt,     name = "rt-SOx")   # SOX
+  export2excel(fspec = reE$fsox$rt,    name = "rrt-SOx")  # SOX  - reduced
+  export2excel(fspec = eE$fnox$rt,     name = "rt-NOx")   # NOX
+  export2excel(fspec = reE$fnox$rt,    name = "rrt-NOx")  # NOX  - reduced
+  export2excel(fspec = eE$fvoc$rt,     name = "rt-VOC")   # VOC
+  export2excel(fspec = reE$fvoc$rt,    name = "rrt-VOC")  # VOC  - reduced
+  export2excel(fspec = eE$fco$rt,      name = "rt-CO")    # CO
+  export2excel(fspec = reE$fco$rt,     name = "rrt-CO")   # CO   - reduced
+  export2excel(fspec = eE$ch2o,        name = "rt-CH2O")  # CH2O
+  export2excel(fspec = reE$ch2o,       name = "rrt-CH2O") # CH2O - reduced
+  
+  # Separators and Heaters
+  export2excel(fspec = eE$fpm10$sh,    name = "sh-PM10")  # PM10
+  export2excel(fspec = reE$fpm10$sh,   name = "rsh-PM10") # PM10 - reduced
+  export2excel(fspec = eE$fpm25$sh,    name = "sh-PM25")  # PM25
+  export2excel(fspec = reE$fpm25$sh,   name = "rsh-PM25") # PM25 - reduced
+  export2excel(fspec = eE$fsox$sh,     name = "sh-SOx")   # SOX
+  export2excel(fspec = reE$fsox$sh,    name = "rsh-SOx")  # SOX  - reduced
+  export2excel(fspec = eE$fnox$sh,     name = "sh-NOx")   # NOX
+  export2excel(fspec = reE$fnox$sh,    name = "rsh-NOx")  # NOX  - reduced
+  export2excel(fspec = eE$fvoc$sh,     name = "sh-VOC")   # VOC
+  export2excel(fspec = reE$fvoc$sh,    name = "rsh-VOC")  # VOC  - reduced
+  export2excel(fspec = eE$fco$sh,      name = "sh-CO")    # CO
+  export2excel(fspec = reE$fco$sh,     name = "rsh-CO")   # CO   - reduced
+  
+  # Dehydrators
+  export2excel(fspec = eE$fnox$dh,     name = "dh-NOx")  # NOX
+  export2excel(fspec = reE$fnox$dh,    name = "rdh-NOx") # NOX  - reduced
+  export2excel(fspec = eE$fvoc$dh,     name = "dh-VOC")  # VOC
+  export2excel(fspec = reE$fvoc$dh,    name = "rdh-VOC") # VOC  - reduced
+  export2excel(fspec = eE$fco$dh,      name = "dh-CO")   # CO
+  export2excel(fspec = reE$fco$dh,     name = "rdh-CO")  # CO   - reduced
+  
+  # Tanks
+  export2excel(fspec = eE$fnox$tank,   name = "tank-NOx")  # NOX
+  export2excel(fspec = reE$fnox$tank,  name = "rtank-NOx") # NOX  - reduced
+  export2excel(fspec = eE$fvoc$tank,   name = "tank-VOC")  # VOC
+  export2excel(fspec = reE$fvoc$tank,  name = "rtank-VOC") # VOC  - reduced
+  export2excel(fspec = eE$fco$tank,    name = "tank-CO")   # CO
+  export2excel(fspec = reE$fco$tank,   name = "rtank-CO")  # CO   - reduced
+  
+  # Trucks
+  export2excel(fspec = eE$fvoc$truck,  name = "truck-VOC")  # VOC
+  export2excel(fspec = reE$fvoc$truck, name = "rtruck-VOC") # VOC  - reduced
+  
+  # Pneumatic Controllers
+  export2excel(fspec = eE$fvoc$pctrl,  name = "pctrl-VOC")  # VOC
+  export2excel(fspec = reE$fvoc$pctrl, name = "rpctrl-VOC") # VOC  - reduced
+  
+  # Pneumatic Pumps
+  export2excel(fspec = eE$fvoc$ppump,  name = "ppump-VOC")  # VOC
+  export2excel(fspec = reE$fvoc$ppump, name = "rppump-VOC") # VOC  - reduced
+  
+  # Fugitives
+  export2excel(fspec = eE$fvoc$fug,    name = "fug-VOC")  # VOC
+  export2excel(fspec = reE$fvoc$fug,   name = "rfug-VOC") # VOC  - reduced 
 }
-
-# Run export function on each equipment/species/base|reduction combination
-
-# Well completions
-export2excel(spec.x = eE$pm10,  f.x = eE$fpm10$wc,  name = "wc-PM10", first = T) # PM10
-export2excel(spec.x = reE$pm10, f.x = reE$fpm10$wc, name = "rwc-PM10")           # PM10 - reduced
-export2excel(spec.x = eE$pm25,  f.x = eE$fpm25$wc,  name = "wc-PM25")            # PM25
-export2excel(spec.x = reE$pm25, f.x = reE$fpm25$wc, name = "rwc-PM25")           # PM25 - reduced
-export2excel(spec.x = eE$nox,   f.x = eE$fnox$wc,   name = "wc-NOx")             # NOX
-export2excel(spec.x = reE$nox,  f.x = reE$fnox$wc,  name = "rwc-NOx")            # NOX  - reduced
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$wc,   name = "wc-VOC")             # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$wc,  name = "rwc-VOC")            # VOC  - reduced
-export2excel(spec.x = eE$co,    f.x = eE$fco$wc,    name = "wc-CO")              # CO
-export2excel(spec.x = reE$co,   f.x = reE$fco$wc,   name = "rwc-CO")             # CO   - reduced
-
-# RICE & Turbines
-export2excel(spec.x = eE$pm10,  f.x = eE$fpm10$rt,  name = "rt-PM10")  # PM10
-export2excel(spec.x = reE$pm10, f.x = reE$fpm10$rt, name = "rrt-PM10") # PM10 - reduced
-export2excel(spec.x = eE$pm25,  f.x = eE$fpm25$rt,  name = "rt-PM25")  # PM25
-export2excel(spec.x = reE$pm25, f.x = reE$fpm25$rt, name = "rrt-PM25") # PM25 - reduced
-export2excel(spec.x = eE$sox,   f.x = eE$fsox$rt,   name = "rt-SOx")   # SOX
-export2excel(spec.x = reE$sox,  f.x = reE$fsox$rt,  name = "rrt-SOx")  # SOX  - reduced
-export2excel(spec.x = eE$nox,   f.x = eE$fnox$rt,   name = "rt-NOx")   # NOX
-export2excel(spec.x = reE$nox,  f.x = reE$fnox$rt,  name = "rrt-NOx")  # NOX  - reduced
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$rt,   name = "rt-VOC")   # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$rt,  name = "rrt-VOC")  # VOC  - reduced
-export2excel(spec.x = eE$co,    f.x = eE$fco$rt,    name = "rt-CO")    # CO
-export2excel(spec.x = reE$co,   f.x = reE$fco$rt,   name = "rrt-CO")   # CO   - reduced
-export2excel(spec.x = eE$ch2o,  f.x = 1,            name = "rt-CH2O")  # CH2O
-export2excel(spec.x = reE$ch2o, f.x = 1,            name = "rrt-CH2O") # CH2O - reduced
-
-# Separators and Heaters
-export2excel(spec.x = eE$pm10,  f.x = eE$fpm10$sh,  name = "sh-PM10")  # PM10
-export2excel(spec.x = reE$pm10, f.x = reE$fpm10$sh, name = "rsh-PM10") # PM10 - reduced
-export2excel(spec.x = eE$pm25,  f.x = eE$fpm25$sh,  name = "sh-PM25")  # PM25
-export2excel(spec.x = reE$pm25, f.x = reE$fpm25$sh, name = "rsh-PM25") # PM25 - reduced
-export2excel(spec.x = eE$sox,   f.x = eE$fsox$sh,   name = "sh-SOx")   # SOX
-export2excel(spec.x = reE$sox,  f.x = reE$fsox$sh,  name = "rsh-SOx")  # SOX  - reduced
-export2excel(spec.x = eE$nox,   f.x = eE$fnox$sh,   name = "sh-NOx")   # NOX
-export2excel(spec.x = reE$nox,  f.x = reE$fnox$sh,  name = "rsh-NOx")  # NOX  - reduced
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$sh,   name = "sh-VOC")   # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$sh,  name = "rsh-VOC")  # VOC  - reduced
-export2excel(spec.x = eE$co,    f.x = eE$fco$sh,    name = "sh-CO")    # CO
-export2excel(spec.x = reE$co,   f.x = reE$fco$sh,   name = "rsh-CO")   # CO   - reduced
-
-# Dehydrators
-export2excel(spec.x = eE$nox,   f.x = eE$fnox$dh,   name = "dh-NOx")  # NOX
-export2excel(spec.x = reE$nox,  f.x = reE$fnox$dh,  name = "rdh-NOx") # NOX  - reduced
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$dh,   name = "dh-VOC")  # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$dh,  name = "rdh-VOC") # VOC  - reduced
-export2excel(spec.x = eE$co,    f.x = eE$fco$dh,    name = "dh-CO")   # CO
-export2excel(spec.x = reE$co,   f.x = reE$fco$dh,   name = "rdh-CO")  # CO   - reduced
-
-# Tanks
-export2excel(spec.x = eE$nox,   f.x = eE$fnox$tank,   name = "tank-NOx")  # NOX
-export2excel(spec.x = reE$nox,  f.x = reE$fnox$tank,  name = "rtank-NOx") # NOX  - reduced
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$tank,   name = "tank-VOC")  # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$tank,  name = "rtank-VOC") # VOC  - reduced
-export2excel(spec.x = eE$co,    f.x = eE$fco$tank,    name = "tank-CO")   # CO
-export2excel(spec.x = reE$co,   f.x = reE$fco$tank,   name = "rtank-CO")  # CO   - reduced
-
-# Trucks
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$truck,   name = "truck-VOC")  # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$truck,  name = "rtruck-VOC") # VOC  - reduced
-
-# Pneumatic Controllers
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$pctrl,   name = "pctrl-VOC")  # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$pctrl,  name = "rpctrl-VOC") # VOC  - reduced
-
-# Pneumatic Pumps
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$ppump,   name = "ppump-VOC")  # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$ppump,  name = "rppump-VOC") # VOC  - reduced
-
-# Fugitives
-export2excel(spec.x = eE$voc,   f.x = eE$fvoc$fug,   name = "fug-VOC")  # VOC
-export2excel(spec.x = reE$voc,  f.x = reE$fvoc$fug,  name = "rfug-VOC") # VOC  - reduced
 
 
 # Global plotting options -------------------------------------------------
@@ -673,7 +808,7 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# 08 - otal oil production simulated vs actual ----------------------------
+# 08 - Total oil production simulated vs actual ----------------------------
 if(opt$plist$plot[j] == TRUE) {
   
   # If exporting to PDF
@@ -1929,315 +2064,155 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# 32 - EQ-Based PM10 Emissions --------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
+# Equiment-based emissions results ----------------------------------------
+
+# The next set of plots show the emissions results for equipment-based emissions
+# calculations by:
+
+# (a) Total emissions by species
+# (b) Emissions by species and equipment type
+
+# All plots follow the same pattern. As such, an internal function in defined
+# here for plotting them.
+emplot <- function(x, rx, type) {
   
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, eE$pm10.q[1,],
-       type = "l",
-       ylim = c(0.9*min(eE$pm10.q),
-                1.1*max(eE$pm10.q)),
-       col = qlinecolor[1],
-       lty = 1,
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "PM10 Emissions (tons)")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-  lines(opt$tsteps, reE$pm10.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, eE$pm10.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, reE$pm10.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+  # Should plot be made?
+  if(opt$plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF, call pdf() function
+    if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+    
+    # Set font size
+    par(cex = opt$defFontSize)
+    
+    # Main plot with largest quantile result
+    plot(opt$tsteps, x[1,],
+         type = "l",
+         ylim = c(0.9*min(x),
+                  1.1*max(x)),
+         col = qlinecolor[1],
+         lty = 1,
+         lwd = qlinewidth[1],
+         xlab = "Time (months)",
+         ylab = paste(type, "Emissions (tons)"),
+         main = paste("Total", type, "Emissions (Equipment-Based)"))
+    mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
+    lines(opt$tsteps, rx[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+    
+    # Other quantile lines
+    for (i in 2:length(opt$quant)) {
+      lines(opt$tsteps, x[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
+      lines(opt$tsteps, rx[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    }
+    
+    # Legend
+    legend("topleft",
+           c("90%", "70%", "50%", "30%", "10%"),
+           ncol = 2,
+           col = qlinecolor,
+           lty = qlinetype,
+           lwd = qlinewidth)
+    
+    # If exporting to PDF, close PDF
+    if(opt$exportFlag == TRUE) {dev.off()}
   }
-  
-  # Legend
-  legend("topleft",
-         c("90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = qlinecolor,
-         lty = qlinetype,
-         lwd = qlinewidth)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
 }
 
-# Increment counter
-j <- j+1
-
-
-# 33 - EQ-Based PM25 Emissions --------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
+# Equipment-based emissions plots - by species by equipment type
+eqplot <- function(x, rx, type, equip) {
   
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, eE$pm25.q[1,],
-       type = "l",
-       ylim = c(0.9*min(eE$pm25.q),
-                1.1*max(eE$pm25.q)),
-       col = qlinecolor[1],
-       lty = 1,
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "PM2.5 Emissions (tons)",
-       main = "Total PM2.5 Emissions (Equipment-Based)")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-  lines(opt$tsteps, reE$pm25.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, eE$pm25.q[i,],   col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, reE$pm25.q[i,],  col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+  # Should plot be made?
+  if(opt$plist$plot[j] == TRUE) {
+    
+    # If exporting to PDF, call pdf() function
+    if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+    
+    # Set font size
+    par(cex = opt$defFontSize)
+    
+    # Main plot with largest quantile result
+    plot(opt$tsteps, x[1,],
+         type = "l",
+         ylim = c(0.9*min(x),
+                  1.1*max(x)),
+         col = qlinecolor[1],
+         lty = 1,
+         lwd = qlinewidth[1],
+         xlab = "Time (months)",
+         ylab = paste(type, "Emissions (tons)"),
+         main = paste(equip, type, "Emissions"))
+    mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
+    lines(opt$tsteps, rx[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+    
+    # Other quantile lines
+    for (i in 2:length(opt$quant)) {
+      lines(opt$tsteps, x[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
+      lines(opt$tsteps, rx[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    }
+    
+    # Legend
+    legend("topleft",
+           c("90%", "70%", "50%", "30%", "10%"),
+           ncol = 2,
+           col = qlinecolor,
+           lty = qlinetype,
+           lwd = qlinewidth)
+    
+    # If exporting to PDF, close PDF
+    if(opt$exportFlag == TRUE) {dev.off()}
   }
-  
-  # Legend
-  legend("topleft",
-         c("90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = qlinecolor,
-         lty = qlinetype,
-         lwd = qlinewidth)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
 }
 
-# Increment counter
-j <- j+1
 
 
-# 34 - EQ-Based SOX Emissions ---------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, eE$sox.q[1,],
-       type = "l",
-       ylim = c(0.9*min(eE$sox.q),
-                1.1*max(eE$sox.q)),
-       col = qlinecolor[1],
-       lty = 1,
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "SOx Emissions (tons)",
-       main = "Total SOx Emissions (Equipment-Based)")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-  lines(opt$tsteps, reE$sox.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, eE$sox.q[i,],   col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, reE$sox.q[i,],  col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
-  }
-  
-  # Legend
-  legend("topleft",
-         c("90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = qlinecolor,
-         lty = qlinetype,
-         lwd = qlinewidth)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
+# 32-38 - Total EQ-Based Emissions ----------------------------------------
 
-# Increment counter
-j <- j+1
+# emplot function calls
+emplot(x = eE$pm10.q, rx = reE$pm10.q, type = "PM10"); j <- j +1 # PM10
+emplot(x = eE$pm25.q, rx = reE$pm25.q, type = "PM25"); j <- j +1 # PM25
+emplot(x = eE$sox.q,  rx = reE$sox.q,  type = "SOx");  j <- j +1 # SOx
+emplot(x = eE$nox.q,  rx = reE$nox.q,  type = "NOx");  j <- j +1 # NOx
+emplot(x = eE$voc.q,  rx = reE$voc.q,  type = "VOC");  j <- j +1 # VOC
+emplot(x = eE$co.q,   rx = reE$co.q,   type = "CO");   j <- j +1 # CO
+emplot(x = eE$ch2o.q, rx = reE$ch2o.q, type = "CH2O"); j <- j +1 # CH2O
 
 
-# 35 - EQ-Based NOX Emissions ---------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, eE$nox.q[1,],
-       type = "l",
-       ylim = c(0.9*min(eE$nox.q),
-                1.1*max(eE$nox.q)),
-       col = qlinecolor[1],
-       lty = 1,
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "NOx Emissions (tons)",
-       main = "Total NOx Emissions (Equipment-Based)")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-  lines(opt$tsteps, reE$nox.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, eE$nox.q[i,],   col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, reE$nox.q[i,],  col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
-  }
-  
-  # Legend
-  legend("topleft",
-         c("90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = qlinecolor,
-         lty = qlinetype,
-         lwd = qlinewidth)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
+# 39-60 EQ-Based Results - by species, by equipment type ------------------
 
-# Increment counter
-j <- j+1
+# PM10
+eqplot(x = eE$fpm10.q$wc,   rx = reE$fpm10.q$wc,    type = "PM10", equip = "Well Completion");    j <- j +1
+eqplot(x = eE$fpm10.q$rt,   rx = reE$fpm10.q$rt,    type = "PM10", equip = "RICE & Turbine");     j <- j +1
+eqplot(x = eE$fpm10.q$sh,   rx = reE$fpm10.q$sh,    type = "PM10", equip = "Separator & Heater"); j <- j +1
 
+# PM25
+eqplot(x = eE$fpm25.q$wc,   rx = reE$fpm25.q$wc,    type = "PM25", equip = "Well Completion");    j <- j +1
+eqplot(x = eE$fpm25.q$rt,   rx = reE$fpm25.q$rt,    type = "PM25", equip = "RICE & Turbine");     j <- j +1
+eqplot(x = eE$fpm25.q$sh,   rx = reE$fpm25.q$sh,    type = "PM25", equip = "Separator & Heater"); j <- j +1
 
-# 36 - EQ-Based VOC Emissions ---------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, eE$voc.q[1,],
-       type = "l",
-       ylim = c(0.9*min(eE$voc.q),
-                1.1*max(eE$voc.q)),
-       col = qlinecolor[1],
-       lty = 1,
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "VOC Emissions (tons)",
-       main = "Total VOC Emissions (Equipment-Based)")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-  lines(opt$tsteps, reE$voc.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, eE$voc.q[i,],   col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, reE$voc.q[i,],  col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
-  }
-  
-  # Legend
-  legend("topleft",
-         c("90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = qlinecolor,
-         lty = qlinetype,
-         lwd = qlinewidth)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
+# SOx
+eqplot(x = eE$fsox.q$rt,    rx = reE$fsox.q$rt,    type = "SOx",   equip = "RICE & Turbine");     j <- j +1
+eqplot(x = eE$fsox.q$sh,    rx = reE$fsox.q$sh,    type = "SOx",   equip = "Separator & Heater"); j <- j +1
 
-# Increment counter
-j <- j+1
+# NOx
+eqplot(x = eE$fnox.q$wc,    rx = reE$fnox.q$wc,    type = "NOx",   equip = "Well Completion");    j <- j +1
+eqplot(x = eE$fnox.q$rt,    rx = reE$fnox.q$rt,    type = "NOx",   equip = "RICE & Turbine");     j <- j +1
+eqplot(x = eE$fnox.q$sh,    rx = reE$fnox.q$sh,    type = "NOx",   equip = "Separator & Heater"); j <- j +1
+eqplot(x = eE$fnox.q$dh,    rx = reE$fnox.q$dh,    type = "NOx",   equip = "Dehydrator");         j <- j +1
+eqplot(x = eE$fnox.q$tank,  rx = reE$fnox.q$tank,  type = "NOx",   equip = "Tank");               j <- j +1
 
+# VOC
+eqplot(x = eE$fvoc.q$wc,    rx = reE$fvoc.q$wc,    type = "VOC",   equip = "Well Completion");      j <- j +1
+eqplot(x = eE$fvoc.q$rt,    rx = reE$fvoc.q$rt,    type = "VOC",   equip = "RICE & Turbine");       j <- j +1
+eqplot(x = eE$fvoc.q$sh,    rx = reE$fvoc.q$sh,    type = "VOC",   equip = "Separator & Heater");   j <- j +1
+eqplot(x = eE$fvoc.q$dh,    rx = reE$fvoc.q$dh,    type = "VOC",   equip = "Dehydrator");           j <- j +1
+eqplot(x = eE$fvoc.q$tank,  rx = reE$fvoc.q$tank,  type = "VOC",   equip = "Tank");                 j <- j +1
+eqplot(x = eE$fvoc.q$truck, rx = reE$fvoc.q$truck, type = "VOC",   equip = "Truck Loading");        j <- j +1
+eqplot(x = eE$fvoc.q$pctrl, rx = reE$fvoc.q$pctrl, type = "VOC",   equip = "Pneumatic Controller"); j <- j +1
+eqplot(x = eE$fvoc.q$ppump, rx = reE$fvoc.q$ppump, type = "VOC",   equip = "Pneumatic Pump");       j <- j +1
+eqplot(x = eE$fvoc.q$fug,   rx = reE$fvoc.q$fug,   type = "VOC",   equip = "Fugitive");             j <- j +1
 
-# 37 - EQ-Based CO Emissions ----------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, eE$co.q[1,],
-       type = "l",
-       ylim = c(0.9*min(eE$co.q),
-                1.1*max(eE$co.q)),
-       col = qlinecolor[1],
-       lty = 1,
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "CO Emissions (tons)",
-       main = "Total CO Emissions (Equipment-Based)")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-  lines(opt$tsteps, reE$co.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, eE$co.q[i,],   col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, reE$co.q[i,],  col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
-  }
-  
-  # Legend
-  legend("topleft",
-         c("90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = qlinecolor,
-         lty = qlinetype,
-         lwd = qlinewidth)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
-
-
-# 38 - EQ-Based CH2O Emissions --------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot with largest quantile result
-  plot(opt$tsteps, eE$ch2o.q[1,],
-       type = "l",
-       ylim = c(0.9*min(eE$ch2o.q),
-                1.1*max(eE$ch2o.q)),
-       col = qlinecolor[1],
-       lty = 1,
-       lwd = qlinewidth[1],
-       xlab = "Time (months)",
-       ylab = "CH2O Emissions (tons)",
-       main = "Total CH2O Emissions (Equipment-Based)")
-  mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-  lines(opt$tsteps, reE$ch2o.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
-  # Other quantile lines
-  for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, eE$ch2o.q[i,],   col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, reE$ch2o.q[i,],  col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
-  }
-  
-  # Legend
-  legend("topleft",
-         c("90%", "70%", "50%", "30%", "10%"),
-         ncol = 2,
-         col = qlinecolor,
-         lty = qlinetype,
-         lwd = qlinewidth)
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
+eqplot(x = eE$fco.q$wc,     rx = reE$fco.q$wc,     type = "CO",    equip = "Well Completion");    j <- j +1
+eqplot(x = eE$fco.q$rt,     rx = reE$fco.q$rt,     type = "CO",    equip = "RICE & Turbine");     j <- j +1
+eqplot(x = eE$fco.q$sh,     rx = reE$fco.q$sh,     type = "CO",    equip = "Separator & Heater"); j <- j +1
+eqplot(x = eE$fco.q$dh,     rx = reE$fco.q$dh,     type = "CO",    equip = "Dehydrator");         j <- j +1
+eqplot(x = eE$fco.q$tank,   rx = reE$fco.q$tank,   type = "CO",    equip = "Tank");               j <- j +1

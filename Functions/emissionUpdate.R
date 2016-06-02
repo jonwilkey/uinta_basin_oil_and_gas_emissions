@@ -40,7 +40,7 @@ emissionUpdate <- function(path, ver) {
   oper.info <-   read.csv(file.path(pOGEI, "operator_info.csv"))         # Operator information
   pneum.ctrl <-  read.csv(file.path(pOGEI, "pneumatic_controllers.csv")) # Pneumatic controllers
   pneum.pumps <- read.csv(file.path(pOGEI, "pneumatic_pumps.csv"))       # Pneumatic pumps
-  prod.areas <-  read.csv(file.path(pOGEI, "production_areas.csv"))      # Production areas (keep?)
+  prod.areas <-  read.csv(file.path(pOGEI, "production_areas.csv"))      # Production areas
   rice.EF <-     read.csv(file.path(pOGEI, "rice_emission_factors.csv")) # RICE emission factors
   rice.turb <-   read.csv(file.path(pOGEI, "rice_turbines.csv"))         # RICE turbines
   sep.heat <-    read.csv(file.path(pOGEI, "separators_heaters.csv"))    # Separators and heaters
@@ -126,7 +126,10 @@ emissionUpdate <- function(path, ver) {
   # Change from character to integer value
   prodlist$area <- as.integer(prodlist$area)
   
-  # Add in data about natural gas molecular weight and VOC wt%
+  # Add in data about natural gas molecular weight and VOC wt%. Note: only 
+  # looking at produced natural gas analysis (analysis_type == 0), not flash or 
+  # SWB gas (only need gas MW and voc wt% for produced natural gas for ppump
+  # calculation).
   temp <- subset(prod.areas,
                  subset = (analysis_type == 0),
                  select = c("operator_id",
@@ -213,15 +216,10 @@ emissionUpdate <- function(path, ver) {
   # Drop the rice_id column
   m <- m[, -which(names(m) == "rice_id")]
   
-  # WARNING - 67 NA's in result - currently cleared by next step
-  
-  # Drop any NA values (must have values in all remaining columns in order to
-  # perform calculation)
-  m <- na.omit(m)
-  
   # 2.2 --- Cumulative Probability Table ---
   
-  # Calculate and write results table to eci list
+  # Calculate and write results table to eci list. Note: NAs occur in result,
+  # primarily in wfrac (133 NA values)
   eci$rt <- cptable(m)
   
   
@@ -280,16 +278,23 @@ emissionUpdate <- function(path, ver) {
   # Add in wfrac using key
   m <- apimerge(tanks)
   
-  # Calculate combined oil and condensate volume if condensate volume is not NA
-  m$oil <- ifelse(test = is.na(tanks$throughput_condensate),
-                  yes =  tanks$throughput_oil,
-                  no =   tanks$throughput_oil + tanks$throughput_condensate)
+  # Calculate combined oil and condensate volume, setting any NA values to 0
+  m$oil <- (ifelse(test = is.na(tanks$throughput_condensate),
+                   yes =  0,
+                   no =   tanks$throughput_condensate) +
+              ifelse(test = is.na(tanks$throughput_oil),
+                     yes =  0,
+                     no =   tanks$throughput_oil) + 
+              ifelse(test = is.na(tanks$throughput_water),
+                     yes =  0,
+                     no =   tanks$throughput_water))
   
   # Calculate ratio of voc / oil
   m$ratio <- m$total_voc / m$oil
   
-  # Exclude any rows from m for which oil == 0 or for which the ratio is NA
-  m <- m[-which(m$oil == 0 | is.na(m$ratio)), ]
+  # About half of the rows in the table have ~0 oil production
+  # # Exclude any rows from m for which oil == 0 or for which the ratio is NA
+  # m <- m[-which(m$oil == 0 | is.na(m$ratio)), ]
   
   # Select desired input columns
   m <- m[, c("control_type",

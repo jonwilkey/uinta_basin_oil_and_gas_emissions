@@ -398,51 +398,53 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   # Summation function
   etotal <- function(E) {
     
-    # Calculate total emissions by species
-    r <- list(pm10 = colSums(E$wc$pm10   + E$rt$pm10   + E$sh$pm10),
-              pm25 = colSums(E$wc$pm25   + E$rt$pm25   + E$sh$pm25),
-              sox  = colSums(E$rt$sox    + E$sh$sox),
-              nox  = colSums(E$wc$nox    + E$rt$nox    + E$sh$nox + E$dh$nox + E$tank$nox),
-              voc  = colSums(E$wc$voc    + E$rt$voc    + E$sh$voc + E$dh$voc + E$tank$voc + E$truck$voc +
-                               E$pctrl$voc + E$ppump$voc + E$fug$voc),
-              co   = colSums(E$wc$co     + E$rt$co     + E$sh$co  + E$dh$co  + E$tank$co),
-              ch2o = colSums(E$rt$ch2o))
+    # Create r list object
+    r <- NULL
     
-    # Calculate how much each type of equipment contributed to each emissions total
-    r$fpm10 <- list(wc = colSums(E$wc$pm10) / r$pm10,
-                    rt = colSums(E$rt$pm10) / r$pm10,
-                    sh = colSums(E$sh$pm10) / r$pm10)
+    # Calculate total emissions by species and equipment type
+    r$fpm10 <- list(wc = colSums(E$wc$pm10),
+                    rt = colSums(E$rt$pm10),
+                    sh = colSums(E$sh$pm10))
     
-    r$fpm25 <- list(wc = colSums(E$wc$pm25) / r$pm25,
-                    rt = colSums(E$rt$pm25) / r$pm25,
-                    sh = colSums(E$sh$pm25) / r$pm25)
+    r$fpm25 <- list(wc = colSums(E$wc$pm25),
+                    rt = colSums(E$rt$pm25),
+                    sh = colSums(E$sh$pm25))
     
-    r$fsox <- list(rt = colSums(E$rt$sox) / r$sox,
-                   sh = colSums(E$sh$sox) / r$sox)
+    r$fsox <- list(rt = colSums(E$rt$sox),
+                   sh = colSums(E$sh$sox))
     
-    r$fnox <- list(wc   = colSums(E$wc$nox)   / r$nox,
-                   rt   = colSums(E$rt$nox)   / r$nox,
-                   sh   = colSums(E$sh$nox)   / r$nox,
-                   dh   = colSums(E$dh$nox)   / r$nox,
-                   tank = colSums(E$tank$nox) / r$nox)
+    r$fnox <- list(wc   = colSums(E$wc$nox),
+                   rt   = colSums(E$rt$nox),
+                   sh   = colSums(E$sh$nox),
+                   dh   = colSums(E$dh$nox),
+                   tank = colSums(E$tank$nox))
     
-    r$fvoc <- list(wc    = colSums(E$wc$voc)    / r$voc,
-                   rt    = colSums(E$rt$voc)    / r$voc,
-                   sh    = colSums(E$sh$voc)    / r$voc,
-                   dh    = colSums(E$dh$voc)    / r$voc,
-                   tank  = colSums(E$tank$voc)  / r$voc,
-                   truck = colSums(E$truck$voc) / r$voc,
-                   pctrl = colSums(E$pctrl$voc) / r$voc,
-                   ppump = colSums(E$ppump$voc) / r$voc,
-                   fug   = colSums(E$fug$voc)   / r$voc)
+    r$fvoc <- list(wc    = colSums(E$wc$voc),
+                   rt    = colSums(E$rt$voc),
+                   sh    = colSums(E$sh$voc),
+                   dh    = colSums(E$dh$voc),
+                   tank  = colSums(E$tank$voc),
+                   truck = colSums(E$truck$voc),
+                   pctrl = colSums(E$pctrl$voc),
+                   ppump = colSums(E$ppump$voc),
+                   fug   = colSums(E$fug$voc))
     
-    r$fco <- list(wc   = colSums(E$wc$co)   / r$co,
-                  rt   = colSums(E$rt$co)   / r$co,
-                  sh   = colSums(E$sh$co)   / r$co,
-                  dh   = colSums(E$dh$co)   / r$co,
-                  tank = colSums(E$tank$co) / r$co)
+    r$fco <- list(wc   = colSums(E$wc$co),
+                  rt   = colSums(E$rt$co),
+                  sh   = colSums(E$sh$co),
+                  dh   = colSums(E$dh$co),
+                  tank = colSums(E$tank$co))
     
     # CH2O emissions are entirely from RICE and Turbines
+    
+    # Calculate total emissions by species
+    r$pm10 <- with(r$fpm10, wc + rt + sh)
+    r$pm25 <- with(r$fpm25, wc + rt + sh)
+    r$sox  <- with(r$fsox,  rt + sh)
+    r$nox  <- with(r$fnox,  wc + rt + sh + dh + tank)
+    r$voc  <- with(r$fvoc,  wc + rt + sh + dh + tank + truck + pctrl + ppump + fug)
+    r$co   <- with(r$fco,   wc + rt + sh + dh + tank)
+    r$ch2o <- colSums(E$rt$ch2o)
     
     # Return result
     return(r)

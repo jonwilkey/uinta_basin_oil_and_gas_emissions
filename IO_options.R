@@ -16,7 +16,7 @@
 opt <- NULL
 
 # Options for loading prior results
-opt$load.prior <- F
+opt$load.prior <- T
 opt$load.name <- "results v1.rda"
 # opt$load.name <- "results v2.rda"
 
@@ -447,17 +447,17 @@ opt$EIA.ep.type <- "frac"
 # predicting)
 opt$EIA.fracProb <- 0.5
 
-# # User specified price path for oil
-# opt$uppo <- matrix(rep(35, opt$nrun * opt$MC.tsteps),
-#                    nrow =  opt$nrun,
-#                    ncol =  opt$MC.tsteps,
-#                    byrow = T)
-# 
-# # User specified price path for gas
-# opt$uppg <- matrix(rep(3.71, opt$nrun * opt$MC.tsteps),
-#                    nrow =  opt$nrun,
-#                    ncol =  opt$MC.tsteps,
-#                    byrow = T)
+# User specified price path for oil
+opt$uppo <- matrix(rep(35, opt$nrun * opt$MC.tsteps),
+                   nrow =  opt$nrun,
+                   ncol =  opt$MC.tsteps,
+                   byrow = T)
+
+# User specified price path for gas
+opt$uppg <- matrix(rep(3.71, opt$nrun * opt$MC.tsteps),
+                   nrow =  opt$nrun,
+                   ncol =  opt$MC.tsteps,
+                   byrow = T)
 
 
 # 3.2 drillSim Options ----------------------------------------------------
@@ -571,12 +571,13 @@ opt$EFred <- data.frame(cat =  c("prod", "proc", "transm", "compl", "drill", "pU
                         date = as.Date(c(rep("2012-11-01", 3), rep("2015-01-01", 4))))                # Effective date
 
 
-# 4.1 postProcess Options -------------------------------------------------
+# 4.0 postProcess Options -------------------------------------------------
 
-# Export options
+
+# 4.1 Plot Export options -------------------------------------------------
 opt$exportFlag <- T                        # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                  # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -predict -5yr -v1.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -xvalid -5yr -v1.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
@@ -618,7 +619,34 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("35 EQ-Based NOX Emissions",     T), # Total NOX emissions from equipment-based calculations
                    c("36 EQ-Based VOC Emissions",     T), # Total VOC emissions from equipment-based calculations
                    c("37 EQ-Based CO Emissions",      T), # Total CO emissions from equipment-based calculations
-                   c("38 EQ-Based CH2O Emissions",    T)  # Total CH2O emissions from equipment-based calculations
+                   c("38 EQ-Based CH2O Emissions",    T), # Total CH2O emissions from equipment-based calculations
+                   c("39 PM10 Emissions - WC",        T), # PM10 emissions from Well Completions
+                   c("40 PM10 Emissions - RT",        T), # PM10 emissions from RICE & Turbines
+                   c("41 PM10 Emissions - SH",        T), # PM10 emissions from Separators & Heaters
+                   c("42 PM25 Emissions - WC",        T), # PM25 emissions from Well Completions
+                   c("43 PM25 Emissions - RT",        T), # PM25 emissions from RICE & Turbines
+                   c("44 PM25 Emissions - SH",        T), # PM25 emissions from Separators & Heaters
+                   c("45 SOx Emissions - RT",         T), # SOx emissions from RICE & Turbines
+                   c("46 SOx Emissions - SH",         T), # SOx emissions from Separators & Heaters
+                   c("47 NOx Emissions - WC",         T), # NOx emissions from Well Completions
+                   c("48 NOx Emissions - RT",         T), # NOx emissions from RICE & Turbines
+                   c("49 NOx Emissions - SH",         T), # NOx emissions from Separators & Heaters
+                   c("50 NOx Emissions - DH",         T), # NOx emissions from Dehydrators
+                   c("51 NOx Emissions - Tanks",      T), # NOx emissions from Tanks
+                   c("52 VOC Emissions - WC",         T), # VOC emissions from Well Completions
+                   c("53 VOC Emissions - RT",         T), # VOC emissions from RICE & Turbines
+                   c("54 VOC Emissions - SH",         T), # VOC emissions from Separators & Heaters
+                   c("55 VOC Emissions - DH",         T), # VOC emissions from Dehydrators
+                   c("56 VOC Emissions - Tanks",      T), # VOC emissions from Tanks
+                   c("57 VOC Emissions - Trucks",     T), # VOC emissions from Truck Loading
+                   c("58 VOC Emissions - PCTRL",      T), # VOC emissions from Pneumatic Controllers
+                   c("59 VOC Emissions - PPUMP",      T), # VOC emissions from Pneumatic Pumps
+                   c("60 VOC Emissions - Fug",        T), # VOC emissions from Fugitive Emissions
+                   c("61 CO Emissions - WC",          T), # CO emissions from Well Completions
+                   c("62 CO Emissions - RT",          T), # CO emissions from RICE & Turbines
+                   c("63 CO Emissions - SH",          T), # CO emissions from Separators & Heaters
+                   c("64 CO Emissions - DH",          T), # CO emissions from Dehydrators
+                   c("65 CO Emissions - Tanks",       T)  # CO emissions from Tanks
 )
 
 # Convert to data.frame and adjust column names
@@ -630,3 +658,12 @@ opt$defFontSize <- 1.25
 
 # Quantiles to use to show uncertainty in simulated results
 opt$quant <- c(0.9, 0.7, 0.5, 0.3, 0.1)
+
+
+# 4.2 Excel export options ------------------------------------------------
+
+# Export equipment-based emissions results to Excel? (T/F)
+opt$xls.export <- F
+
+# Export name
+opt$xls.name <- "Equipment-based emission results "

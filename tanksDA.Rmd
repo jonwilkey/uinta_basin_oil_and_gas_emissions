@@ -1,0 +1,358 @@
+---
+title: "Tank VOC Emissions"
+author: "Jon Wilkey"
+date: "June 1, 2016"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 4
+    number_sections: true
+    fig_width: 6.5
+    fig_height: 6.5
+    fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# 1.1 Paths ---------------------------------------------------------------
+
+# Predefine list object "path" for holding directory path listings
+path <- NULL
+
+# Path switch - replace with the path directory for your local copy of the Git
+# repository and Dropbox files.
+pwd.drop <- "C:/Users/jonwi/"
+pwd.git  <- "C:/Users/jonwi/Documents/R/"
+  
+# Define paths.
+# "raw"  is raw data (*.dbf files from DOGM, *.csv files, etc.). 
+# "data" is prepared data files (typically *.rda).
+# "look" is lookup tables. 
+# "plot" is the directory for saving plot *.pdf files.
+# "work" is the working directory where main.R and IO_options.R are located.
+# "fun"  is the directory for all *.R functions.
+path$raw  <-    paste(pwd.drop, "Dropbox/UBOG/Raw Data", sep = "")
+path$data <-    paste(pwd.drop, "Dropbox/UBOG/Prepared Data", sep = "")
+path$look <-    paste(pwd.drop, "Dropbox/UBOG/Lookup Tables", sep = "")
+path$plot <-    paste(pwd.drop, "Dropbox/UBOG/Plots", sep = "")
+path$work <-    paste(pwd.git,  "ub_o-g_emissions", sep = "")
+path$fun  <-    paste(pwd.git,  "ub_o-g_emissions/Functions", sep = "")
+path$plotfun <- paste(pwd.git,  "ub_o-g_emissions/Functions/Plotting", sep = "")
+
+# Remove temporary path objects
+remove(pwd.drop, pwd.git)
+
+# Set working directory
+setwd(path$work)
+
+
+# 1.2 Functions -----------------------------------------------------------
+
+# List of functions used in this script to be loaded here
+flst <- file.path(path$fun, c("GBMsim.R",
+                              "EIAsim.R",
+                              "EIAsimLT.R",
+                              "drillsim.R",
+                              "priorProd.R",
+                              "priorInfo.R",
+                              "sim_tdelay.R",
+                              "sim_DCC.R",
+                              "sim_depth.R",
+                              "sim_EF.R",
+                              "sim_fieldnum.R",
+                              "sim_county.R",
+                              "sim_lease.R",
+                              "sim_rework.R",
+                              "sim_dupRework.R",
+                              "sim_tdrill.R",
+                              "sim_wellType.R",
+                              "productionsim.R",
+                              "priorProdReworkAdjust.R",
+                              "Ecalc.R",
+                              "LOCcalc.R",
+                              "calc_E_wc.R",
+                              "calc_E_rt.R",
+                              "calc_E_sh.R",
+                              "calc_E_dh.R",
+                              "calc_E_tank.R",
+                              "calc_E_truck.R",
+                              "calc_E_pctrl.R",
+                              "calc_E_ppump.R",
+                              "calc_E_fug.R",
+                              "clipboard.R",
+                              "inf_adj.R",
+                              "CDFd.R",
+                              "CDFq.R",
+                              "asYear.R",
+                              "NAoverwrite.R"))
+
+# Load each function in list then remove temporary file list variables
+for (f in flst) source(f); remove(f, flst)
+
+
+# 1.3 Packages -----------------------------------------------------------
+
+library(foreign)
+library(plyr)
+library(zoo)
+library(data.table)
+library(sqldf)
+library(minpack.lm)
+library(scatterplot3d)
+library(beepr)
+library(fitdistrplus)
+library(lhs)
+library(xtable)
+library(knitr)
+
+
+# 1.4 Options -------------------------------------------------------------
+
+# Don't want strings 'typed' as factors but as characters
+options(stringsAsFactors=FALSE)
+
+# Run scripts to load user defined input/output options
+source("IO_options.R")
+source("EF_options.R")
+
+# Set seed for random number generation (for reproducibility)
+set.seed(1)
+
+# 1.5 Load Data -----------------------------------------------------------
+
+# Load data sets used in analysis below
+load(file.path(path$data, paste("emissionUpdate_", opt$file_ver, ".rda", sep = "")))
+
+# File path for OGEI *.csv tables
+pOGEI <- file.path(path$raw, "OGEI")
+
+# Read in each OGEI table
+apis <-        read.csv(file.path(pOGEI, "apis.csv"))                  # API #'s associated with each facility ID
+comp.count <-  read.csv(file.path(pOGEI, "component_count.csv"))       # Component counts
+dehy <-        read.csv(file.path(pOGEI, "dehydrators.csv"))           # Dehydrators
+fac.list <-    read.csv(file.path(pOGEI, "facilities_list.csv"))       # Facilities list
+fugitives <-   read.csv(file.path(pOGEI, "fugitives.csv"))             # Fugitive emissions
+oper.info <-   read.csv(file.path(pOGEI, "operator_info.csv"))         # Operator information
+pneum.ctrl <-  read.csv(file.path(pOGEI, "pneumatic_controllers.csv")) # Pneumatic controllers
+pneum.pumps <- read.csv(file.path(pOGEI, "pneumatic_pumps.csv"))       # Pneumatic pumps
+prod.areas <-  read.csv(file.path(pOGEI, "production_areas.csv"))      # Production areas (keep?)
+rice.EF <-     read.csv(file.path(pOGEI, "rice_emission_factors.csv")) # RICE emission factors
+rice.turb <-   read.csv(file.path(pOGEI, "rice_turbines.csv"))         # RICE turbines
+sep.heat <-    read.csv(file.path(pOGEI, "separators_heaters.csv"))    # Separators and heaters
+tanks <-       read.csv(file.path(pOGEI, "tanks.csv"))                 # Tanks
+truck <-       read.csv(file.path(pOGEI, "truck_loading.csv"))         # Truck loading
+well.compl <-  read.csv(file.path(pOGEI, "well_completions.csv"))      # Well completions
+```
+
+# Introduction
+
+During the training webinar held on May 18, 2016, Whitney and I discussed options for estimating VOC emissions from tanks in the R model. Currently, the model randomly selects total VOC emissions for a tank from a cumulative probability table (CPT) based on data from the "tanks" table of the OGEI database. For example, suppose that a tank had total VOC emissions of 1.0 ton/yr, and that there was only 1 well associated with that tank. If a well randomly selected the row in the CPT for that particular tank, then the tank VOC emissions for that well would always be 1 ton/yr, or in the time steps used in the model, 0.083 ton/month. That emissions rate would be constant, and wouldn't vary with production rate.
+
+The reason that I adopted this approach was that during the data analysis phase I found a strange relationship between VOC emissions and oil throughput:
+
+```{r oil.no.na}
+plot(tanks$throughput_oil, tanks$total_voc,
+     xlab = "Annual Oil Throughput (bbl / yr)",
+     ylab = "Total VOC Emissions (tons / yr)",
+     main = "VOC Emissions vs. Oil Throughput")
+mtext("Note: Excluding records with NA values for throughput_oil in tanks table")
+
+# For future analysis below
+temp <- subset(tanks, subset = (throughput_oil > 0), select = c("total_voc", "throughput_oil"))
+temp$r <- temp$total_voc/temp$throughput_oil
+```
+
+During my first implementation attempt for tank VOC emissions, I calculated the ratio $r$ of tons VOCs emitted per barrel of oil throughput:
+
+$$\begin{equation}
+  r = \dfrac{VOC}{oil}
+\end{equation}$$
+
+and then randomly selected from the the $r$ ratio in the CPT. The total VOC tank emissions are then:
+
+$$\begin{equation}
+  VOC = r * oil
+\end{equation}$$
+
+where $oil$ is the vector of monthly oil production for a given well. The problem that I ran into is that $r$ spans a huge range, from a minimum of ~1e-07 to a maximum of ~22. A CDF for $r$ is shown below (neglecting those values of $r$ that are $\infty$ due to dividing by zero):
+
+```{r rCDF}
+plot(CDFq(vector = temp$r, xq = opt$xq),
+     xlim = c(1e-7, 1e1),
+     log = "x",
+     type = "l",
+     xlab = "r (log-scale)",
+     ylab = "Cumulative Probability",
+     main = "CDF of r Ratio")
+```
+
+So if you randomly pick $r$ from a CPT, you're fairly likely to combine it with a mismatched oil production vector, producing either too little or too much VOCs.
+
+Given the importance of tank VOCs in the overall emissions inventory, Whitney suggested that we spend more time on trying to refine the approach used so that we can still model emissions as a function of tank throughput (or some other factor that is related to the well(s) feeding into the tank). Plotted below are a series of exploratory plots that look at how VOC emissions vary as a function of fluid throughput, by:
+
+* Fluid type (oil, condensate, and water)
+* Control Type (controlled vs. uncontrolled)
+* Operator
+
+To cut down on the total number of plots, only the ten largest operators are considered, which are:
+
+```{r opers}
+top.op <- sqldf("select operator_id, count(*) as count from tanks group by operator_id order by count desc")[1:10,]
+print(top.op, row.names = F)
+```
+
+Note - count is the number of records in the tanks table for each operator ID number.
+
+# Exploratory Plots
+
+Notes:
+
+* In all plots black points represent uncontrolled sources, while red points indicate emissions from tanks with controls.
+* Any NA values in the data set for fluild throughput volume are assumed to be = 0
+    * `r length(which(is.na(tanks$throughput_oil)))` records for oil and `r length(which(is.na(tanks$throughput_condensate)))` records for condensate are NA out of `r nrow(tanks)` total records in the tanks table.
+    * Interestingly, only `r length(which(is.na(tanks$throughput_water)))` records for water are NA).
+* NA values for control type are assumed to be equivalent to "No Control".
+
+## All Operators
+
+```{r all.op}
+# Create dataset for future operations
+fld <- data.frame(voc = NA.overwrite(tanks$total_voc),
+                  oil = NA.overwrite(tanks$throughput_oil),
+                  con = NA.overwrite(tanks$throughput_condensate),
+                  wat = NA.overwrite(tanks$throughput_water),
+                  ctrl = ifelse(test = (tanks$control_type == "Combustor" |
+                                        tanks$control_type == "VRU"),
+                                yes  = T,
+                                no   = F),
+                  oper = tanks$operator_id)
+
+# Oil
+plot(voc ~ oil, fld[which(!fld$ctrl),],
+     xlim = c(0, 1.1*max(fld$oil)), ylim = c(0, 1.1*max(fld$voc)),
+     xlab = "Oil (bbl/yr)", ylab = "VOC (ton/yr)", main = "Oil")
+points(voc ~ oil, fld[which(fld$ctrl),], col = "red")
+
+# Oil < 99th percentile
+plot(voc ~ oil, fld[which(!fld$ctrl & fld$oil <= quantile(fld$oil, 0.99)),],
+     xlab = "Oil (bbl/yr)", ylab = "VOC (ton/yr)", main = "Oil - up to 99th %")
+points(voc ~oil, fld[which(fld$ctrl & fld$oil <= quantile(fld$oil, 0.99)),], col = "red")
+
+# Condensate
+plot(voc ~ con, fld[which(!fld$ctrl),],
+     xlim = c(0, 1.1*max(fld$con)), ylim = c(0, 1.1*max(fld$voc)),
+     xlab = "Condensate (bbl/yr)", ylab = "VOC (ton/yr)", main = "Condensate")
+points(voc ~con, fld[which(fld$ctrl),], col = "red")
+
+# Condensate < 99th percentile
+plot(voc ~ con, fld[which(!fld$ctrl & fld$con <= quantile(fld$con, 0.99)),],
+     xlab = "Condensate (bbl/yr)", ylab = "VOC (ton/yr)", main = "Condensate - up to 99th %")
+points(voc ~con, fld[which(fld$ctrl & fld$con <= quantile(fld$con, 0.99)),], col = "red")
+
+# Water
+plot(voc ~ wat, fld[which(!fld$ctrl),],
+     xlim = c(0, 1.1*max(fld$wat)), ylim = c(0, 1.1*max(fld$voc)),
+     xlab = "Water (bbl/yr)", ylab = "VOC (ton/yr)", main = "Water")
+points(voc ~ wat, fld[which(fld$ctrl),], col = "red")
+
+# Water <= 99th percentile
+plot(voc ~ wat, fld[which(!fld$ctrl & fld$wat <= quantile(fld$wat, 0.99)),],
+     xlab = "Water (bbl/yr)", ylab = "VOC (ton/yr)", main = "Water - up to 99th %")
+points(voc ~ wat, fld[which(fld$ctrl & fld$wat <= quantile(fld$wat, 0.99)),], col = "red")
+```
+
+## Individual Operators
+
+### Operator ID # `r top.op$operator_id[1]`
+
+```{r op1}
+
+# Functionalize to save space and time
+operplots <- function(op_id) {
+  
+  # Subset to just specific operator
+  temp <- fld[fld$oper == top.op$operator_id[op_id],]
+  
+  # Oil
+  plot(voc ~ oil, temp[which(!temp$ctrl),],
+       xlim = c(0, 1.1*max(temp$oil)), ylim = c(0, 1.1*max(temp$voc)),
+       xlab = "Oil (bbl/yr)", ylab = "VOC (ton/yr)", main = "Oil")
+  points(voc ~ oil, temp[which(temp$ctrl),], col = "red")
+  
+  # Condensate
+  plot(voc ~ con, temp[which(!temp$ctrl),],
+       xlim = c(0, 1.1*max(temp$con)), ylim = c(0, 1.1*max(temp$voc)),
+       xlab = "Condensate (bbl/yr)", ylab = "VOC (ton/yr)", main = "Condensate")
+  points(voc ~con, temp[which(temp$ctrl),], col = "red")
+  
+  # Water
+  plot(voc ~ wat, temp[which(!temp$ctrl),],
+       xlim = c(0, 1.1*max(temp$wat)), ylim = c(0, 1.1*max(temp$voc)),
+       xlab = "Water (bbl/yr)", ylab = "VOC (ton/yr)", main = "Water")
+  points(voc ~ wat, temp[which(temp$ctrl),], col = "red")
+}
+
+# Call plot function
+operplots(op_id = 1)
+```
+
+### Operator ID # `r top.op$operator_id[2]`
+```{r op2}
+operplots(op_id = 2)
+```
+
+### Operator ID # `r top.op$operator_id[3]`
+```{r op3}
+operplots(op_id = 3)
+```
+
+### Operator ID # `r top.op$operator_id[4]`
+```{r op4}
+operplots(op_id = 4)
+```
+
+### Operator ID # `r top.op$operator_id[5]`
+```{r op5}
+operplots(op_id = 5)
+```
+
+### Operator ID # `r top.op$operator_id[6]`
+```{r op6}
+operplots(op_id = 6)
+```
+
+### Operator ID # `r top.op$operator_id[7]`
+```{r op7}
+operplots(op_id = 7)
+```
+
+### Operator ID # `r top.op$operator_id[8]`
+```{r op8}
+operplots(op_id = 8)
+```
+
+### Operator ID # `r top.op$operator_id[9]`
+```{r op9}
+operplots(op_id = 9)
+```
+
+### Operator ID # `r top.op$operator_id[10]`
+```{r op10}
+operplots(op_id = 10)
+```
+
+# Conclusions
+
+Fromt the plots shown here, I think we can draw the following conclusions:
+
+* There's no real relationship between water throughput and VOC emissions.
+* There's clearly a linear relationship between oil and/or condensate throughput and VOC emissions, but it varies by operator.
+* Most operators are reporting either all oil or all condensate moving through their tank batteries.
+    * Oil only operators: 23, 22, 8, 25, 31
+    * Condensate only operators: 11, 14, 19
+    * Operators with both oil and condensate: 12, 1
+* In general, several plots show an inverse relationship between emissions and throughput (i.e. high VOC emissions with low oil/condensate throughput, and vice-versa).
+    * This could just be because of new wells, which presumably have the highest production rates and are feeding into new tank batteries with the best controls.
+* Other factors besides those contained in tanks table are likely influencing emission rates (tank age, jurisdiction, etc.). I could try including factors located in other tables (anything in the OGEI database or any of the well information that we have from UDOGM), but it would take additional time to program the required merges. If there are any other factors that you would like me to investigate, please let me know.
