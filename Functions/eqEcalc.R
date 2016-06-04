@@ -115,8 +115,24 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   # montly basis and applied to each month that each well is in operation using
   # the Eid matrix.
   
+  # Cleanup NAs in eci$rt - only NAs are in horsepower, total_combusted, and wfrac
+  rtclean <- data.frame(horespower      = NA.overwrite(eci$rt$horsepower),
+                        annual_hours    = eci$rt$annual_hours,
+                        total_combusted = NA.overwrite(eci$rt$total_combusted),
+                        fuel_heating    = eci$rt$fuel_heating,
+                        control_type    = eci$rt$control_type,
+                        control_pm10    = eci$rt$control_pm10,
+                        control_pm25    = eci$rt$control_pm25,
+                        control_sox     = eci$rt$control_sox,
+                        control_nox     = eci$rt$control_nox,
+                        control_voc     = eci$rt$control_voc,
+                        control_co      = eci$rt$control_co,
+                        control_ch2o    = eci$rt$control_ch2o,
+                        wfrac           = NA.overwrite(eci$rt$wfrac),
+                        eci$rt[, which(names(eci$rt) == "fpm10"):which(names(eci$rt) == "cprob")])
+  
   # Calculation
-  calc <- calc_E_rt(rt = eci$rt[wsim$eqEF.rt,])
+  calc <- calc_E_rt(rt = rtclean)
   
   # Assign emissions
   E$rt$pm10 <- (calc$em.rt.pm10 / 12) * Eid
