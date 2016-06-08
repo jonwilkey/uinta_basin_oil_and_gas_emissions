@@ -17,7 +17,7 @@ if(opt$crossvalid == T) {
   # Actual energy prices for oil and gas
   ep.act <- subset(eia.hp,
                    subset = (month >= as.yearmon(opt$tstart) &
-                               month <= as.yearmon(opt$tstop)),
+                             month <= as.yearmon(opt$tstop)),
                    select = c("OP", "GP"))
   
   # Actual number of wells drilled as timeseries. sqldf returns result as a
@@ -291,17 +291,33 @@ if(opt$xls.export == T) {
   
   # Run export function on each equipment/species/base|reduction combination
   
+  # Total emissions by species
+  export2excel(fspec = eE$pm10,        name = "PM10", first = T) # PM10
+  export2excel(fspec = reE$pm10,       name = "rPM10")           # PM10 - reduced
+  export2excel(fspec = eE$pm25,        name = "pm25")            # PM25
+  export2excel(fspec = reE$pm25,       name = "rpm25")           # PM25 - reduced
+  export2excel(fspec = eE$sox,         name = "sox")             # SOx
+  export2excel(fspec = reE$sox,        name = "rsox")            # SOx - reduced
+  export2excel(fspec = eE$nox,         name = "nox")             # NOx
+  export2excel(fspec = reE$nox,        name = "rnox")            # NOx - reduced
+  export2excel(fspec = eE$voc,         name = "voc")             # VOC
+  export2excel(fspec = reE$voc,        name = "rvoc")            # VOC - reduced
+  export2excel(fspec = eE$co,          name = "co")              # CO
+  export2excel(fspec = reE$co,         name = "rco")             # CO - reduced
+  export2excel(fspec = eE$ch2o,        name = "ch2o")            # CH2O
+  export2excel(fspec = reE$ch2o,       name = "rch2o")           # CH2O - reduced
+  
   # Well completions
-  export2excel(fspec = eE$fpm10$wc,    name = "wc-PM10", first = T) # PM10
-  export2excel(fspec = reE$fpm10$wc,   name = "rwc-PM10")           # PM10 - reduced
-  export2excel(fspec = eE$fpm25$wc,    name = "wc-PM25")            # PM25
-  export2excel(fspec = reE$fpm25$wc,   name = "rwc-PM25")           # PM25 - reduced
-  export2excel(fspec = eE$fnox$wc,     name = "wc-NOx")             # NOX
-  export2excel(fspec = reE$fnox$wc,    name = "rwc-NOx")            # NOX  - reduced
-  export2excel(fspec = eE$fvoc$wc,     name = "wc-VOC")             # VOC
-  export2excel(fspec = reE$fvoc$wc,    name = "rwc-VOC")            # VOC  - reduced
-  export2excel(fspec = eE$fco$wc,      name = "wc-CO")              # CO
-  export2excel(fspec = reE$fco$wc,     name = "rwc-CO")             # CO   - reduced
+  export2excel(fspec = eE$fpm10$wc,    name = "wc-PM10")  # PM10
+  export2excel(fspec = reE$fpm10$wc,   name = "rwc-PM10") # PM10 - reduced
+  export2excel(fspec = eE$fpm25$wc,    name = "wc-PM25")  # PM25
+  export2excel(fspec = reE$fpm25$wc,   name = "rwc-PM25") # PM25 - reduced
+  export2excel(fspec = eE$fnox$wc,     name = "wc-NOx")   # NOX
+  export2excel(fspec = reE$fnox$wc,    name = "rwc-NOx")  # NOX  - reduced
+  export2excel(fspec = eE$fvoc$wc,     name = "wc-VOC")   # VOC
+  export2excel(fspec = reE$fvoc$wc,    name = "rwc-VOC")  # VOC  - reduced
+  export2excel(fspec = eE$fco$wc,      name = "wc-CO")    # CO
+  export2excel(fspec = reE$fco$wc,     name = "rwc-CO")   # CO   - reduced
   
   # RICE & Turbines
   export2excel(fspec = eE$fpm10$rt,    name = "rt-PM10")  # PM10

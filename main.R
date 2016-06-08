@@ -988,7 +988,8 @@ if (opt$load.prior == TRUE) {
                        osim =      rbind(psim$osim, apri$oil),
                        gsim =      rbind(psim$gsim, apri$gas),
                        eci =       eci,
-                       eopt =      eopt)
+                       eopt =      eopt,
+                       tstart =    opt$tstart)
     
     
     # 3.3.7 Get totals for MC run i --------------------------------------

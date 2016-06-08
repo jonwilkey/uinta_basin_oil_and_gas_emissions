@@ -16,6 +16,8 @@
 
 # MC.tsteps - number of time steps in simulation
 
+# tstart - start date of simulation period as date object
+
 
 # Outputs -----------------------------------------------------------------
 
@@ -31,7 +33,7 @@
 
 # Function ----------------------------------------------------------------
 
-eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
+eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt, tstart) {
   
   # 0.0 Setup ---------------------------------------------------------------
   
@@ -55,6 +57,15 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
     
     # Return result
     return(base)
+  }
+  
+  # Function for translating calendar date of reduction implementations into
+  # model time step
+  redtstep <- function (redCal) {
+    
+    # Calculate monthly time step based on time difference between tstart and
+    # redCal date
+    1+round(as.numeric(difftime(redCal, tstart, units = "days"))*(12/365.25))
   }
   
   
@@ -101,11 +112,11 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$wc$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE <- list(wc = list(pm10 = redfun(base = E$wc$pm10, ind = ind, tstep = eopt$r$wc$tstep, red = eopt$r$wc$red.pm10),
-                       pm25 = redfun(base = E$wc$pm25, ind = ind, tstep = eopt$r$wc$tstep, red = eopt$r$wc$red.pm25),
-                       nox  = redfun(base = E$wc$nox,  ind = ind, tstep = eopt$r$wc$tstep, red = eopt$r$wc$red.nox),
-                       voc  = redfun(base = E$wc$voc,  ind = ind, tstep = eopt$r$wc$tstep, red = eopt$r$wc$red.voc),
-                       co   = redfun(base = E$wc$co,   ind = ind, tstep = eopt$r$wc$tstep, red = eopt$r$wc$red.co)))
+  rE <- list(wc = list(pm10 = redfun(base = E$wc$pm10, ind = ind, tstep = redtstep(eopt$r$wc$tstep), red = eopt$r$wc$red.pm10),
+                       pm25 = redfun(base = E$wc$pm25, ind = ind, tstep = redtstep(eopt$r$wc$tstep), red = eopt$r$wc$red.pm25),
+                       nox  = redfun(base = E$wc$nox,  ind = ind, tstep = redtstep(eopt$r$wc$tstep), red = eopt$r$wc$red.nox),
+                       voc  = redfun(base = E$wc$voc,  ind = ind, tstep = redtstep(eopt$r$wc$tstep), red = eopt$r$wc$red.voc),
+                       co   = redfun(base = E$wc$co,   ind = ind, tstep = redtstep(eopt$r$wc$tstep), red = eopt$r$wc$red.co)))
   
   
   # 2.0 RICE and Turbines ---------------------------------------------------
@@ -148,13 +159,13 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$rt$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE$rt$pm10 <- redfun(base = E$rt$pm10, ind = ind, tstep = eopt$r$rt$tstep, red = eopt$r$rt$red.pm10)
-  rE$rt$pm25 <- redfun(base = E$rt$pm25, ind = ind, tstep = eopt$r$rt$tstep, red = eopt$r$rt$red.pm25)
-  rE$rt$sox  <- redfun(base = E$rt$sox,  ind = ind, tstep = eopt$r$rt$tstep, red = eopt$r$rt$red.sox)
-  rE$rt$nox  <- redfun(base = E$rt$nox,  ind = ind, tstep = eopt$r$rt$tstep, red = eopt$r$rt$red.nox)
-  rE$rt$voc  <- redfun(base = E$rt$voc,  ind = ind, tstep = eopt$r$rt$tstep, red = eopt$r$rt$red.voc)
-  rE$rt$co   <- redfun(base = E$rt$co,   ind = ind, tstep = eopt$r$rt$tstep, red = eopt$r$rt$red.co)
-  rE$rt$ch2o <- redfun(base = E$rt$ch2o, ind = ind, tstep = eopt$r$rt$tstep, red = eopt$r$rt$red.ch2o)
+  rE$rt$pm10 <- redfun(base = E$rt$pm10, ind = ind, tstep = redtstep(eopt$r$rt$tstep), red = eopt$r$rt$red.pm10)
+  rE$rt$pm25 <- redfun(base = E$rt$pm25, ind = ind, tstep = redtstep(eopt$r$rt$tstep), red = eopt$r$rt$red.pm25)
+  rE$rt$sox  <- redfun(base = E$rt$sox,  ind = ind, tstep = redtstep(eopt$r$rt$tstep), red = eopt$r$rt$red.sox)
+  rE$rt$nox  <- redfun(base = E$rt$nox,  ind = ind, tstep = redtstep(eopt$r$rt$tstep), red = eopt$r$rt$red.nox)
+  rE$rt$voc  <- redfun(base = E$rt$voc,  ind = ind, tstep = redtstep(eopt$r$rt$tstep), red = eopt$r$rt$red.voc)
+  rE$rt$co   <- redfun(base = E$rt$co,   ind = ind, tstep = redtstep(eopt$r$rt$tstep), red = eopt$r$rt$red.co)
+  rE$rt$ch2o <- redfun(base = E$rt$ch2o, ind = ind, tstep = redtstep(eopt$r$rt$tstep), red = eopt$r$rt$red.ch2o)
   
   
   # 3.0 Separators and Heaters ----------------------------------------------
@@ -190,12 +201,12 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$sh$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE$sh$pm10 <- redfun(base = E$sh$pm10, ind = ind, tstep = eopt$r$sh$tstep, red = eopt$r$sh$red.pm10)
-  rE$sh$pm25 <- redfun(base = E$sh$pm25, ind = ind, tstep = eopt$r$sh$tstep, red = eopt$r$sh$red.pm25)
-  rE$sh$sox  <- redfun(base = E$sh$sox,  ind = ind, tstep = eopt$r$sh$tstep, red = eopt$r$sh$red.sox)
-  rE$sh$nox  <- redfun(base = E$sh$nox,  ind = ind, tstep = eopt$r$sh$tstep, red = eopt$r$sh$red.nox)
-  rE$sh$voc  <- redfun(base = E$sh$voc,  ind = ind, tstep = eopt$r$sh$tstep, red = eopt$r$sh$red.voc)
-  rE$sh$co   <- redfun(base = E$sh$co,   ind = ind, tstep = eopt$r$sh$tstep, red = eopt$r$sh$red.co)
+  rE$sh$pm10 <- redfun(base = E$sh$pm10, ind = ind, tstep = redtstep(eopt$r$sh$tstep), red = eopt$r$sh$red.pm10)
+  rE$sh$pm25 <- redfun(base = E$sh$pm25, ind = ind, tstep = redtstep(eopt$r$sh$tstep), red = eopt$r$sh$red.pm25)
+  rE$sh$sox  <- redfun(base = E$sh$sox,  ind = ind, tstep = redtstep(eopt$r$sh$tstep), red = eopt$r$sh$red.sox)
+  rE$sh$nox  <- redfun(base = E$sh$nox,  ind = ind, tstep = redtstep(eopt$r$sh$tstep), red = eopt$r$sh$red.nox)
+  rE$sh$voc  <- redfun(base = E$sh$voc,  ind = ind, tstep = redtstep(eopt$r$sh$tstep), red = eopt$r$sh$red.voc)
+  rE$sh$co   <- redfun(base = E$sh$co,   ind = ind, tstep = redtstep(eopt$r$sh$tstep), red = eopt$r$sh$red.co)
   
   
   # 4.0 Dehydrators ---------------------------------------------------------
@@ -223,9 +234,9 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$dh$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE$dh$nox  <- redfun(base = E$dh$nox,  ind = ind, tstep = eopt$r$dh$tstep, red = eopt$r$dh$red.nox)
-  rE$dh$voc  <- redfun(base = E$dh$voc,  ind = ind, tstep = eopt$r$dh$tstep, red = eopt$r$dh$red.voc)
-  rE$dh$co   <- redfun(base = E$dh$co,   ind = ind, tstep = eopt$r$dh$tstep, red = eopt$r$dh$red.co)
+  rE$dh$nox  <- redfun(base = E$dh$nox,  ind = ind, tstep = redtstep(eopt$r$dh$tstep), red = eopt$r$dh$red.nox)
+  rE$dh$voc  <- redfun(base = E$dh$voc,  ind = ind, tstep = redtstep(eopt$r$dh$tstep), red = eopt$r$dh$red.voc)
+  rE$dh$co   <- redfun(base = E$dh$co,   ind = ind, tstep = redtstep(eopt$r$dh$tstep), red = eopt$r$dh$red.co)
   
   
   # 5.0 Tanks ---------------------------------------------------------------
@@ -254,9 +265,9 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
                rowSums(E$tank$voc)/12 >= eopt$r$tank$avoc)
   
   # Calculate reduced emissions and assign to list rE
-  rE$tank$nox  <- redfun(base = E$tank$nox,  ind = ind, tstep = eopt$r$tank$tstep, red = eopt$r$tank$red.nox)
-  rE$tank$voc  <- redfun(base = E$tank$voc,  ind = ind, tstep = eopt$r$tank$tstep, red = eopt$r$tank$red.voc)
-  rE$tank$co   <- redfun(base = E$tank$co,   ind = ind, tstep = eopt$r$tank$tstep, red = eopt$r$tank$red.co)
+  rE$tank$nox  <- redfun(base = E$tank$nox,  ind = ind, tstep = redtstep(eopt$r$tank$tstep), red = eopt$r$tank$red.nox)
+  rE$tank$voc  <- redfun(base = E$tank$voc,  ind = ind, tstep = redtstep(eopt$r$tank$tstep), red = eopt$r$tank$red.voc)
+  rE$tank$co   <- redfun(base = E$tank$co,   ind = ind, tstep = redtstep(eopt$r$tank$tstep), red = eopt$r$tank$red.co)
   
   
   # 6.0 Truck Loading -------------------------------------------------------
@@ -287,7 +298,7 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$truck$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE$truck$voc  <- redfun(base = E$truck$voc,  ind = ind, tstep = eopt$r$truck$tstep, red = eopt$r$truck$red.voc)
+  rE$truck$voc  <- redfun(base = E$truck$voc,  ind = ind, tstep = redtstep(eopt$r$truck$tstep), red = eopt$r$truck$red.voc)
   
   
   # 7.0 Pneumatic Controllers -----------------------------------------------
@@ -313,7 +324,7 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$pctrl$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE$pctrl$voc  <- redfun(base = E$pctrl$voc,  ind = ind, tstep = eopt$r$pctrl$tstep, red = eopt$r$pctrl$red.voc)
+  rE$pctrl$voc  <- redfun(base = E$pctrl$voc,  ind = ind, tstep = redtstep(eopt$r$pctrl$tstep), red = eopt$r$pctrl$red.voc)
   
   
   # 8.0 Pneumatic Pumps -----------------------------------------------------
@@ -338,7 +349,7 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$ppump$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE$ppump$voc  <- redfun(base = E$ppump$voc,  ind = ind, tstep = eopt$r$ppump$tstep, red = eopt$r$ppump$red.voc)
+  rE$ppump$voc  <- redfun(base = E$ppump$voc,  ind = ind, tstep = redtstep(eopt$r$ppump$tstep), red = eopt$r$ppump$red.voc)
   
   
   # 9.0 Fugitives -----------------------------------------------------------
@@ -406,7 +417,7 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   ind <- which(wsim$tDrill >= eopt$r$fug$tDrill)
   
   # Calculate reduced emissions and assign to list rE
-  rE$fug$voc  <- redfun(base = E$fug$voc,  ind = ind, tstep = eopt$r$fug$tstep, red = eopt$r$fug$red.voc)
+  rE$fug$voc  <- redfun(base = E$fug$voc,  ind = ind, tstep = redtstep(eopt$r$fug$tstep), red = eopt$r$fug$red.voc)
   
   
   # 10. Result --------------------------------------------------------------

@@ -32,7 +32,7 @@ eopt$wc.EF <- data.frame(pm10 = 0.00683829365079365,
 
 # Emission reductions
 eopt$r$wc <- data.frame(tDrill   = 30,
-                        tstep    = 30,
+                        tstep    = as.Date("2012-06-01"),
                         red.pm10 = 0.5,
                         red.pm25 = 0.5,
                         red.nox  = 0.5,
@@ -49,7 +49,7 @@ eopt$r$wc <- data.frame(tDrill   = 30,
 # -- Calculation Inputs --
 # Emission reductions
 eopt$r$rt <- data.frame(tDrill   = 30,
-                        tstep    = 30,
+                        tstep    = as.Date("2012-06-01"),
                         red.pm10 = 0.5,
                         red.pm25 = 0.5,
                         red.sox  = 0.5,
@@ -75,7 +75,7 @@ eopt$sh.EF <- data.frame(pm10 = 7.6,
 
 # Emission reductions
 eopt$r$sh <- data.frame(tDrill   = 30,
-                        tstep    = 30,
+                        tstep    = as.Date("2012-06-01"),
                         red.pm10 = 0.5,
                         red.pm25 = 0.5,
                         red.sox  = 0.5,
@@ -99,7 +99,7 @@ eopt$dh.EF <- data.frame(nox       = 0.068,
 
 # Emission reductions
 eopt$r$dh <- data.frame(tDrill   = 30,
-                        tstep    = 30,
+                        tstep    = as.Date("2012-06-01"),
                         red.nox  = 0.5,
                         red.voc  = 0.5,
                         red.co   = 0.5)
@@ -120,7 +120,7 @@ eopt$tank.EF <- data.frame(nox       = 0.068,
 
 # Emission reductions
 eopt$r$tank <- data.frame(tDrill   = 30,
-                          tstep    = 30,
+                          tstep    = as.Date("2012-06-01"),
                           red.nox  = 0.5,
                           red.voc  = 0.5,
                           red.co   = 0.5,
@@ -135,7 +135,7 @@ eopt$r$tank <- data.frame(tDrill   = 30,
 # -- Calculation Inputs --
 # Emission reductions
 eopt$r$truck <- data.frame(tDrill   = 30,
-                           tstep    = 30,
+                           tstep    = as.Date("2012-06-01"),
                            red.voc  = 0.5)
 
 
@@ -152,7 +152,7 @@ eopt$pctrl.EF <- data.frame(HB.voc = 1.92  / 365 / 24,
 
 # Emission reductions
 eopt$r$pctrl <- data.frame(tDrill   = 30,
-                           tstep    = 30,
+                           tstep    = as.Date("2012-06-01"),
                            red.voc  = 0.5)
 
 
@@ -164,7 +164,7 @@ eopt$r$pctrl <- data.frame(tDrill   = 30,
 # -- Calculation Inputs --
 # Emission reductions
 eopt$r$ppump <- data.frame(tDrill   = 30,
-                           tstep    = 30,
+                           tstep    = as.Date("2012-06-01"),
                            red.voc  = 0.5)
 
 # Fugitive emissions ------------------------------------------------------
@@ -206,5 +206,5 @@ eopt$fug.def.eq <- data.frame(gas =  c(0.25,   15,    0,   25, 1000,   25,    1)
 
 # Emission reductions
 eopt$r$fug <- data.frame(tDrill   = 30,
-                         tstep    = 30,
+                         tstep    = as.Date("2012-06-01"),
                          red.voc  = 0.5)
