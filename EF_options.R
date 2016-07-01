@@ -30,9 +30,49 @@ eopt$wc.EF <- data.frame(pm10 = 0.00683829365079365,
                          voc  = 0.218825396825397,
                          co   = 0.118530423280423)
 
-# Emission reductions
-eopt$r$wc <- data.frame(tDrill   = 30,
-                        tstep    = as.Date("2012-06-01"),
+# -- Emission reductions --
+
+# Explaination of terms (applies to all eopt$r$... data.frames):
+#
+# tDrill   - time step that well is drilled
+#
+# tstep    - time step that reduction is implemented
+#
+# wellType - required well type, options are:
+#               "OW"  for oil wells
+#               "GW"  for gas wells
+#               "all" for both types
+#
+# juris    - required jurisdiction of surface lease, options are:
+#               "federal" for Federal jurisdiction
+#               "state"   for State jurisdiction
+#               "fee"     for private fee lands jurisdiction
+#               "indian"  for Indian jurisdiction
+#               "all"     for any jurisdiction
+#
+# county   - required county, options are:
+#               "UINTAH"   for Uintah county
+#               "DUCHESNE" for Duchesne county
+#               "all"      for any county
+#
+# a...     - threshold annual emissions of pollutant ... (e.g. pm10, voc, etc.)
+#
+# moil     - Minimum value of maximum oil production rate (bbl/month)
+#
+# mgas     - Minimum value of maximum gas production rate (MCF/month)
+
+eopt$r$wc <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                        tstep    = calTstep(as.Date("2012-06-01")),
+                        wellType = "all",
+                        juris    = "all",
+                        county   = "all",
+                        apm10    = 0,
+                        apm25    = 0,
+                        anox     = 0,
+                        avoc     = 0,
+                        aco      = 0,
+                        moil     = 100,
+                        mgas     = 1000,
                         red.pm10 = 0.5,
                         red.pm25 = 0.5,
                         red.nox  = 0.5,
@@ -48,8 +88,20 @@ eopt$r$wc <- data.frame(tDrill   = 30,
 
 # -- Calculation Inputs --
 # Emission reductions
-eopt$r$rt <- data.frame(tDrill   = 30,
-                        tstep    = as.Date("2012-06-01"),
+eopt$r$rt <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                        tstep    = calTstep(as.Date("2012-06-01")),
+                        wellType = "all",
+                        juris    = "all",
+                        county   = "all",
+                        apm10    = 0,
+                        apm25    = 0,
+                        asox     = 0,
+                        anox     = 0,
+                        avoc     = 0,
+                        aco      = 0,
+                        ach2o    = 0,
+                        moil     = 100,
+                        mgas     = 1000,
                         red.pm10 = 0.5,
                         red.pm25 = 0.5,
                         red.sox  = 0.5,
@@ -74,8 +126,19 @@ eopt$sh.EF <- data.frame(pm10 = 7.6,
                          co   = 84)
 
 # Emission reductions
-eopt$r$sh <- data.frame(tDrill   = 30,
-                        tstep    = as.Date("2012-06-01"),
+eopt$r$sh <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                        tstep    = calTstep(as.Date("2012-06-01")),
+                        wellType = "all",
+                        juris    = "all",
+                        county   = "all",
+                        apm10    = 0,
+                        apm25    = 0,
+                        asox     = 0,
+                        anox     = 0,
+                        avoc     = 0,
+                        aco      = 0,
+                        moil     = 100,
+                        mgas     = 1000,
                         red.pm10 = 0.5,
                         red.pm25 = 0.5,
                         red.sox  = 0.5,
@@ -98,8 +161,16 @@ eopt$dh.EF <- data.frame(nox       = 0.068,
                          co.pilot  = 84)
 
 # Emission reductions
-eopt$r$dh <- data.frame(tDrill   = 30,
-                        tstep    = as.Date("2012-06-01"),
+eopt$r$dh <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                        tstep    = calTstep(as.Date("2012-06-01")),
+                        wellType = "all",
+                        juris    = "all",
+                        county   = "all",
+                        anox     = 0,
+                        avoc     = 0,
+                        aco      = 0,
+                        moil     = 100,
+                        mgas     = 1000,
                         red.nox  = 0.5,
                         red.voc  = 0.5,
                         red.co   = 0.5)
@@ -119,8 +190,16 @@ eopt$tank.EF <- data.frame(nox       = 0.068,
                            co.pilot  = 84)
 
 # Emission reductions
-eopt$r$tank <- data.frame(tDrill   = 30,
-                          tstep    = as.Date("2012-06-01"),
+eopt$r$tank <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                          tstep    = calTstep(as.Date("2012-06-01")),
+                          wellType = "all",
+                          juris    = "all",
+                          county   = "all",
+                          anox     = 0,
+                          avoc     = 0,
+                          aco      = 0,
+                          moil     = 100,
+                          mgas     = 1000,
                           red.nox  = 0.5,
                           red.voc  = 0.5,
                           red.co   = 0.5,
@@ -134,8 +213,14 @@ eopt$r$tank <- data.frame(tDrill   = 30,
 
 # -- Calculation Inputs --
 # Emission reductions
-eopt$r$truck <- data.frame(tDrill   = 30,
-                           tstep    = as.Date("2012-06-01"),
+eopt$r$truck <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                           tstep    = calTstep(as.Date("2012-06-01")),
+                           wellType = "all",
+                           juris    = "all",
+                           county   = "all",
+                           avoc     = 0,
+                           moil     = 100,
+                           mgas     = 1000,
                            red.voc  = 0.5)
 
 
@@ -151,8 +236,14 @@ eopt$pctrl.EF <- data.frame(HB.voc = 1.92  / 365 / 24,
                             LB.voc = 0.072 / 365 / 24)
 
 # Emission reductions
-eopt$r$pctrl <- data.frame(tDrill   = 30,
-                           tstep    = as.Date("2012-06-01"),
+eopt$r$pctrl <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                           tstep    = calTstep(as.Date("2012-06-01")),
+                           wellType = "all",
+                           juris    = "all",
+                           county   = "all",
+                           avoc     = 0,
+                           moil     = 100,
+                           mgas     = 1000,
                            red.voc  = 0.5)
 
 
@@ -163,8 +254,14 @@ eopt$r$pctrl <- data.frame(tDrill   = 30,
 
 # -- Calculation Inputs --
 # Emission reductions
-eopt$r$ppump <- data.frame(tDrill   = 30,
-                           tstep    = as.Date("2012-06-01"),
+eopt$r$ppump <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                           tstep    = calTstep(as.Date("2012-06-01")),
+                           wellType = "all",
+                           juris    = "all",
+                           county   = "all",
+                           avoc     = 0,
+                           moil     = 100,
+                           mgas     = 1000,
                            red.voc  = 0.5)
 
 # Fugitive emissions ------------------------------------------------------
@@ -205,6 +302,12 @@ eopt$fug.def.eq <- data.frame(gas =  c(0.25,   15,    0,   25, 1000,   25,    1)
                                             "Open-Ended Lines"))
 
 # Emission reductions
-eopt$r$fug <- data.frame(tDrill   = 30,
-                         tstep    = as.Date("2012-06-01"),
+eopt$r$fug <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
+                         tstep    = calTstep(as.Date("2012-06-01")),
+                         wellType = "all",
+                         juris    = "all",
+                         county   = "all",
+                         avoc     = 0,
+                         moil     = 100,
+                         mgas     = 1000,
                          red.voc  = 0.5)

@@ -19,7 +19,11 @@
 
 # Description -------------------------------------------------------------
 
-# This function blah blah blah
+# This function loads tables exported from the OGEI database, finds the unique 
+# combinations of inputs for each type of equipment, and creates a cumulative 
+# probability table (CPT) for each. The result is saved out as a list named
+# "eci" containing the CPTs for each type of equipment, containing all of the
+# inputs necessary for performing equipment-based emissions calculations.
 
 
 # Function ----------------------------------------------------------------
@@ -52,29 +56,32 @@ emissionUpdate <- function(path, ver) {
   eci <- NULL
   
   
-  # 0.1 Create API-CPT cross-reference table ------------------------------
-  
-  # Make a copy of apis table for cross-referencing APIs and CPTs
-  acpt <- apis
-  
-  # Add operator-facility ID key
-  acpt$key <- paste0(acpt$operator_id, "-", acpt$facility_id)
-  
-  # Strip whitespace from API column
-  acpt$api <- gsub("[[:space:]]", "", acpt$api)
-  
-  # Select only the first 10 characters of the API string (to match the format
-  # used by DOGM for p$p_api)
-  acpt$api <- substr(x = acpt$api, start = 1, stop = 10)
-  
-  # Remove unknown API numbers
-  acpt <- acpt[-which(acpt$api == "Unknown"), ]
-  
-  # Remove op and facility columns
-  acpt <- acpt[, -c(2, 3)]
-  
-  # Remove duplicates
-  acpt <- acpt[-which(duplicated(acpt)),]
+  # # This section and all subsequent acpt sections commented out due to issues
+  # # with multiple CPT row matches for some APIs
+  # 
+  # # 0.1 Create API-CPT cross-reference table ------------------------------
+  # 
+  # # Make a copy of apis table for cross-referencing APIs and CPTs
+  # acpt <- apis
+  # 
+  # # Add operator-facility ID key
+  # acpt$key <- paste0(acpt$operator_id, "-", acpt$facility_id)
+  # 
+  # # Strip whitespace from API column
+  # acpt$api <- gsub("[[:space:]]", "", acpt$api)
+  # 
+  # # Select only the first 10 characters of the API string (to match the format
+  # # used by DOGM for p$p_api)
+  # acpt$api <- substr(x = acpt$api, start = 1, stop = 10)
+  # 
+  # # Remove unknown API numbers
+  # acpt <- acpt[-which(acpt$api == "Unknown"), ]
+  # 
+  # # Remove op and facility columns
+  # acpt <- acpt[, -c(2, 3)]
+  # 
+  # # Remove duplicates
+  # acpt <- acpt[-which(duplicated(acpt)),]
   
   
   # 0.2 Internal Probability Table Function -------------------------------
@@ -167,52 +174,52 @@ emissionUpdate <- function(path, ver) {
                 by = c("operator", "area"),
                 all.x = TRUE)
   
-  # 0.5 acpt-cpt match function -------------------------------------------
-  
-  # Need function that finds first matching row in CPT for each API in acpt
-  acpt.cpt <- function(btab, bcpt) {
-    
-    # -- Inputs --
-    # btab - base table from OGEI database
-    # bcpt - CPT created from base table
-    
-    # Select just the entries from each  type necessary to match rows
-    x <- btab[, 2:ncol(btab)]     # Excludes key column
-    y <- bcpt[, 1:(ncol(bcpt)-2)] # Excludes count and cprob columns
-    
-    # Predefine results vector
-    result <- rep(NA, nrow(x))
-    
-    # For each row in base table x
-    for (i in 1:nrow(x)) {
-      
-      # Set row counter k
-      k <- 1
-      
-      # Set test condition to false
-      test <- FALSE
-      
-      # Extract test vector z from row i of base table x
-      z <- c(x[i, ])
-      
-      # While (a) now identical row has been found and (b) the row number is <=
-      # total number of rows in the CPT y
-      while(!test & k <= nrow(y)) {
-        
-        # Test row k of CPT y to see if it's identical to z
-        test <- identical(c(y[k, ]), z)
-        
-        # Increment the row counter k
-        k <- k + 1
-      }
-      
-      # When a match is found, the previous value of k is the matching row
-      result[i] <- k - 1
-    }
-    
-    # Return results vector
-    return(result)
-  }
+  # # 0.5 acpt-cpt match function -------------------------------------------
+  # 
+  # # Need function that finds first matching row in CPT for each API in acpt
+  # acpt.cpt <- function(btab, bcpt) {
+  #   
+  #   # -- Inputs --
+  #   # btab - base table from OGEI database
+  #   # bcpt - CPT created from base table
+  #   
+  #   # Select just the entries from each  type necessary to match rows
+  #   x <- btab[, 2:ncol(btab)]     # Excludes key column
+  #   y <- bcpt[, 1:(ncol(bcpt)-2)] # Excludes count and cprob columns
+  #   
+  #   # Predefine results vector
+  #   result <- rep(NA, nrow(x))
+  #   
+  #   # For each row in base table x
+  #   for (i in 1:nrow(x)) {
+  #     
+  #     # Set row counter k
+  #     k <- 1
+  #     
+  #     # Set test condition to false
+  #     test <- FALSE
+  #     
+  #     # Extract test vector z from row i of base table x
+  #     z <- c(x[i, ])
+  #     
+  #     # While (a) no identical row has been found and (b) the row number is <=
+  #     # total number of rows in the CPT y
+  #     while(!test & k <= nrow(y)) {
+  #       
+  #       # Test row k of CPT y to see if it's identical to z
+  #       test <- identical(c(y[k, ]), z)
+  #       
+  #       # Increment the row counter k
+  #       k <- k + 1
+  #     }
+  #     
+  #     # When a match is found, the previous value of k is the matching row
+  #     result[i] <- k - 1
+  #   }
+  #   
+  #   # Return results vector
+  #   return(result)
+  # }
   
   
   # 1.0 Well completion ---------------------------------------------------
@@ -292,8 +299,8 @@ emissionUpdate <- function(path, ver) {
   # Drop the rice_id column
   m <- m[, -which(names(m) == "rice_id")]
   
-  # Make a copy of m for acpt
-  n <- m
+  # # Make a copy of m for acpt
+  # n <- m
   
   # Drop the key column
   m <- m[, -which(names(m) == "key")]
@@ -304,20 +311,24 @@ emissionUpdate <- function(path, ver) {
   # primarily in wfrac (133 NA values)
   eci$rt <- cptable(m)
   
-  # 2.3 --- Match to existing wells
-  
-  # Run acpt.cpt function to find which rows in eci$rt match APIs of existing
-  # wells
-  n$rt <- acpt.cpt(btab = n, bcpt = eci$rt)
-  
-  # Select only key and rt columns from n
-  n <- n[,c("key", "rt")]
-  
-  # Remove duplicates
-  n <- n[-which(duplicated(n)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = n, all.x = T)
+  # # 2.3 --- Match to existing wells
+  # 
+  # # Run acpt.cpt function to find which rows in eci$rt match APIs of existing
+  # # wells
+  # n$rt <- acpt.cpt(btab = n, bcpt = eci$rt)
+  # 
+  # # Select only key and rt columns from n
+  # n <- n[,c("key", "rt")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = n, all.x = T)
   
   
   # 3.0 Separators & Heaters ----------------------------------------------
@@ -339,23 +350,27 @@ emissionUpdate <- function(path, ver) {
              "percent_control",
              "wfrac")]
   
-  # Make copy of m and drop key column from m
-  n <- m; m <- m[, -which(names(m) == "key")]
+  # # Make copy of m and drop key column from m
+  # n <- m; m <- m[, -which(names(m) == "key")]
   
   # Calculate and write results to table to eci list (results contain NAs)
   eci$sh <- cptable(m)
   
-  # Run acpt.cpt function to find rows in eci$sh match APIs of existing wells
-  n$sh <- acpt.cpt(btab = n, bcpt = eci$sh)
-  
-  # Select only key and sh columns from n
-  n <- n[,c("key", "sh")]
-  
-  # Remove duplicates
-  n <- n[-which(duplicated(n)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = n, all.x = T)
+  # # Run acpt.cpt function to find rows in eci$sh match APIs of existing wells
+  # n$sh <- acpt.cpt(btab = n, bcpt = eci$sh)
+  # 
+  # # Select only key and sh columns from n
+  # n <- n[,c("key", "sh")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = n, all.x = T)
   
   
   # 4.0 Dehydrators -------------------------------------------------------
@@ -375,23 +390,27 @@ emissionUpdate <- function(path, ver) {
              "factor_voc",
              "wfrac")]
   
-  # Make copy of m and drop key column from m
-  n <- m; m <- m[, -which(names(m) == "key")]
+  # # Make copy of m and drop key column from m
+  # n <- m; m <- m[, -which(names(m) == "key")]
   
   # Calculate and write results to table to eci list (results contain NAs)
   eci$dh <- cptable(m)
   
-  # Run acpt.cpt function to find rows in eci$dh match APIs of existing wells
-  n$dh <- acpt.cpt(btab = n, bcpt = eci$dh)
-  
-  # Select only key and dh columns from n
-  n <- n[,c("key", "dh")]
-  
-  # Remove duplicates
-  n <- n[-which(duplicated(n)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = n, all.x = T)
+  # # Run acpt.cpt function to find rows in eci$dh match APIs of existing wells
+  # n$dh <- acpt.cpt(btab = n, bcpt = eci$dh)
+  # 
+  # # Select only key and dh columns from n
+  # n <- n[,c("key", "dh")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = n, all.x = T)
   
   
   # 5.0 Tanks -------------------------------------------------------------
@@ -402,22 +421,19 @@ emissionUpdate <- function(path, ver) {
   m <- apimerge(tanks)
   
   # Calculate combined oil and condensate volume, setting any NA values to 0
-  m$oil <- (ifelse(test = is.na(tanks$throughput_condensate),
+  m$oil <- (ifelse(test = is.na(m$throughput_condensate),
                    yes =  0,
-                   no =   tanks$throughput_condensate) +
-              ifelse(test = is.na(tanks$throughput_oil),
+                   no =   m$throughput_condensate) +
+              ifelse(test = is.na(m$throughput_oil),
                      yes =  0,
-                     no =   tanks$throughput_oil) + 
-              ifelse(test = is.na(tanks$throughput_water),
-                     yes =  0,
-                     no =   tanks$throughput_water))
+                     no =   m$throughput_oil))
   
   # Calculate ratio of voc / oil
   m$ratio <- m$total_voc / m$oil
   
-  # About half of the rows in the table have ~0 oil production
-  # # Exclude any rows from m for which oil == 0 or for which the ratio is NA
-  # m <- m[-which(m$oil == 0 | is.na(m$ratio)), ]
+  # Rewrite any m$ratio values from m for which oil == 0 or NA as zero. This
+  # applies to 856 rows (out of 7826), of which 737 have total_voc == 0.
+  m$ratio[which(m$oil == 0 | is.na(m$ratio))] <- 0
   
   # Select desired input columns
   m <- m[, c("key",
@@ -430,23 +446,27 @@ emissionUpdate <- function(path, ver) {
              "ratio",
              "wfrac")]
   
-  # Make copy of m and drop key column from m
-  n <- m; m <- m[, -which(names(m) == "key")]
+  # # Make copy of m and drop key column from m
+  # n <- m; m <- m[, -which(names(m) == "key")]
   
   # Calculate and write results to table to eci list
   eci$tank <- cptable(m)
   
-  # Run acpt.cpt function to find rows in eci$tank match APIs of existing wells
-  n$tank <- acpt.cpt(btab = n, bcpt = eci$tank)
-  
-  # Select only key and tank columns from n
-  n <- n[,c("key", "tank")]
-  
-  # Remove duplicates
-  n <- n[-which(duplicated(n)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = n, all.x = T)
+  # # Run acpt.cpt function to find rows in eci$tank match APIs of existing wells
+  # n$tank <- acpt.cpt(btab = n, bcpt = eci$tank)
+  # 
+  # # Select only key and tank columns from n
+  # n <- n[,c("key", "tank")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = n, all.x = T)
   
   
   # 6.0 Truck Loading -----------------------------------------------------
@@ -460,31 +480,35 @@ emissionUpdate <- function(path, ver) {
   m <- apimerge(truck)
   
   # Select desired input columns
-  m <- truck[, c("key",
-                 "s_factor",
-                 "vapor_pressure",
-                 "molecular_weight",
-                 "temp_r",
-                 "control_type",
-                 "control_percent")]
+  m <- m[, c("key",
+             "s_factor",
+             "vapor_pressure",
+             "molecular_weight",
+             "temp_r",
+             "control_type",
+             "control_percent")]
   
-  # Make copy of m and drop key column from m
-  n <- m; m <- m[, -which(names(m) == "key")]
+  # # Make copy of m and drop key column from m
+  # n <- m; m <- m[, -which(names(m) == "key")]
   
   # Calculate and write results to table to eci list
   eci$truck <- cptable(m)
   
-  # Run acpt.cpt function to find rows in eci$truck match APIs of existing wells
-  n$truck <- acpt.cpt(btab = n, bcpt = eci$truck)
-  
-  # Select only key and truck columns from n
-  n <- n[,c("key", "truck")]
-  
-  # Remove duplicates
-  n <- n[-which(duplicated(n)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = n, all.x = T)
+  # # Run acpt.cpt function to find rows in eci$truck match APIs of existing wells
+  # n$truck <- acpt.cpt(btab = n, bcpt = eci$truck)
+  # 
+  # # Select only key and truck columns from n
+  # n <- n[,c("key", "truck")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = n, all.x = T)
   
   
   # 7.0 Pneumatic Controllers ---------------------------------------------
@@ -502,23 +526,27 @@ emissionUpdate <- function(path, ver) {
              "avg_hours",
              "wfrac")]
   
-  # Make copy of m and drop key column from m
-  n <- m; m <- m[, -which(names(m) == "key")]
+  # # Make copy of m and drop key column from m
+  # n <- m; m <- m[, -which(names(m) == "key")]
   
   # Calculate and write results to table to eci list
   eci$pctrl <- cptable(m)
   
-  # Run acpt.cpt function to find rows in eci$pctrl match APIs of existing wells
-  n$pctrl <- acpt.cpt(btab = n, bcpt = eci$pctrl)
-  
-  # Select only key and pctrl columns from n
-  n <- n[,c("key", "pctrl")]
-  
-  # Remove duplicates
-  n <- n[-which(duplicated(n)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = n, all.x = T)
+  # # Run acpt.cpt function to find rows in eci$pctrl match APIs of existing wells
+  # n$pctrl <- acpt.cpt(btab = n, bcpt = eci$pctrl)
+  # 
+  # # Select only key and pctrl columns from n
+  # n <- n[,c("key", "pctrl")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = n, all.x = T)
   
   
   # 8.0 Pneumatic Pumps ---------------------------------------------------
@@ -541,23 +569,27 @@ emissionUpdate <- function(path, ver) {
              "voc_wt",
              "wfrac")]
   
-  # Make copy of m and drop key column from m
-  n <- m; m <- m[, -which(names(m) == "key")]
+  # # Make copy of m and drop key column from m
+  # n <- m; m <- m[, -which(names(m) == "key")]
   
   # Calculate and write results to table to eci list
   eci$ppump <- cptable(m)
   
-  # Run acpt.cpt function to find rows in eci$ppump match APIs of existing wells
-  n$ppump <- acpt.cpt(btab = n, bcpt = eci$ppump)
-  
-  # Select only key and ppump columns from n
-  n <- n[,c("key", "ppump")]
-  
-  # Remove duplicates
-  n <- n[-which(duplicated(n)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = n, all.x = T)
+  # # Run acpt.cpt function to find rows in eci$ppump match APIs of existing wells
+  # n$ppump <- acpt.cpt(btab = n, bcpt = eci$ppump)
+  # 
+  # # Select only key and ppump columns from n
+  # n <- n[,c("key", "ppump")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = n, all.x = T)
   
   
   # 9.0 Fugitives ---------------------------------------------------------
@@ -615,11 +647,11 @@ emissionUpdate <- function(path, ver) {
   loil <- fugmerge(k = 2) # Light oil component
   woil <- fugmerge(k = 3) # Water / oil component
   
-  # Make copies of each table and drop key column
-  ngas  <- gas;  gas  <- gas [, -which(names(gas)  == "key")]
-  nhoil <- hoil; hoil <- hoil[, -which(names(hoil) == "key")]
-  nloil <- loil; loil <- loil[, -which(names(loil) == "key")]
-  nwoil <- woil; woil <- woil[, -which(names(woil) == "key")]
+  # # Make copies of each table and drop key column
+  # ngas  <- gas;  gas  <- gas [, -which(names(gas)  == "key")]
+  # nhoil <- hoil; hoil <- hoil[, -which(names(hoil) == "key")]
+  # nloil <- loil; loil <- loil[, -which(names(loil) == "key")]
+  # nwoil <- woil; woil <- woil[, -which(names(woil) == "key")]
   
   # Calculate and write results to eci list
   eci$fug$gas <-  cptable(gas)
@@ -627,35 +659,41 @@ emissionUpdate <- function(path, ver) {
   eci$fug$loil <- cptable(loil)
   eci$fug$woil <- cptable(woil)
   
-  # Run acpt.cpt function to find rows in eci$fug matching existing wells
-  ngas$gas   <- acpt.cpt(btab = ngas,  bcpt = eci$fug$gas)
-  nhoil$hoil <- acpt.cpt(btab = nhoil, bcpt = eci$fug$hoil)
-  nloil$loil <- acpt.cpt(btab = nloil, bcpt = eci$fug$loil)
-  nwoil$woil <- acpt.cpt(btab = nwoil, bcpt = eci$fug$woil)
-  
-  # Select only key and ppump columns from n
-  ngas  <- ngas [,c("key", "gas")]
-  nhoil <- nhoil[,c("key", "hoil")]
-  nloil <- nloil[,c("key", "loil")]
-  nwoil <- nwoil[,c("key", "woil")]
-  
-  # Remove duplicates
-  ngas  <- ngas [-which(duplicated(ngas)),]
-  nhoil <- nhoil[-which(duplicated(nhoil)),]
-  nloil <- nloil[-which(duplicated(nloil)),]
-  nwoil <- nwoil[-which(duplicated(nwoil)),]
-  
-  # Merge with acpt
-  acpt <- merge(x = acpt, y = ngas,  all.x = T)
-  acpt <- merge(x = acpt, y = nhoil, all.x = T)
-  acpt <- merge(x = acpt, y = nloil, all.x = T)
-  acpt <- merge(x = acpt, y = nwoil, all.x = T)
+  # # Run acpt.cpt function to find rows in eci$fug matching existing wells
+  # ngas$gas   <- acpt.cpt(btab = ngas,  bcpt = eci$fug$gas)
+  # nhoil$hoil <- acpt.cpt(btab = nhoil, bcpt = eci$fug$hoil)
+  # nloil$loil <- acpt.cpt(btab = nloil, bcpt = eci$fug$loil)
+  # nwoil$woil <- acpt.cpt(btab = nwoil, bcpt = eci$fug$woil)
+  # 
+  # # Select only key and ppump columns from n
+  # ngas  <- ngas [,c("key", "gas")]
+  # nhoil <- nhoil[,c("key", "hoil")]
+  # nloil <- nloil[,c("key", "loil")]
+  # nwoil <- nwoil[,c("key", "woil")]
+  # 
+  # # If there are duplicates in n
+  # if(length(which(duplicated(n))) > 0) {
+  #   
+  #   # Then remove them
+  #   n <- n[-which(duplicated(n)),]
+  # }
+  # 
+  # # Remove duplicates
+  # if(length(which(duplicated(ngas))) > 0)  ngas  <- ngas [-which(duplicated(ngas)),]
+  # if(length(which(duplicated(nhoil))) > 0) nhoil <- nhoil[-which(duplicated(nhoil)),]
+  # if(length(which(duplicated(nloil))) > 0) nloil <- nloil[-which(duplicated(nloil)),]
+  # if(length(which(duplicated(nwoil))) > 0) nwoil <- nwoil[-which(duplicated(nwoil)),]
+  # 
+  # # Merge with acpt
+  # acpt <- merge(x = acpt, y = ngas,  all.x = T)
+  # acpt <- merge(x = acpt, y = nhoil, all.x = T)
+  # acpt <- merge(x = acpt, y = nloil, all.x = T)
+  # acpt <- merge(x = acpt, y = nwoil, all.x = T)
   
   
   # Save results ----------------------------------------------------------
   
   save(file = file.path(path$data,
                         paste("emissionUpdate_", ver, ".rda", sep = "")),
-       list = c("eci",
-                "acpt"))
+       list = "eci")
 }

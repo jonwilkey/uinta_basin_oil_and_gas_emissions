@@ -15,10 +15,17 @@
 # Define "opt" list object - this must exist in order to set any other options
 opt <- NULL
 
-# Options for loading prior results
-opt$load.prior <- T
+# Save results?
+opt$save <- F
+
+# Save name
+opt$save.name <- "results v1.rda"
+
+# Load results?
+opt$load.prior <- F
+
+# Load name
 opt$load.name <- "results v1.rda"
-# opt$load.name <- "results v2.rda"
 
 # Version filename. If any of the update flags above is set to "TRUE", change
 # the version number below so that previous *.rda versions will be retained.
@@ -26,17 +33,12 @@ opt$load.name <- "results v1.rda"
 opt$file_ver <- "v1"
 # opt$file_ver <- "v2"
 
-# Save run results?
-opt$save <- F
-opt$save.name <- "results v1.rda"
-# opt$save.name <- "results v2.rda"
-
 # Version notes
 # v1: Xvalid -      train 1984-2009, predict 2010-2014
 # v2: 5yr predict - train 1984-2015, predict 2016-2020
 
 # Enter number of overall simulation iterations
-opt$nrun <- 1e3
+opt$nrun <- 1e2
 
 # Is model run for cross-validation? (turns on/off plots of actual values in
 # postProcess script)
@@ -113,7 +115,7 @@ opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
 opt$rework.update       <- F # Generates CDF for well reworks
 opt$DCAlnorm.update     <- F # Fits log-normal/normal distributions to DCA coefficients and then finds trendlines in those distribution parameters
-opt$emission.update     <- F # Loads UDAQ emissions inventory database, creates single data.frame
+opt$emission.update     <- T # Loads UDAQ emissions inventory database, creates single data.frame
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
@@ -575,7 +577,7 @@ opt$EFred <- data.frame(cat =  c("prod", "proc", "transm", "compl", "drill", "pU
 
 
 # 4.1 Plot Export options -------------------------------------------------
-opt$exportFlag <- T                        # If true, will plot to PDF located in path$plot directory
+opt$exportFlag <- F                        # If true, will plot to PDF located in path$plot directory
 opt$prefix <-     "Fig- "                  # Any text here will be added in front of the name given in the table below
 opt$affix  <-     " -xvalid -5yr -v1.pdf" # Any text here will be added to the end " " " "...
 
@@ -613,40 +615,40 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("29 CH4 emissions barplot",      F), # Total CH4 emissions barplot showing contribution from emissions sources
                    c("30 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources
                    c("31 Production fraction n vs e", F), # Fraction of production from new wells vs. old wells
-                   c("32 EQ-Based PM10 Emissions",    T), # Total PM10 emissions from equipment-based calculations
-                   c("33 EQ-Based PM25 Emissions",    T), # Total PM25 emissions from equipment-based calculations
-                   c("34 EQ-Based SOX Emissions",     T), # Total SOX emissions from equipment-based calculations
-                   c("35 EQ-Based NOX Emissions",     T), # Total NOX emissions from equipment-based calculations
-                   c("36 EQ-Based VOC Emissions",     T), # Total VOC emissions from equipment-based calculations
-                   c("37 EQ-Based CO Emissions",      T), # Total CO emissions from equipment-based calculations
-                   c("38 EQ-Based CH2O Emissions",    T), # Total CH2O emissions from equipment-based calculations
-                   c("39 PM10 Emissions - WC",        T), # PM10 emissions from Well Completions
-                   c("40 PM10 Emissions - RT",        T), # PM10 emissions from RICE & Turbines
-                   c("41 PM10 Emissions - SH",        T), # PM10 emissions from Separators & Heaters
-                   c("42 PM25 Emissions - WC",        T), # PM25 emissions from Well Completions
-                   c("43 PM25 Emissions - RT",        T), # PM25 emissions from RICE & Turbines
-                   c("44 PM25 Emissions - SH",        T), # PM25 emissions from Separators & Heaters
-                   c("45 SOx Emissions - RT",         T), # SOx emissions from RICE & Turbines
-                   c("46 SOx Emissions - SH",         T), # SOx emissions from Separators & Heaters
-                   c("47 NOx Emissions - WC",         T), # NOx emissions from Well Completions
-                   c("48 NOx Emissions - RT",         T), # NOx emissions from RICE & Turbines
-                   c("49 NOx Emissions - SH",         T), # NOx emissions from Separators & Heaters
-                   c("50 NOx Emissions - DH",         T), # NOx emissions from Dehydrators
-                   c("51 NOx Emissions - Tanks",      T), # NOx emissions from Tanks
-                   c("52 VOC Emissions - WC",         T), # VOC emissions from Well Completions
-                   c("53 VOC Emissions - RT",         T), # VOC emissions from RICE & Turbines
-                   c("54 VOC Emissions - SH",         T), # VOC emissions from Separators & Heaters
-                   c("55 VOC Emissions - DH",         T), # VOC emissions from Dehydrators
-                   c("56 VOC Emissions - Tanks",      T), # VOC emissions from Tanks
-                   c("57 VOC Emissions - Trucks",     T), # VOC emissions from Truck Loading
-                   c("58 VOC Emissions - PCTRL",      T), # VOC emissions from Pneumatic Controllers
-                   c("59 VOC Emissions - PPUMP",      T), # VOC emissions from Pneumatic Pumps
-                   c("60 VOC Emissions - Fug",        T), # VOC emissions from Fugitive Emissions
-                   c("61 CO Emissions - WC",          T), # CO emissions from Well Completions
-                   c("62 CO Emissions - RT",          T), # CO emissions from RICE & Turbines
-                   c("63 CO Emissions - SH",          T), # CO emissions from Separators & Heaters
-                   c("64 CO Emissions - DH",          T), # CO emissions from Dehydrators
-                   c("65 CO Emissions - Tanks",       T)  # CO emissions from Tanks
+                   c("32 EQ-Based PM10 Emissions",    F), # Total PM10 emissions from equipment-based calculations
+                   c("33 EQ-Based PM25 Emissions",    F), # Total PM25 emissions from equipment-based calculations
+                   c("34 EQ-Based SOX Emissions",     F), # Total SOX emissions from equipment-based calculations
+                   c("35 EQ-Based NOX Emissions",     F), # Total NOX emissions from equipment-based calculations
+                   c("36 EQ-Based VOC Emissions",     F), # Total VOC emissions from equipment-based calculations
+                   c("37 EQ-Based CO Emissions",      F), # Total CO emissions from equipment-based calculations
+                   c("38 EQ-Based CH2O Emissions",    F), # Total CH2O emissions from equipment-based calculations
+                   c("39 PM10 Emissions - WC",        F), # PM10 emissions from Well Completions
+                   c("40 PM10 Emissions - RT",        F), # PM10 emissions from RICE & Turbines
+                   c("41 PM10 Emissions - SH",        F), # PM10 emissions from Separators & Heaters
+                   c("42 PM25 Emissions - WC",        F), # PM25 emissions from Well Completions
+                   c("43 PM25 Emissions - RT",        F), # PM25 emissions from RICE & Turbines
+                   c("44 PM25 Emissions - SH",        F), # PM25 emissions from Separators & Heaters
+                   c("45 SOx Emissions - RT",         F), # SOx emissions from RICE & Turbines
+                   c("46 SOx Emissions - SH",         F), # SOx emissions from Separators & Heaters
+                   c("47 NOx Emissions - WC",         F), # NOx emissions from Well Completions
+                   c("48 NOx Emissions - RT",         F), # NOx emissions from RICE & Turbines
+                   c("49 NOx Emissions - SH",         F), # NOx emissions from Separators & Heaters
+                   c("50 NOx Emissions - DH",         F), # NOx emissions from Dehydrators
+                   c("51 NOx Emissions - Tanks",      F), # NOx emissions from Tanks
+                   c("52 VOC Emissions - WC",         F), # VOC emissions from Well Completions
+                   c("53 VOC Emissions - RT",         F), # VOC emissions from RICE & Turbines
+                   c("54 VOC Emissions - SH",         F), # VOC emissions from Separators & Heaters
+                   c("55 VOC Emissions - DH",         F), # VOC emissions from Dehydrators
+                   c("56 VOC Emissions - Tanks",      F), # VOC emissions from Tanks
+                   c("57 VOC Emissions - Trucks",     F), # VOC emissions from Truck Loading
+                   c("58 VOC Emissions - PCTRL",      F), # VOC emissions from Pneumatic Controllers
+                   c("59 VOC Emissions - PPUMP",      F), # VOC emissions from Pneumatic Pumps
+                   c("60 VOC Emissions - Fug",        F), # VOC emissions from Fugitive Emissions
+                   c("61 CO Emissions - WC",          F), # CO emissions from Well Completions
+                   c("62 CO Emissions - RT",          F), # CO emissions from RICE & Turbines
+                   c("63 CO Emissions - SH",          F), # CO emissions from Separators & Heaters
+                   c("64 CO Emissions - DH",          F), # CO emissions from Dehydrators
+                   c("65 CO Emissions - Tanks",       F)  # CO emissions from Tanks
 )
 
 # Convert to data.frame and adjust column names

@@ -15,7 +15,7 @@
 # 4. Perform post-processing calculations and generate plots.
 
 
-# 1.1 Paths ---------------------------------------------------------------
+# 1.0 Paths ---------------------------------------------------------------
 
 # Predefine list object "path" for holding directory path listings
 path <- NULL
@@ -47,7 +47,7 @@ remove(pwd.drop, pwd.git)
 setwd(path$work)
 
 
-# 1.2 Functions -----------------------------------------------------------
+# 1.1 Functions -----------------------------------------------------------
 
 # List of functions used in this script to be loaded here
 flst <- file.path(path$fun, c("GBMsim.R",
@@ -87,13 +87,14 @@ flst <- file.path(path$fun, c("GBMsim.R",
                               "CDFd.R",
                               "CDFq.R",
                               "asYear.R",
-                              "NAoverwrite.R"))
+                              "NAoverwrite.R",
+                              "calTstep.R"))
 
 # Load each function in list then remove temporary file list variables
 for (f in flst) source(f); remove(f, flst)
 
 
-# 1.3 Packages -----------------------------------------------------------
+# 1.2 Packages -----------------------------------------------------------
 
 library(foreign)
 library(plyr)
@@ -109,7 +110,7 @@ library(xtable)
 library(xlsx)
 
 
-# 1.4 Options -------------------------------------------------------------
+# 1.3 Options -------------------------------------------------------------
 
 # Don't want strings 'typed' as factors but as characters
 options(stringsAsFactors=FALSE)
@@ -121,10 +122,29 @@ source("EF_options.R")
 # Set seed for random number generation (for reproducibility)
 set.seed(1)
 
+# If loading saved results
+if(opt$load.prior == TRUE) {
+  
+  # Print loading message
+  writeLines(c("", "Loading saved results"))
+  
+  # Load saved results
+  load(file.path(path$data, opt$load.name))
+  
+  # Stop executing main.R and suppress error message
+  stop(simpleError(sprintf("\r%s\r",
+                           paste(rep(" ",
+                                     getOption("width")-1L),
+                                 collapse=" "))))
+}
+
+
+# 2.0 Data Analysis -------------------------------------------------------
+
 # Print and save start time for data analysis section
 writeLines(c("",
-           "Running data analysis functions and/or loading data analysis results",
-           paste("Start time:",Sys.time())))
+             "Running data analysis functions and/or loading data analysis results",
+             paste("Start time:",Sys.time())))
 runstart <- Sys.time()
 
 
@@ -565,593 +585,571 @@ if(opt$emission.update == TRUE) {
 load(file.path(path$data, paste("emissionUpdate_", opt$file_ver, ".rda", sep = "")))
 
 
-# Transition to MC simulation ---------------------------------------------
+# 3.0 Monte-Carlo simulation ----------------------------------------------
 
 # Print stop time for data analysis section
 writeLines(c("",
              paste("Finished data analysis at:", Sys.time()),
              paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))
 
-# If loading results of previous analysis
-if (opt$load.prior == TRUE) {
-  
-  # Load prior results
-  load(file.path(path$data, opt$load.name))
-  
-} else {
-  
-  # Print and save start time for MC simulation
-  writeLines(c("",
-               "Running Monte-Carlo Simulation",
-               paste("Start time:",Sys.time())))
-  runstart <- Sys.time()
-  
-  
-  # 3.1 Energy price path simulation ----------------------------------------
-  
-  # Switch for price path simulation method.
-  switch(opt$ep.type,
+# Print and save start time for MC simulation
+writeLines(c("",
+             "Running Monte-Carlo Simulation",
+             paste("Start time:",Sys.time())))
+runstart <- Sys.time()
+
+
+# 3.1 Energy price path simulation ----------------------------------------
+
+# Switch for price path simulation method.
+switch(opt$ep.type,
+       
+       # If GBM simulation, ep.type == "a"
+       a = {
          
-         # If GBM simulation, ep.type == "a"
-         a = {
-           
-           # Run Geometric Brownian Motion (GBM) price path simulation
-           epsim <- GBMsim(path =         path,
-                           oil.fpp.init = opt$oil.fpp.init,
-                           gas.fpp.init = opt$gas.fpp.init,
-                           timesteps =    opt$MC.tsteps,
-                           nrun =         opt$nrun,
-                           GBMfitOP =     GBMfitOP,
-                           GBMfitGP =     GBMfitGP)
-           
-           # Extract individual data.frames from list object
-           op <- epsim$op
-           gp <- epsim$gp
-           
-           # Remove list
-           remove(epsim)
-         },
+         # Run Geometric Brownian Motion (GBM) price path simulation
+         epsim <- GBMsim(path =         path,
+                         oil.fpp.init = opt$oil.fpp.init,
+                         gas.fpp.init = opt$gas.fpp.init,
+                         timesteps =    opt$MC.tsteps,
+                         nrun =         opt$nrun,
+                         GBMfitOP =     GBMfitOP,
+                         GBMfitGP =     GBMfitGP)
          
-         # If EIA forecast with error propagation, ep.type == "b"
-         b = {
-           
-           # Run EIAsim
-           epsim <- EIAsim(nrun =     opt$nrun,
-                           Eoil =     Eoil,
-                           Egas =     Egas,
-                           EoilFrac = EoilFrac,
-                           EgasFrac = EgasFrac,
-                           op.FC =    op.FC.ref,
-                           gp.FC =    gp.FC.ref,
-                           type =     opt$EIA.ep.type,
-                           fracProb = opt$EIA.fracProb)
-           
-           # Extract objects from list
-           op <- epsim$op
-           gp <- epsim$gp
-           
-           # Remove list
-           remove(epsim)
-         },
+         # Extract individual data.frames from list object
+         op <- epsim$op
+         gp <- epsim$gp
          
-         # If using actual energy price paths, ep.type == "c"
-         c = {
-           
-           # Get prices from eia.hp data.frame
-           op <- matrix(rep(eia.hp$OP[(nrow(eia.hp)-opt$MC.tsteps+1):nrow(eia.hp)],
-                            times = opt$nrun),
-                        nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
-           gp <- matrix(rep(eia.hp$GP[(nrow(eia.hp)-opt$MC.tsteps+1):nrow(eia.hp)],
-                            times = opt$nrun),
-                        nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
-         },
+         # Remove list
+         remove(epsim)
+       },
+       
+       # If EIA forecast with error propagation, ep.type == "b"
+       b = {
          
-         # If using long-term EIA based forecasts, ep.type = "d"
-         d = {
-           
-           # Run EIAsim
-           epsim <- EIAsimLT(nrun =    opt$nrun,
-                             Eoil.LT = Eoil.LT,
-                             Egas.LT = Egas.LT)
-           
-           # Extract objects from list
-           op <- epsim$op
-           gp <- epsim$gp
-           
-           # Remove list
-           remove(epsim)
-         },
+         # Run EIAsim
+         epsim <- EIAsim(nrun =     opt$nrun,
+                         Eoil =     Eoil,
+                         Egas =     Egas,
+                         EoilFrac = EoilFrac,
+                         EgasFrac = EgasFrac,
+                         op.FC =    op.FC.ref,
+                         gp.FC =    gp.FC.ref,
+                         type =     opt$EIA.ep.type,
+                         fracProb = opt$EIA.fracProb)
          
-         # If using user specified price path, ep.type = "e"
-         e = {
+         # Extract objects from list
+         op <- epsim$op
+         gp <- epsim$gp
+         
+         # Remove list
+         remove(epsim)
+       },
+       
+       # If using actual energy price paths, ep.type == "c"
+       c = {
+         
+         # Get prices from eia.hp data.frame
+         op <- matrix(rep(eia.hp$OP[(nrow(eia.hp)-opt$MC.tsteps+1):nrow(eia.hp)],
+                          times = opt$nrun),
+                      nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
+         gp <- matrix(rep(eia.hp$GP[(nrow(eia.hp)-opt$MC.tsteps+1):nrow(eia.hp)],
+                          times = opt$nrun),
+                      nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
+       },
+       
+       # If using long-term EIA based forecasts, ep.type = "d"
+       d = {
+         
+         # Run EIAsim
+         epsim <- EIAsimLT(nrun =    opt$nrun,
+                           Eoil.LT = Eoil.LT,
+                           Egas.LT = Egas.LT)
+         
+         # Extract objects from list
+         op <- epsim$op
+         gp <- epsim$gp
+         
+         # Remove list
+         remove(epsim)
+       },
+       
+       # If using user specified price path, ep.type = "e"
+       e = {
+         
+         # Define op and gp using user specified price matrices in opt
+         op <- opt$uppo
+         gp <- opt$uppg
+       })
+
+
+# 3.2 Well drilling simulation --------------------------------------------
+
+# Run well drilling simulation given price paths opsim and gpsim
+Drilled <- drillsim(path =            path,
+                    GBMsim.OP =       op,
+                    GBMsim.GP =       gp,
+                    nrun =            opt$nrun,
+                    drilled.init =    opt$drilled.init,
+                    drillModel =      drillModel,
+                    type =            opt$DStype,
+                    p =               p,
+                    tstart =          opt$tstart,
+                    tstop =           opt$tstop,
+                    simtype =         opt$DSsimtype,
+                    op.init =         opt$oil.fpp.init,
+                    gp.init =         opt$gas.fpp.init)
+
+
+# 3.3 Prior production calculations ---------------------------------------
+
+# Run prior oil and gas production calculation
+ppri <- priorProd(mo =        mo,
+                  mg =        mg,
+                  MC.tsteps = opt$MC.tsteps,
+                  tend.cut =  opt$tend.cut)
+
+# Get prior well info for wells with fits
+prior.Info <- priorInfo(apilist = ppri$apilist,
+                        p =       p,
+                        field =   field)
+
+# Get prior well info for wells w/o fits
+pi.skip <- priorInfo(apilist = ppri$skip$api,
+                     p =       p,
+                     field =   field)
+
+# Add in data from ppri function call to pi.skip
+pi.skip <- cbind(pi.skip,
+                 tend =      ppri$skip$tend,
+                 firstprod = ppri$skip$firstprod)
+
+
+# 3.3 Monte-Carlo Loop ----------------------------------------------------
+
+# The following for-loop calculates all terms for each well in a single 
+# Monte-Carlo (MC) iteration and returns the results as a total to cut down on
+# the memory usage for all the objects in the for-loop
+
+# Preallocate results matrices
+osim <-    matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
+gsim <-    osim # osim/gsim total oil/gas production (bbl or MCF)
+posim <-   osim # total oil production (bbl) from prior wells
+pgsim <-   osim # total gas production (MCF) from prior wells
+
+# Activity-based emissions results
+aE <- list(CO2 =     osim,                                 # CO2 emission totals (metric tons)
+           CH4 =     osim,                                 # CH4 emission totals (metric tons)
+           VOC =     osim,                                 # VOC emission totals (metric tons)
+           rCO2 =    osim,                                 # Reduced CO2 emission totals (metric tons)
+           rCH4 =    osim,                                 # Reduced CH4 emission totals (metric tons)
+           rVOC =    osim,                                 # Reduced VOC emission totals (metric tons)
+           nfCO2 =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for CO2
+           nfCH4 =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for CH4
+           nfVOC =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for VOC
+           pfCO2 =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for CO2
+           pfCH4 =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for CH4
+           pfVOC =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for VOC
+           rnfCO2 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for CO2
+           rnfCH4 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for CH4
+           rnfVOC =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for VOC
+           rpfCO2 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for CO2
+           rpfCH4 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for CH4
+           rpfVOC =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for VOC
+           foil =    matrix(0, nrow = opt$nrun, ncol = 2), # Fraction of base emissions from oil wells
+           NSPSred = matrix(0, nrow = opt$nrun, ncol = 4), # Fraction of NSPS reductions
+           fnvp =    matrix(0, nrow = opt$nrun, ncol = 3), # Fraction of emissions from new wells vs. prior wells
+           rfnvp =   matrix(0, nrow = opt$nrun, ncol = 3)) # Reduced fraction of emissions from new wells vs. prior wells
+
+# Equipment-based emissions results
+eE <- list(pm10  = osim, # Emissions totals for each species
+           pm25  = osim,
+           sox   = osim,
+           nox   = osim,
+           voc   = osim,
+           co    = osim,
+           ch2o  = osim,
            
-           # Define op and gp using user specified price matrices in opt
-           op <- opt$uppo
-           gp <- opt$uppg
-         })
+           fpm10 = list(wc    = osim,  # Fraction of emissions from each type of equipment for each species
+                        rt    = osim,  # wc    = well completion
+                        sh    = osim), # rt    = RICE and Turbines
+           # sh    = Separators and Heaters
+           fpm25 = list(wc    = osim,  # dh    = Dehydrators
+                        rt    = osim,  # tank  = Tanks
+                        sh    = osim), # truck = Truck Loading
+           # pctrl = Pneumatic Controllers
+           fsox  = list(rt    = osim,  # ppump = Pneumatic Pumps
+                        sh    = osim), # fug   = Fugitive Emissions
+           
+           fnox  = list(wc    = osim,
+                        rt    = osim,
+                        sh    = osim,
+                        dh    = osim,
+                        tank  = osim),
+           
+           fvoc  = list(wc    = osim,
+                        rt    = osim,
+                        sh    = osim,
+                        dh    = osim,
+                        tank  = osim,
+                        truck = osim,
+                        pctrl = osim,
+                        ppump = osim,
+                        fug   = osim),
+           
+           fco   = list(wc    = osim,
+                        rt    = osim,
+                        sh    = osim,
+                        dh    = osim,
+                        tank  = osim))
+
+# Reduced equipment-based results
+reE <- eE
+
+# Progress Bar (since this next for-loop takes a while)
+pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
+
+# For each runID
+for (i in 1:opt$nrun) {
+  
+  # 3.3.1 Well data simulation -------------------------------------------
+  
+  # Get time step that each well is drilled and flag as being a new well (i.e.
+  # prior = FALSE)
+  wsim <- data.frame(tDrill = sim_tdrill(Drilled = Drilled[i,]),
+                     prior =  FALSE,
+                     tend =   0)
+  
+  # Get field numbers
+  wsim$fieldnum <- sim_fieldnum(cdf.ff = cdf.ff,
+                                times =  length(wsim$tDrill))
+  
+  # Get well types
+  wsim$wellType <- sim_wellType(fieldnum = wsim$fieldnum,
+                                prob =     prob)
+  
+  # Get county
+  wsim$county <- sim_county(fieldnum = wsim$fieldnum,
+                            prob =     prob)
+  
+  # Get time delays for oil/gas production
+  wsim <- cbind(wsim, sim_tdelay(times =            nrow(wsim),
+                                 field =            field,
+                                 fieldnum =         wsim$fieldnum,
+                                 DCA.cdf.coef.oil = DCA.cdf.coef.oil,
+                                 DCA.cdf.coef.gas = DCA.cdf.coef.gas))
+  
+  # Get well depth
+  wsim$depth <- sim_depth(wellType =     wsim$wellType,
+                          cdf.depth.ow = cdf.depth.ow,
+                          cdf.depth.gw = cdf.depth.gw)
+  
+  # Get lease type
+  wsim$lease <- sim_lease(fieldnum = wsim$fieldnum,
+                          cdf.flt =  cdf.flt)
+  
+  # Pick well rework time steps for new wells
+  wsim$rework <- sim_rework(type =       "new",
+                            wellType =   wsim$wellType,
+                            tDrill =     wsim$tDrill,
+                            td.oil =     wsim$td.oil,
+                            td.gas =     wsim$td.gas,
+                            cdf.rework = cdf.rework,
+                            timesteps =  opt$MC.tsteps)
+  
+  # Pick well rework time steps for existing wells with fits
+  wpri <- cbind(prior.Info, rework = sim_rework(type =       "prior",
+                                                wellType =   prior.Info$wellType,
+                                                cdf.rework = cdf.rework,
+                                                timesteps =  opt$MC.tsteps,
+                                                firstprod =  ppri$firstprod,
+                                                tstart =     opt$tstart))
+  
+  # Pick well rework time steps for existing wells w/o fits
+  pi.skip$rework <- sim_rework(type =       "prior",
+                               wellType =   pi.skip$wellType,
+                               cdf.rework = cdf.rework,
+                               timesteps =  opt$MC.tsteps,
+                               firstprod =  pi.skip$firstprod,
+                               tstart =     opt$tstart)
+  
+  # Combine wsim and pi.skip data.frames (note - assuming zero time delay for
+  # prior wells)
+  wsim <- rbind(wsim, data.frame(tDrill =   0,
+                                 prior =    TRUE,
+                                 tend =     pi.skip$tend,
+                                 fieldnum = pi.skip$fieldnum,
+                                 wellType = pi.skip$wellType,
+                                 td.oil =   0,
+                                 td.gas =   0,
+                                 depth =    pi.skip$depth,
+                                 lease =    pi.skip$lease,
+                                 county =   pi.skip$county,
+                                 rework =   pi.skip$rework))
+  
+  # Duplicate reworked wells. Reworks from wpri are tracked through wsim
+  wsim <- sim_dupRework(wsim =    wsim,
+                        wpri =    wpri)
+  
+  # Pick decline curve coefficients
+  wsim <- cbind(wsim, sim_DCC(decline.type.oil =   opt$mc.DCCpick.type.oil,
+                              decline.type.gas =   opt$mc.DCCpick.type.gas,
+                              times =              nrow(wsim),
+                              field =              field,
+                              fieldnum =           wsim$fieldnum,
+                              DCA.cdf.coef.oil =   DCA.cdf.coef.oil,
+                              DCA.cdf.coef.gas =   DCA.cdf.coef.gas,
+                              Q.DCA.cdf.coef.oil = Q.DCA.cdf.coef.oil,
+                              Q.DCA.cdf.coef.gas = Q.DCA.cdf.coef.gas,
+                              tsteps =             opt$tsteps,
+                              tDrill =             wsim$tDrill,
+                              tend =               wsim$tend,
+                              DCAlnormFit =        DCAlnormFit))
+  
+  # Pick activity-based emission factors
+  wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
+  wpri <- cbind(wpri, sim_EF(times = nrow(wpri), EF = opt$EF))
+  
+  # Pick CPT rows for equipment-based emissions calculations
+  wsim <- cbind(wsim, sim_eq_EF(times = nrow(wsim), eci = eci))
+  wpri <- cbind(wpri, sim_eq_EF(times = nrow(wpri), eci = eci))
   
   
-  # 3.2 Well drilling simulation --------------------------------------------
+  # 3.3.2 Production simulation ------------------------------------------
   
-  # Run well drilling simulation given price paths opsim and gpsim
-  Drilled <- drillsim(path =            path,
-                      GBMsim.OP =       op,
-                      GBMsim.GP =       gp,
-                      nrun =            opt$nrun,
-                      drilled.init =    opt$drilled.init,
-                      drillModel =      drillModel,
-                      type =            opt$DStype,
-                      p =               p,
-                      tstart =          opt$tstart,
-                      tstop =           opt$tstop,
-                      simtype =         opt$DSsimtype,
-                      op.init =         opt$oil.fpp.init,
-                      gp.init =         opt$gas.fpp.init)
+  # Run production simulation function
+  psim <- productionsim(wsim =            wsim,
+                        timesteps =       opt$MC.tsteps,
+                        decline.type =    opt$mc.DCeq.type)
+  
+  # Calculate adjusted prior production volumes by removing production from
+  # reworked wells.
+  apri <- priorProdReworkAdjust(wpri =      wpri,
+                                timesteps = opt$MC.tsteps,
+                                ppri =      ppri)
   
   
-  # 3.3 Prior production calculations ---------------------------------------
+  # 3.3.3 Lease operating costs -----------------------------------------
   
-  # Run prior oil and gas production calculation
-  ppri <- priorProd(mo =        mo,
-                    mg =        mg,
-                    MC.tsteps = opt$MC.tsteps,
-                    tend.cut =  opt$tend.cut)
-  
-  # Get prior well info for wells with fits
-  prior.Info <- priorInfo(apilist = ppri$apilist,
-                          p =       p,
-                          field =   field)
-  
-  # Get prior well info for wells w/o fits
-  pi.skip <- priorInfo(apilist = ppri$skip$api,
-                       p =       p,
-                       field =   field)
-  
-  # Add in data from ppri function call to pi.skip
-  pi.skip <- cbind(pi.skip,
-                   tend =      ppri$skip$tend,
-                   firstprod = ppri$skip$firstprod)
+  # Calculate the operating cost for lease equipment
+  LOC <- LOCcalc(wsim =       rbind(wsim[,c("wellType", "depth")],
+                                    wpri[,c("wellType", "depth")]),
+                 LOC.oil.op = LOC.oil.op,
+                 LOC.gas.op = LOC.gas.op,
+                 op =         op[i,],
+                 gp =         gp[i,],
+                 osim =       rbind(psim$osim, apri$oil),
+                 gsim =       rbind(psim$gsim, apri$gas))
   
   
-  # 3.3 Monte-Carlo Loop ----------------------------------------------------
+  # 3.3.4 Production correction -----------------------------------------
   
-  # The following for-loop calculates all terms for each well in a single 
-  # Monte-Carlo (MC) iteration and returns the results as a total to cut down on
-  # the memory usage for all the objects in the for-loop
+  OSIM <- rbind(psim$osim, apri$oil)
+  GSIM <- rbind(psim$gsim, apri$gas)
   
-  # Preallocate results matrices
-  osim <-    matrix(0, nrow = opt$nrun, ncol = opt$MC.tsteps)
-  gsim <-    osim # osim/gsim total oil/gas production (bbl or MCF)
-  posim <-   osim # total oil production (bbl) from prior wells
-  pgsim <-   osim # total gas production (MCF) from prior wells
+  # No well should produce if its LOC is higher than some fraction of its gross 
+  # revenue. Calculate gross revenue from oil and gas sales.
+  gr <- op[i,]*rbind(psim$osim, apri$oil)+gp[i,]*rbind(psim$gsim, apri$gas)
   
-  # Activity-based emissions results
-  aE <- list(CO2 =     osim,                                 # CO2 emission totals (metric tons)
-             CH4 =     osim,                                 # CH4 emission totals (metric tons)
-             VOC =     osim,                                 # VOC emission totals (metric tons)
-             rCO2 =    osim,                                 # Reduced CO2 emission totals (metric tons)
-             rCH4 =    osim,                                 # Reduced CH4 emission totals (metric tons)
-             rVOC =    osim,                                 # Reduced VOC emission totals (metric tons)
-             nfCO2 =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for CO2
-             nfCH4 =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for CH4
-             nfVOC =   matrix(0, nrow = opt$nrun, ncol = 8), # New well emission source fractions for VOC
-             pfCO2 =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for CO2
-             pfCH4 =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for CH4
-             pfVOC =   matrix(0, nrow = opt$nrun, ncol = 8), # Prior well emission source fractions for VOC
-             rnfCO2 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for CO2
-             rnfCH4 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for CH4
-             rnfVOC =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced new well emission source fractions for VOC
-             rpfCO2 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for CO2
-             rpfCH4 =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for CH4
-             rpfVOC =  matrix(0, nrow = opt$nrun, ncol = 8), # Reduced prior well emission source fractions for VOC
-             foil =    matrix(0, nrow = opt$nrun, ncol = 2), # Fraction of base emissions from oil wells
-             NSPSred = matrix(0, nrow = opt$nrun, ncol = 4), # Fraction of NSPS reductions
-             fnvp =    matrix(0, nrow = opt$nrun, ncol = 3), # Fraction of emissions from new wells vs. prior wells
-             rfnvp =   matrix(0, nrow = opt$nrun, ncol = 3)) # Reduced fraction of emissions from new wells vs. prior wells
+  # Get indices of wells (rows) and time steps (columns) with LOC/gr >= cutoff
+  ind <- which(LOC/gr >= opt$grFrac)
   
-  # Equipment-based emissions results
-  eE <- list(pm10  = osim, # Emissions totals for each species
-             pm25  = osim,
-             sox   = osim,
-             nox   = osim,
-             voc   = osim,
-             co    = osim,
-             ch2o  = osim,
-             
-             fpm10 = list(wc    = osim,  # Fraction of emissions from each type of equipment for each species
-                          rt    = osim,  # wc    = well completion
-                          sh    = osim), # rt    = RICE and Turbines
-                                         # sh    = Separators and Heaters
-             fpm25 = list(wc    = osim,  # dh    = Dehydrators
-                          rt    = osim,  # tank  = Tanks
-                          sh    = osim), # truck = Truck Loading
-                                         # pctrl = Pneumatic Controllers
-             fsox  = list(rt    = osim,  # ppump = Pneumatic Pumps
-                          sh    = osim), # fug   = Fugitive Emissions
-             
-             fnox  = list(wc    = osim,
-                          rt    = osim,
-                          sh    = osim,
-                          dh    = osim,
-                          tank  = osim),
-             
-             fvoc  = list(wc    = osim,
-                          rt    = osim,
-                          sh    = osim,
-                          dh    = osim,
-                          tank  = osim,
-                          truck = osim,
-                          pctrl = osim,
-                          ppump = osim,
-                          fug   = osim),
-             
-             fco   = list(wc    = osim,
-                          rt    = osim,
-                          sh    = osim,
-                          dh    = osim,
-                          tank  = osim))
+  # Zero out production records and LOCs for wells in ind
+  LOC[ind] <- 0
+  OSIM[ind] <- 0
+  GSIM[ind] <- 0
   
-  # Reduced equipment-based results
-  reE <- eE
+  # Pullout production records from OSIM/GSIM
+  psim$osim <- OSIM[1:nrow(psim$osim),]
+  apri$oil <-  OSIM[(nrow(psim$osim)+1):nrow(OSIM),]
+  psim$gsim <- GSIM[1:nrow(psim$gsim),]
+  apri$gas <-  GSIM[(nrow(psim$gsim)+1):nrow(GSIM),]
   
-  # Progress Bar (since this next for-loop takes a while)
-  pb <- txtProgressBar(min = 0, max = opt$nrun, width = 50, style = 3)
   
-  # For each runID
-  for (i in 1:opt$nrun) {
-    
-    # 3.3.1 Well data simulation -------------------------------------------
-    
-    # Get time step that each well is drilled and flag as being a new well (i.e.
-    # prior = FALSE)
-    wsim <- data.frame(tDrill = sim_tdrill(Drilled = Drilled[i,]),
-                       prior =  FALSE,
-                       tend =   0)
-    
-    # Get field numbers
-    wsim$fieldnum <- sim_fieldnum(cdf.ff = cdf.ff,
-                                  times =  length(wsim$tDrill))
-    
-    # Get well types
-    wsim$wellType <- sim_wellType(fieldnum = wsim$fieldnum,
-                                  prob =     prob)
-    
-    # Get county
-    wsim$county <- sim_county(fieldnum = wsim$fieldnum,
-                              prob =     prob)
-    
-    # Get time delays for oil/gas production
-    wsim <- cbind(wsim, sim_tdelay(times =            nrow(wsim),
-                                   field =            field,
-                                   fieldnum =         wsim$fieldnum,
-                                   DCA.cdf.coef.oil = DCA.cdf.coef.oil,
-                                   DCA.cdf.coef.gas = DCA.cdf.coef.gas))
-    
-    # Get well depth
-    wsim$depth <- sim_depth(wellType =     wsim$wellType,
-                            cdf.depth.ow = cdf.depth.ow,
-                            cdf.depth.gw = cdf.depth.gw)
-    
-    # Get lease type
-    wsim$lease <- sim_lease(fieldnum = wsim$fieldnum,
-                            cdf.flt =  cdf.flt)
-    
-    # Pick well rework time steps for new wells
-    wsim$rework <- sim_rework(type =       "new",
-                              wellType =   wsim$wellType,
-                              tDrill =     wsim$tDrill,
-                              td.oil =     wsim$td.oil,
-                              td.gas =     wsim$td.gas,
-                              cdf.rework = cdf.rework,
-                              timesteps =  opt$MC.tsteps)
-    
-    # Pick well rework time steps for existing wells with fits
-    wpri <- cbind(prior.Info, rework = sim_rework(type =       "prior",
-                                                  wellType =   prior.Info$wellType,
-                                                  cdf.rework = cdf.rework,
-                                                  timesteps =  opt$MC.tsteps,
-                                                  firstprod =  ppri$firstprod,
-                                                  tstart =     opt$tstart))
-    
-    # Pick well rework time steps for existing wells w/o fits
-    pi.skip$rework <- sim_rework(type =       "prior",
-                                 wellType =   pi.skip$wellType,
-                                 cdf.rework = cdf.rework,
-                                 timesteps =  opt$MC.tsteps,
-                                 firstprod =  pi.skip$firstprod,
-                                 tstart =     opt$tstart)
-    
-    # Combine wsim and pi.skip data.frames (note - assuming zero time delay for
-    # prior wells)
-    wsim <- rbind(wsim, data.frame(tDrill =   0,
-                                   prior =    TRUE,
-                                   tend =     pi.skip$tend,
-                                   fieldnum = pi.skip$fieldnum,
-                                   wellType = pi.skip$wellType,
-                                   td.oil =   0,
-                                   td.gas =   0,
-                                   depth =    pi.skip$depth,
-                                   lease =    pi.skip$lease,
-                                   county =   pi.skip$county,
-                                   rework =   pi.skip$rework))
-    
-    # Duplicate reworked wells. Reworks from wpri are tracked through wsim
-    wsim <- sim_dupRework(wsim =    wsim,
-                          wpri =    wpri)
-    
-    # Pick decline curve coefficients
-    wsim <- cbind(wsim, sim_DCC(decline.type.oil =   opt$mc.DCCpick.type.oil,
-                                decline.type.gas =   opt$mc.DCCpick.type.gas,
-                                times =              nrow(wsim),
-                                field =              field,
-                                fieldnum =           wsim$fieldnum,
-                                DCA.cdf.coef.oil =   DCA.cdf.coef.oil,
-                                DCA.cdf.coef.gas =   DCA.cdf.coef.gas,
-                                Q.DCA.cdf.coef.oil = Q.DCA.cdf.coef.oil,
-                                Q.DCA.cdf.coef.gas = Q.DCA.cdf.coef.gas,
-                                tsteps =             opt$tsteps,
-                                tDrill =             wsim$tDrill,
-                                tend =               wsim$tend,
-                                DCAlnormFit =        DCAlnormFit))
-    
-    # Pick activity-based emission factors
-    wsim <- cbind(wsim, sim_EF(times = nrow(wsim), EF = opt$EF))
-    wpri <- cbind(wpri, sim_EF(times = nrow(wpri), EF = opt$EF))
-    
-    # Pick CPT rows for equipment-based emissions calculations
-    wsim <- cbind(wsim, sim_eq_EF(times = nrow(wsim), eci = eci))
-    wpri <- cbind(wpri, sim_eq_EF(times = nrow(wpri), eci = eci))
-    
-    
-    # 3.3.2 Production simulation ------------------------------------------
-    
-    # Run production simulation function
-    psim <- productionsim(wsim =            wsim,
-                          timesteps =       opt$MC.tsteps,
-                          decline.type =    opt$mc.DCeq.type)
-    
-    # Calculate adjusted prior production volumes by removing production from
-    # reworked wells.
-    apri <- priorProdReworkAdjust(wpri =      wpri,
-                                  timesteps = opt$MC.tsteps,
-                                  ppri =      ppri)
-    
-    
-    # 3.3.3 Lease operating costs -----------------------------------------
-    
-    # Calculate the operating cost for lease equipment
-    LOC <- LOCcalc(wsim =       rbind(wsim[,c("wellType", "depth")],
-                                      wpri[,c("wellType", "depth")]),
-                   LOC.oil.op = LOC.oil.op,
-                   LOC.gas.op = LOC.gas.op,
-                   op =         op[i,],
-                   gp =         gp[i,],
-                   osim =       rbind(psim$osim, apri$oil),
-                   gsim =       rbind(psim$gsim, apri$gas))
-    
-    
-    # 3.3.4 Production correction -----------------------------------------
-    
-    OSIM <- rbind(psim$osim, apri$oil)
-    GSIM <- rbind(psim$gsim, apri$gas)
-    
-    # No well should produce if its LOC is higher than some fraction of its gross 
-    # revenue. Calculate gross revenue from oil and gas sales.
-    gr <- op[i,]*rbind(psim$osim, apri$oil)+gp[i,]*rbind(psim$gsim, apri$gas)
-    
-    # Get indices of wells (rows) and time steps (columns) with LOC/gr >= cutoff
-    ind <- which(LOC/gr >= opt$grFrac)
-    
-    # Zero out production records and LOCs for wells in ind
-    LOC[ind] <- 0
-    OSIM[ind] <- 0
-    GSIM[ind] <- 0
-    
-    # Pullout production records from OSIM/GSIM
-    psim$osim <- OSIM[1:nrow(psim$osim),]
-    apri$oil <-  OSIM[(nrow(psim$osim)+1):nrow(OSIM),]
-    psim$gsim <- GSIM[1:nrow(psim$gsim),]
-    apri$gas <-  GSIM[(nrow(psim$gsim)+1):nrow(GSIM),]
-    
-    
-    # 3.3.5 Activity-Based Emissions -------------------------------------
-    
-    # Calculate emissions from new wells
-    ETsim <- Ecalc(osim =      psim$osim,
-                   gsim =      psim$gsim,
-                   wsim =      wsim,
-                   tstart =    opt$tstart,
-                   EFred =     opt$EFred,
-                   MC.tsteps = opt$MC.tsteps)
-    
-    # Calculate emissions from existing wells
-    ETpri <- Ecalc(osim =      apri$oil,
-                   gsim =      apri$gas,
-                   wsim =      wpri,
-                   tstart =    opt$tstart,
-                   EFred =     opt$EFred,
-                   MC.tsteps = opt$MC.tsteps)
-    
-    
-    # 3.3.6 Equipment-Based Emissions ------------------------------------
-    
-    # Get column numbers of subset of wsim & wpri which are required for
-    # emissions calculation
-    ind.wsim <- c(which(names(wsim) == "tDrill"),
-                  which(names(wsim) == "eqEF.wc"):which(names(wsim) == "eqEF.fug.woil"))
-    ind.wpri <- c(which(names(wpri) == "tDrill"),
-                  which(names(wpri) == "eqEF.wc"):which(names(wpri) == "eqEF.fug.woil"))
-    
-    # Calculate emissions from both new wells and existing wells
-    eqETsim <- eqEcalc(wsim =      rbind(wsim[, ind.wsim], wpri[, ind.wpri]),
-                       MC.tsteps = opt$MC.tsteps,
-                       osim =      rbind(psim$osim, apri$oil),
-                       gsim =      rbind(psim$gsim, apri$gas),
-                       eci =       eci,
-                       eopt =      eopt,
-                       tstart =    opt$tstart)
-    
-    
-    # 3.3.7 Get totals for MC run i --------------------------------------
-    
-    # Calculate column sums for each results matrix generated to get totals
-    osim[i, ] <-    colSums(psim$osim[which(wsim$prior == F),])
-    gsim[i, ] <-    colSums(psim$gsim[which(wsim$prior == F),])
-    posim[i, ] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
-    pgsim[i, ] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
-    
-    # Activity-based emissions summations and calculations
-    aE$CO2[i, ] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
-    aE$CH4[i, ] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
-    aE$VOC[i, ] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
-    aE$rCO2[i, ] <-    colSums(rbind(ETsim$rCO2, ETpri$rCO2))
-    aE$rCH4[i, ] <-    colSums(rbind(ETsim$rCH4, ETpri$rCH4))
-    aE$rVOC[i, ] <-    colSums(rbind(ETsim$rVOC, ETpri$rVOC))
-    aE$nfCO2[i, ] <-   ETsim$fET$co2
-    aE$nfCH4[i, ] <-   ETsim$fET$ch4
-    aE$nfVOC[i, ] <-   ETsim$fET$voc
-    aE$pfCO2[i, ] <-   ETpri$fET$co2
-    aE$pfCH4[i, ] <-   ETpri$fET$ch4
-    aE$pfVOC[i, ] <-   ETpri$fET$voc
-    aE$rnfCO2[i, ] <-  ETsim$rfET$co2
-    aE$rnfCH4[i, ] <-  ETsim$rfET$ch4
-    aE$rnfVOC[i, ] <-  ETsim$rfET$voc
-    aE$rpfCO2[i, ] <-  ETpri$rfET$co2
-    aE$rpfCH4[i, ] <-  ETpri$rfET$ch4
-    aE$rpfVOC[i, ] <-  ETpri$rfET$voc
-    aE$foil[i, ] <-    c(ETsim$foil, ETpri$foil)
-    aE$fnvp[i, ] <-    c(sum(ETsim$CO2)/sum(aE$CO2[i, ]),
-                         sum(ETsim$CH4)/sum(aE$CH4[i, ]),
-                         sum(ETsim$VOC)/sum(aE$VOC[i, ]))
-    aE$rfnvp[i, ] <-   c(sum(ETsim$rCO2)/sum(aE$rCO2[i, ]),
-                         sum(ETsim$rCH4)/sum(aE$rCH4[i, ]),
-                         sum(ETsim$rVOC)/sum(aE$rVOC[i, ]))
-    aE$NSPSred[i, ] <- c(ETsim$NSPSred, ETpri$NSPSred)
-    
-    # Equipment-based emissions totals are already calculated, just assign to
-    # results list eE
-    eE$pm10[i, ] <- eqETsim$eb$pm10
-    eE$pm25[i, ] <- eqETsim$eb$pm25
-    eE$sox [i, ] <- eqETsim$eb$sox
-    eE$nox [i, ] <- eqETsim$eb$nox
-    eE$voc [i, ] <- eqETsim$eb$voc
-    eE$co  [i, ] <- eqETsim$eb$co
-    eE$ch2o[i, ] <- eqETsim$eb$ch2o
-    
-    eE$fpm10$wc[i, ] <- eqETsim$eb$fpm10$wc
-    eE$fpm10$rt[i, ] <- eqETsim$eb$fpm10$rt
-    eE$fpm10$sh[i, ] <- eqETsim$eb$fpm10$sh
-    
-    eE$fpm25$wc[i, ] <- eqETsim$eb$fpm25$wc
-    eE$fpm25$rt[i, ] <- eqETsim$eb$fpm25$rt
-    eE$fpm25$sh[i, ] <- eqETsim$eb$fpm25$sh
-    
-    eE$fsox$rt[i, ] <- eqETsim$eb$fsox$rt
-    eE$fsox$sh[i, ] <- eqETsim$eb$fsox$sh
-    
-    eE$fnox$wc  [i, ] <- eqETsim$eb$fnox$wc
-    eE$fnox$rt  [i, ] <- eqETsim$eb$fnox$rt
-    eE$fnox$sh  [i, ] <- eqETsim$eb$fnox$sh
-    eE$fnox$dh  [i, ] <- eqETsim$eb$fnox$dh
-    eE$fnox$tank[i, ] <- eqETsim$eb$fnox$tank
-    
-    eE$fvoc$wc   [i, ] <- eqETsim$eb$fvoc$wc
-    eE$fvoc$rt   [i, ] <- eqETsim$eb$fvoc$rt
-    eE$fvoc$sh   [i, ] <- eqETsim$eb$fvoc$sh
-    eE$fvoc$dh   [i, ] <- eqETsim$eb$fvoc$dh
-    eE$fvoc$tank [i, ] <- eqETsim$eb$fvoc$tank
-    eE$fvoc$truck[i, ] <- eqETsim$eb$fvoc$truck
-    eE$fvoc$pctrl[i, ] <- eqETsim$eb$fvoc$pctrl
-    eE$fvoc$ppump[i, ] <- eqETsim$eb$fvoc$ppump
-    eE$fvoc$fug  [i, ] <- eqETsim$eb$fvoc$fug
-    
-    eE$fco$wc   [i, ] <- eqETsim$eb$fco$wc
-    eE$fco$rt   [i, ] <- eqETsim$eb$fco$rt
-    eE$fco$sh   [i, ] <- eqETsim$eb$fco$sh
-    eE$fco$dh   [i, ] <- eqETsim$eb$fco$dh
-    eE$fco$tank [i, ] <- eqETsim$eb$fco$tank
-    
-    # Repeat for reduced results
-    reE$pm10[i, ] <- eqETsim$re$pm10
-    reE$pm25[i, ] <- eqETsim$re$pm25
-    reE$sox [i, ] <- eqETsim$re$sox
-    reE$nox [i, ] <- eqETsim$re$nox
-    reE$voc [i, ] <- eqETsim$re$voc
-    reE$co  [i, ] <- eqETsim$re$co
-    reE$ch2o[i, ] <- eqETsim$re$ch2o
-    
-    reE$fpm10$wc[i, ] <- eqETsim$re$fpm10$wc
-    reE$fpm10$rt[i, ] <- eqETsim$re$fpm10$rt
-    reE$fpm10$sh[i, ] <- eqETsim$re$fpm10$sh
-    
-    reE$fpm25$wc[i, ] <- eqETsim$re$fpm25$wc
-    reE$fpm25$rt[i, ] <- eqETsim$re$fpm25$rt
-    reE$fpm25$sh[i, ] <- eqETsim$re$fpm25$sh
-    
-    reE$fsox$rt[i, ] <- eqETsim$re$fsox$rt
-    reE$fsox$sh[i, ] <- eqETsim$re$fsox$sh
-    
-    reE$fnox$wc  [i, ] <- eqETsim$re$fnox$wc
-    reE$fnox$rt  [i, ] <- eqETsim$re$fnox$rt
-    reE$fnox$sh  [i, ] <- eqETsim$re$fnox$sh
-    reE$fnox$dh  [i, ] <- eqETsim$re$fnox$dh
-    reE$fnox$tank[i, ] <- eqETsim$re$fnox$tank
-    
-    reE$fvoc$wc   [i, ] <- eqETsim$re$fvoc$wc
-    reE$fvoc$rt   [i, ] <- eqETsim$re$fvoc$rt
-    reE$fvoc$sh   [i, ] <- eqETsim$re$fvoc$sh
-    reE$fvoc$dh   [i, ] <- eqETsim$re$fvoc$dh
-    reE$fvoc$tank [i, ] <- eqETsim$re$fvoc$tank
-    reE$fvoc$truck[i, ] <- eqETsim$re$fvoc$truck
-    reE$fvoc$pctrl[i, ] <- eqETsim$re$fvoc$pctrl
-    reE$fvoc$ppump[i, ] <- eqETsim$re$fvoc$ppump
-    reE$fvoc$fug  [i, ] <- eqETsim$re$fvoc$fug
-    
-    reE$fco$wc   [i, ] <- eqETsim$re$fco$wc
-    reE$fco$rt   [i, ] <- eqETsim$re$fco$rt
-    reE$fco$sh   [i, ] <- eqETsim$re$fco$sh
-    reE$fco$dh   [i, ] <- eqETsim$re$fco$dh
-    reE$fco$tank [i, ] <- eqETsim$re$fco$tank
-    
-    # Update progress bar
-    Sys.sleep(1e-3)
-    setTxtProgressBar(pb, i)
-  }
+  # 3.3.5 Activity-Based Emissions -------------------------------------
   
-  # Close progress bar
-  close(pb)
+  # Calculate emissions from new wells
+  ETsim <- Ecalc(osim =      psim$osim,
+                 gsim =      psim$gsim,
+                 wsim =      wsim,
+                 tstart =    opt$tstart,
+                 EFred =     opt$EFred,
+                 MC.tsteps = opt$MC.tsteps)
   
-  # If specified, save results
-  if (opt$save == T) {
-    
-    # Save results
-    save(file = file.path(path$data, opt$save.name),
-         list = c("osim",
-                  "gsim",
-                  "posim",
-                  "pgsim",
-                  "aE",
-                  "eE",
-                  "reE",
-                  "op",
-                  "gp",
-                  "Drilled",
-                  "ppri",
-                  "prior.Info",
-                  "pi.skip"))
-  }
+  # Calculate emissions from existing wells
+  ETpri <- Ecalc(osim =      apri$oil,
+                 gsim =      apri$gas,
+                 wsim =      wpri,
+                 tstart =    opt$tstart,
+                 EFred =     opt$EFred,
+                 MC.tsteps = opt$MC.tsteps)
   
-  # Print stop time for MC simulation section
-  writeLines(c("",
-               paste("Finished Monte-Carlo simulation at:", Sys.time()),
-               paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))
   
-  writeLines(c("",
-               "Monte-Carlo simulation complete"))
+  # 3.3.6 Equipment-Based Emissions ------------------------------------
+  
+  # Get column numbers of subset of wsim & wpri which are required for
+  # emissions calculation
+  temp <-     names(wsim)
+  ind.wsim <- c(which(temp == "tDrill"),
+                which(temp == "wellType"),
+                which(temp == "county"),
+                which(temp == "lease"),
+                which(temp == "eqEF.wc"):which(temp == "eqEF.fug.woil"))
+  temp <-     names(wpri)
+  ind.wpri <- c(which(temp == "tDrill"),
+                which(temp == "wellType"),
+                which(temp == "county"),
+                which(temp == "lease"),
+                which(temp == "eqEF.wc"):which(temp == "eqEF.fug.woil"))
+  
+  # Calculate emissions from both new wells and existing wells
+  eqETsim <- eqEcalc(wsim =      rbind(wsim[, ind.wsim], wpri[, ind.wpri]),
+                     MC.tsteps = opt$MC.tsteps,
+                     osim =      rbind(psim$osim, apri$oil),
+                     gsim =      rbind(psim$gsim, apri$gas),
+                     eci =       eci,
+                     eopt =      eopt)
+  
+  
+  # 3.3.7 Get totals for MC run i --------------------------------------
+  
+  # Calculate column sums for each results matrix generated to get totals
+  osim[i, ] <-    colSums(psim$osim[which(wsim$prior == F),])
+  gsim[i, ] <-    colSums(psim$gsim[which(wsim$prior == F),])
+  posim[i, ] <-   colSums(apri$oil)+colSums(psim$osim[which(wsim$prior == T),])
+  pgsim[i, ] <-   colSums(apri$gas)+colSums(psim$gsim[which(wsim$prior == T),])
+  
+  # Activity-based emissions summations and calculations
+  aE$CO2[i, ] <-     colSums(rbind(ETsim$CO2, ETpri$CO2))
+  aE$CH4[i, ] <-     colSums(rbind(ETsim$CH4, ETpri$CH4))
+  aE$VOC[i, ] <-     colSums(rbind(ETsim$VOC, ETpri$VOC))
+  aE$rCO2[i, ] <-    colSums(rbind(ETsim$rCO2, ETpri$rCO2))
+  aE$rCH4[i, ] <-    colSums(rbind(ETsim$rCH4, ETpri$rCH4))
+  aE$rVOC[i, ] <-    colSums(rbind(ETsim$rVOC, ETpri$rVOC))
+  aE$nfCO2[i, ] <-   ETsim$fET$co2
+  aE$nfCH4[i, ] <-   ETsim$fET$ch4
+  aE$nfVOC[i, ] <-   ETsim$fET$voc
+  aE$pfCO2[i, ] <-   ETpri$fET$co2
+  aE$pfCH4[i, ] <-   ETpri$fET$ch4
+  aE$pfVOC[i, ] <-   ETpri$fET$voc
+  aE$rnfCO2[i, ] <-  ETsim$rfET$co2
+  aE$rnfCH4[i, ] <-  ETsim$rfET$ch4
+  aE$rnfVOC[i, ] <-  ETsim$rfET$voc
+  aE$rpfCO2[i, ] <-  ETpri$rfET$co2
+  aE$rpfCH4[i, ] <-  ETpri$rfET$ch4
+  aE$rpfVOC[i, ] <-  ETpri$rfET$voc
+  aE$foil[i, ] <-    c(ETsim$foil, ETpri$foil)
+  aE$fnvp[i, ] <-    c(sum(ETsim$CO2)/sum(aE$CO2[i, ]),
+                       sum(ETsim$CH4)/sum(aE$CH4[i, ]),
+                       sum(ETsim$VOC)/sum(aE$VOC[i, ]))
+  aE$rfnvp[i, ] <-   c(sum(ETsim$rCO2)/sum(aE$rCO2[i, ]),
+                       sum(ETsim$rCH4)/sum(aE$rCH4[i, ]),
+                       sum(ETsim$rVOC)/sum(aE$rVOC[i, ]))
+  aE$NSPSred[i, ] <- c(ETsim$NSPSred, ETpri$NSPSred)
+  
+  # Equipment-based emissions totals are already calculated, just assign to
+  # results list eE
+  eE$pm10[i, ] <- eqETsim$eb$pm10
+  eE$pm25[i, ] <- eqETsim$eb$pm25
+  eE$sox [i, ] <- eqETsim$eb$sox
+  eE$nox [i, ] <- eqETsim$eb$nox
+  eE$voc [i, ] <- eqETsim$eb$voc
+  eE$co  [i, ] <- eqETsim$eb$co
+  eE$ch2o[i, ] <- eqETsim$eb$ch2o
+  
+  eE$fpm10$wc[i, ] <- eqETsim$eb$fpm10$wc
+  eE$fpm10$rt[i, ] <- eqETsim$eb$fpm10$rt
+  eE$fpm10$sh[i, ] <- eqETsim$eb$fpm10$sh
+  
+  eE$fpm25$wc[i, ] <- eqETsim$eb$fpm25$wc
+  eE$fpm25$rt[i, ] <- eqETsim$eb$fpm25$rt
+  eE$fpm25$sh[i, ] <- eqETsim$eb$fpm25$sh
+  
+  eE$fsox$rt[i, ] <- eqETsim$eb$fsox$rt
+  eE$fsox$sh[i, ] <- eqETsim$eb$fsox$sh
+  
+  eE$fnox$wc  [i, ] <- eqETsim$eb$fnox$wc
+  eE$fnox$rt  [i, ] <- eqETsim$eb$fnox$rt
+  eE$fnox$sh  [i, ] <- eqETsim$eb$fnox$sh
+  eE$fnox$dh  [i, ] <- eqETsim$eb$fnox$dh
+  eE$fnox$tank[i, ] <- eqETsim$eb$fnox$tank
+  
+  eE$fvoc$wc   [i, ] <- eqETsim$eb$fvoc$wc
+  eE$fvoc$rt   [i, ] <- eqETsim$eb$fvoc$rt
+  eE$fvoc$sh   [i, ] <- eqETsim$eb$fvoc$sh
+  eE$fvoc$dh   [i, ] <- eqETsim$eb$fvoc$dh
+  eE$fvoc$tank [i, ] <- eqETsim$eb$fvoc$tank
+  eE$fvoc$truck[i, ] <- eqETsim$eb$fvoc$truck
+  eE$fvoc$pctrl[i, ] <- eqETsim$eb$fvoc$pctrl
+  eE$fvoc$ppump[i, ] <- eqETsim$eb$fvoc$ppump
+  eE$fvoc$fug  [i, ] <- eqETsim$eb$fvoc$fug
+  
+  eE$fco$wc   [i, ] <- eqETsim$eb$fco$wc
+  eE$fco$rt   [i, ] <- eqETsim$eb$fco$rt
+  eE$fco$sh   [i, ] <- eqETsim$eb$fco$sh
+  eE$fco$dh   [i, ] <- eqETsim$eb$fco$dh
+  eE$fco$tank [i, ] <- eqETsim$eb$fco$tank
+  
+  # Repeat for reduced results
+  reE$pm10[i, ] <- eqETsim$re$pm10
+  reE$pm25[i, ] <- eqETsim$re$pm25
+  reE$sox [i, ] <- eqETsim$re$sox
+  reE$nox [i, ] <- eqETsim$re$nox
+  reE$voc [i, ] <- eqETsim$re$voc
+  reE$co  [i, ] <- eqETsim$re$co
+  reE$ch2o[i, ] <- eqETsim$re$ch2o
+  
+  reE$fpm10$wc[i, ] <- eqETsim$re$fpm10$wc
+  reE$fpm10$rt[i, ] <- eqETsim$re$fpm10$rt
+  reE$fpm10$sh[i, ] <- eqETsim$re$fpm10$sh
+  
+  reE$fpm25$wc[i, ] <- eqETsim$re$fpm25$wc
+  reE$fpm25$rt[i, ] <- eqETsim$re$fpm25$rt
+  reE$fpm25$sh[i, ] <- eqETsim$re$fpm25$sh
+  
+  reE$fsox$rt[i, ] <- eqETsim$re$fsox$rt
+  reE$fsox$sh[i, ] <- eqETsim$re$fsox$sh
+  
+  reE$fnox$wc  [i, ] <- eqETsim$re$fnox$wc
+  reE$fnox$rt  [i, ] <- eqETsim$re$fnox$rt
+  reE$fnox$sh  [i, ] <- eqETsim$re$fnox$sh
+  reE$fnox$dh  [i, ] <- eqETsim$re$fnox$dh
+  reE$fnox$tank[i, ] <- eqETsim$re$fnox$tank
+  
+  reE$fvoc$wc   [i, ] <- eqETsim$re$fvoc$wc
+  reE$fvoc$rt   [i, ] <- eqETsim$re$fvoc$rt
+  reE$fvoc$sh   [i, ] <- eqETsim$re$fvoc$sh
+  reE$fvoc$dh   [i, ] <- eqETsim$re$fvoc$dh
+  reE$fvoc$tank [i, ] <- eqETsim$re$fvoc$tank
+  reE$fvoc$truck[i, ] <- eqETsim$re$fvoc$truck
+  reE$fvoc$pctrl[i, ] <- eqETsim$re$fvoc$pctrl
+  reE$fvoc$ppump[i, ] <- eqETsim$re$fvoc$ppump
+  reE$fvoc$fug  [i, ] <- eqETsim$re$fvoc$fug
+  
+  reE$fco$wc   [i, ] <- eqETsim$re$fco$wc
+  reE$fco$rt   [i, ] <- eqETsim$re$fco$rt
+  reE$fco$sh   [i, ] <- eqETsim$re$fco$sh
+  reE$fco$dh   [i, ] <- eqETsim$re$fco$dh
+  reE$fco$tank [i, ] <- eqETsim$re$fco$tank
+  
+  # Update progress bar
+  Sys.sleep(1e-3)
+  setTxtProgressBar(pb, i)
 }
 
+# Close progress bar
+close(pb)
 
-# 4.1 Post processing -----------------------------------------------------
+# Print stop time for MC simulation section
+writeLines(c("",
+             paste("Finished Monte-Carlo simulation at:", Sys.time()),
+             paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))
+
+writeLines(c("",
+             "Monte-Carlo simulation complete"))
+
+
+# 4.0 Post processing -----------------------------------------------------
 
 # Notify user that post-processing has started
 writeLines(c("",
@@ -1169,3 +1167,15 @@ beep(3)
 writeLines(c("",
              paste("Finished post-processing at:", Sys.time()),
              paste("Elapsed time:", format(difftime(Sys.time(), runstart)))))
+
+
+# 5.0 Save results --------------------------------------------------------
+
+# If specified
+if (opt$save == TRUE) {
+  
+  # Save workspace
+  save(list =  ls(all.names = TRUE),
+       file =  file.path(path$data, opt$save.name),
+       envir = .GlobalEnv)
+}
