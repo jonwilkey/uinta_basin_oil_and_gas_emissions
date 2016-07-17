@@ -1394,41 +1394,6 @@ if(opt$plist$plot[j] == TRUE) {
 j <- j+1
 
 
-# 20 - Well Capital Cost --------------------------------------------------
-if(opt$plist$plot[j] == TRUE) {
-  
-  # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
-  # Set font size
-  par(cex = opt$defFontSize)
-  
-  # Main plot
-  plot(cost ~ depth,
-       data = drillCost.data,
-       col =  "grey40",
-       xlab = "Measured Well Depth (ft)",
-       ylab = paste("Well Capital Cost (in", opt$cpiDate, "dollars)"))#,
-       #main = "Well Capital Cost Model")
-  
-  # Add line for model fit results
-  lines(seq(0, 16e3, 100),
-        exp(coef(drillCost.fit)["(Intercept)"]+coef(drillCost.fit)["depth"]*seq(0, 16e3, 100)))
-  
-  # Add text line with equation
-  # mtext(expression(log(C)==a+b%.%D))
-  
-  # Legend
-  legend("topleft", c("Actual", "Fit"), lty = c(NA,1), pch = c(1,NA), col = c("grey40","black"))
-  
-  # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
-}
-
-# Increment counter
-j <- j+1
-
-
 # 21 - Surface Lease Ownership --------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
   
@@ -1487,7 +1452,7 @@ if(opt$plist$plot[j] == TRUE) {
   lines(cdf.depth.gw, col = "red")
   
   # Legend
-  legend = legend("topleft", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue","red"))
+  legend("topleft", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue","red"))
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -1861,6 +1826,10 @@ if(opt$plist$plot[j] == TRUE) {
           legend.text = fCO2.names,
           args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
   
+  # Cleanup variables from workspace
+  remove(fCO2.lab, fCO2.names, fCO2.xlab, fconv, fnvp.CO2, nfCO2.med,
+         pfCO2.med, rfconv, rfnvp.CO2, rnfCO2.med, rpfCO2.med, tCO2)
+  
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
 }
@@ -1935,6 +1904,10 @@ if(opt$plist$plot[j] == TRUE) {
           legend.text = fCH4.names,
           args.legend = list(x = 12.3, y = 34.75, ncol = 3, cex = 1/opt$defFontSize))
   
+  # Cleanup variables from workspace
+  remove(fCH4.lab, fCH4.names, fCH4.xlab, fconv, fnvp.CH4, nfCH4.med, pfCH4.med,
+         rfconv, rfnvp.CH4, rnfCH4.med, rpfCH4.med, tCH4)
+  
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
 }
@@ -2008,6 +1981,10 @@ if(opt$plist$plot[j] == TRUE) {
           ylab = "VOC Emissions (1E+06 kg / yr)",
           legend.text = fVOC.names,
           args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
+  
+  # Cleanup variables from workspace
+  remove(fVOC.lab, fVOC.names, fVOC.xlab, fconv, fnvp.VOC, nfVOC.med,
+         pfVOC.med, rfconv, rfnvp.VOC, rnfVOC.med, rpfVOC.med, tVOC)
   
   # If exporting to PDF, close PDF
   if(opt$exportFlag == TRUE) {dev.off()}
@@ -2232,3 +2209,9 @@ eqplot(x = eE$fco.q$rt,     rx = reE$fco.q$rt,     type = "CO",    equip = "RICE
 eqplot(x = eE$fco.q$sh,     rx = reE$fco.q$sh,     type = "CO",    equip = "Separator & Heater"); j <- j +1
 eqplot(x = eE$fco.q$dh,     rx = reE$fco.q$dh,     type = "CO",    equip = "Dehydrator");         j <- j +1
 eqplot(x = eE$fco.q$tank,   rx = reE$fco.q$tank,   type = "CO",    equip = "Tank");               j <- j +1
+
+
+# Cleanup -----------------------------------------------------------------
+
+# Remove temp object from workspace
+remove(temp)
