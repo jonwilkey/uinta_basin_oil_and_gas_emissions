@@ -304,10 +304,10 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
   
   # 5.0 Tanks ---------------------------------------------------------------
   
-  # Tanks have ongoing emissions. Reference eci$tank CPT and calculate emissions 
-  # using calc_E_tank function. Tank VOC emissions are assumed to be constant and
-  # are not a function of oil production rates. Annual total emissions are
-  # converted to a monthly basis and applied to each month using Eid.
+  # Tanks have ongoing emissions. Reference eci$tank CPT and calculate emissions
+  # using calc_E_tank function. Tank VOC emissions are a function of oil
+  # production rates. Annual total emissions are converted to a monthly basis
+  # and applied to each month using Eid.
   
   # Calculation
   calc <- calc_E_tank(heat.duty  = eci$tank$combustor_heat_input[wsim$eqEF.tank],
@@ -318,12 +318,12 @@ eqEcalc <- function(wsim, MC.tsteps, osim, gsim, eci, eopt) {
                       red        = NA.overwrite(eci$tank$control_percent[wsim$eqEF.tank]),
                       Eid        = Eid,
                       ratio      = eci$tank$ratio[wsim$eqEF.tank],
-                      max.voc    = max(eci$tank$total_voc))
+                      max.voc    = max(eci$tank$total_voc)/12)
   
-  # Assign emissions
-  E$tank$nox <- (calc$nox / 12) * Eid
-  E$tank$voc <- (calc$voc / 12) * Eid
-  E$tank$co <-  (calc$co  / 12) * Eid
+  # Assign emissions (already converted to monthly basis by calc_E_tank function)
+  E$tank$nox <- calc$nox
+  E$tank$voc <- calc$voc
+  E$tank$co <-  calc$co
   
   # Find row indices of wells to which reduction will be applied. Selection
   # criteria that always apply:
