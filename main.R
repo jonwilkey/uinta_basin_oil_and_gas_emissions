@@ -52,7 +52,7 @@ setwd(path$work)
 # List of functions used in this script to be loaded here
 flst <- file.path(path$fun, c("GBMsim.R",
                               "EIAsim.R",
-                              "EIAsimLT.R",
+                              # "EIAsimLT.R", (DISABLED)
                               "drillsim.R",
                               "priorProd.R",
                               "priorInfo.R",
@@ -348,7 +348,7 @@ if(opt$EIAerror.update == TRUE) {
   # Source function to load
   source(file.path(path$fun, "EIAerrorUpdate.R"))
   source(file.path(path$fun, "EIAerrorUpdateFrac.R"))
-  source(file.path(path$fun, "EIAerrorUpdateLT.R"))
+  # source(file.path(path$fun, "EIAerrorUpdateLT.R"))
   
   # Function call - Relative error w/ directionality
   EIAerrorUpdate(path =   path,
@@ -362,7 +362,7 @@ if(opt$EIAerror.update == TRUE) {
                      tsteps = opt$EEU.tsteps,
                      ver =    opt$file_ver)
   
-  # # Function call - Long Term projections
+  # # Function call - Long Term projections (DISABLED)
   # EIAerrorUpdateLT(op.FC.high = op.FC.high,
   #                    op.FC.ref =  op.FC.ref,
   #                    op.FC.low =  op.FC.low,
@@ -658,24 +658,24 @@ switch(opt$ep.type,
                       nrow = opt$nrun, ncol = opt$MC.tsteps, byrow = T)
        },
        
-       # If using long-term EIA based forecasts, ep.type = "d"
-       d = {
-         
-         # Run EIAsim
-         epsim <- EIAsimLT(nrun =    opt$nrun,
-                           Eoil.LT = Eoil.LT,
-                           Egas.LT = Egas.LT)
-         
-         # Extract objects from list
-         op <- epsim$op
-         gp <- epsim$gp
-         
-         # Remove list
-         remove(epsim)
-       },
+       # # If using long-term EIA based forecasts, ep.type = "d"
+       # d = {
+       #   
+       #   # Run EIAsim
+       #   epsim <- EIAsimLT(nrun =    opt$nrun,
+       #                     Eoil.LT = Eoil.LT,
+       #                     Egas.LT = Egas.LT)
+       #   
+       #   # Extract objects from list
+       #   op <- epsim$op
+       #   gp <- epsim$gp
+       #   
+       #   # Remove list
+       #   remove(epsim)
+       # },
        
-       # If using user specified price path, ep.type = "e"
-       e = {
+       # If using user specified price path, ep.type = "d"
+       d = {
          
          # Define op and gp using user specified price matrices in opt
          op <- opt$uppo
