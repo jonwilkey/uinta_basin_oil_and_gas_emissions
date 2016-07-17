@@ -8,7 +8,7 @@ Please complete the following steps to setup the model:
 1. [Download](http://www.r-project.org/) and install R.
 2. (Recommended) [Download](http://www.rstudio.com/products/rstudio/download/) and install RStudio.
 3. [Download](http://git-scm.com/downloads) and install Git for version control.
-4. Download [this](https://www.dropbox.com/sh/m8rqvurad4wuzyr/AAANOLPsDGr6m5UFkrdtf24Ga?dl=0) shared Dropbox folder.
+4. Download [this](https://www.dropbox.com/sh/sfc47tx1c2d9nzw/AADDnBzPnw4S5ywAVfVZ6L1Ya?dl=0) shared Dropbox folder.
 5. Launch RStudio.
 6. From the menu, select **File > New Project**.
 7. In the dialogue menu that pops up, select **Version Control**.
@@ -26,7 +26,7 @@ Please complete the following steps to setup the model:
 
 ### Documentation ###
 
-* The model's User Manual is available [here](https://www.dropbox.com/s/1votw5ndec6yqz7/User%20Manual%20for%20Uinta%20Basin%20Oil%20and%20Gas%20Production%20Model.pdf?dl=0).
+* The model's User Manual is available [here](https://www.dropbox.com/s/mrl31iyp58wlyzm/User%20Manual%20for%20Uinta%20Basin%20Oil%20and%20Gas%20Emissions%20Model.pdf?dl=0).
 * Documentation for Git [here](http://git-scm.com/doc).
 * Documentation for Bitbucket [here](https://confluence.atlassian.com/x/bgozDQ).
 
