@@ -19,10 +19,6 @@ eopt <- NULL
 
 # Well Completions --------------------------------------------------------
 
-# -- Data Analysis --
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission Factors (lb/gal)
 eopt$wc.EF <- data.frame(pm10 = 0.00683829365079365,
                          pm25 = 0.00683829365079365,
@@ -82,11 +78,6 @@ eopt$r$wc <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # RICE & Turbines ---------------------------------------------------------
 
-# -- Data Analysis --
-# No inputs or calculation options (modeled directly from CPT table)
-
-
-# -- Calculation Inputs --
 # Emission reductions
 eopt$r$rt <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
                         tstep    = calTstep(as.Date("2012-06-01")),
@@ -113,10 +104,6 @@ eopt$r$rt <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # Separators and Heaters --------------------------------------------------
 
-# -- Data Analysis --
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission Factors (lb/MMCF)
 eopt$sh.EF <- data.frame(pm10 = 7.6,
                          pm25 = 7.6,
@@ -149,10 +136,6 @@ eopt$r$sh <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # Dehydrators -------------------------------------------------------------
 
-# -- Data Analysis --
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission Factors (lb/MMCF)
 eopt$dh.EF <- data.frame(nox       = 0.068,
                          co        = 0.31,
@@ -178,10 +161,6 @@ eopt$r$dh <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # Tanks -------------------------------------------------------------------
 
-# -- Data Analysis --
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission Factors (lb/MMCF)
 eopt$tank.EF <- data.frame(nox       = 0.068,
                            co        = 0.31,
@@ -208,10 +187,6 @@ eopt$r$tank <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # Truck Loading -----------------------------------------------------------
 
-# -- Data Analysis --
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission reductions
 eopt$r$truck <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
                            tstep    = calTstep(as.Date("2012-06-01")),
@@ -226,10 +201,6 @@ eopt$r$truck <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # Pneumatic Controllers ---------------------------------------------------
 
-# -- Data Analysis --
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission factors (ton/hr)
 eopt$pctrl.EF <- data.frame(HB.voc = 1.92  / 365 / 24,
                             IB.voc = 0.698 / 365 / 24,
@@ -249,10 +220,6 @@ eopt$r$pctrl <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # Pneumatic Pumps ---------------------------------------------------------
 
-# -- Data Analysis
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission reductions
 eopt$r$ppump <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
                            tstep    = calTstep(as.Date("2012-06-01")),
@@ -266,10 +233,6 @@ eopt$r$ppump <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
 
 # Fugitive emissions ------------------------------------------------------
 
-# -- Data Analysis --
-# No inputs required
-
-# -- Calculation Inputs --
 # Emission factors
 #..............................................................................................
 #                    Service Type   Valves     Pumps    Others  Connectors  Flanges  Open-Ended Lines
@@ -284,22 +247,6 @@ eopt$fug.EF <- data.frame(gas =  c(9.90E-03, 5.30E-03, 1.94E-02, 4.40E-04, 8.60E
                                         "Connectors",
                                         "Flanges",
                                         "Open-Ended Lines"))
-
-# Default equipment counts
-#..........................................................................................
-#                        Service Type  m.VOC Valve Pumps Other Conn. Flan. Open-Ended Lines
-#..........................................................................................
-eopt$fug.def.eq <- data.frame(gas =  c(0.25,   15,    0,   25, 1000,   25,    1),
-                              hoil = c(0.10,   10,    0,   10,  600,   10,    5),
-                              loil = c(1.00,   10,    0,   10,  600,   10,    5),
-                              woil = c(1.00,    5,    0,    5,  200,    0,    2),
-                              row.names = c("m.voc",
-                                            "Valves",
-                                            "Pumps",
-                                            "Others",
-                                            "Connectors",
-                                            "Flanges",
-                                            "Open-Ended Lines"))
 
 # Emission reductions
 eopt$r$fug <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
