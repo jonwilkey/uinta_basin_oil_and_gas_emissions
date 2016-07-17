@@ -115,7 +115,7 @@ opt$DCA.CDF.update      <- F # Generates CDFs from decline curve fits
 opt$drillCapCost.update <- F # Runs regression fit on drilling and completion capital cost data
 opt$rework.update       <- F # Generates CDF for well reworks
 opt$DCAlnorm.update     <- F # Fits log-normal/normal distributions to DCA coefficients and then finds trendlines in those distribution parameters
-opt$emission.update     <- T # Loads UDAQ emissions inventory database, creates single data.frame
+opt$emission.update     <- F # Loads UDAQ emissions inventory database, creates single data.frame
 
 
 # 1.2 Subsetting options for production.rda file ------------------------------
@@ -433,8 +433,8 @@ opt$DF.tstop <-  2009
 #  a - GBM price paths
 #  b - EIA forecast with error propagation
 #  c - Actual price path
-#  d - EIA long-term price forecast based on log-normal distribution
-#  e - User specified price path
+#    - EIA long-term price forecast based on log-normal distribution (DISABLED)
+#  d - User specified price path
 opt$ep.type <- "b"
 
 # Additional options for EIA forecast with error propagation method
@@ -527,7 +527,7 @@ opt$mc.DCeq.type <- "b"
 opt$grFrac <- 0.8
 
 
-# Emission Factors --------------------------------------------------------
+# Activity-Based Emission Factors -----------------------------------------
 
 # Emission factor category names and units
 EF.names <- c("site",    # Site preparation                          (metric tons / well)
@@ -603,7 +603,6 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("17 Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
                    c("18 Field Fractions -OW",        F), # Same but just oil wells
                    c("19 Field Fractions -GW",        F), # Same but just gas wells
-                   c("20 Well Capital Cost",          F), # Drilling and completion capital cost data and fit
                    c("21 Surface Lease Ownership",    F), # Surface lease ownership by field
                    c("22 CDFs for Well Depth",        F), # CDFs for well depth by well type
                    c("23 LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
