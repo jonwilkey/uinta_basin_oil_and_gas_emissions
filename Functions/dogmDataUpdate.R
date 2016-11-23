@@ -28,56 +28,56 @@
 
 # Function ----------------------------------------------------------------
 dogmDataUpdate <- function(path, ver) {
-  
+
   # Options -----------------------------------------------------------------
-  
+
   options(width=200)
   options(drop=FALSE)
-  
-  
+
+
   # Functions ---------------------------------------------------------------
-  
+
   # List of functions to load
   flst <- file.path(path$fun, c("clean_names.R",
                                 "diffMonPOSIX.R"))
-  
+
   # Load all functions in file list
   for (f in flst) source(f)
-  
-  
+
+
   # Lookup Tables -----------------------------------------------------------
-  
+
   names_pattern_replacement <- read.csv(file.path(path$look,
                                                   "names_pattern_replacement.csv"),
                                         header=TRUE,
                                         colClasses="character")
-  
+
   names_pattern_replacement <- as.matrix(names_pattern_replacement)
-  
-  
+
+
   # Read-in DBF as dataframes and prepare -----------------------------------
-  
-  # Import the DBF files into R dataframes 
+
+  # Import the DBF files into R dataframes
   welldata <- read.dbf(file.path(path$raw, "welldata.dbf"))
   proddata <- read.dbf(file.path(path$raw, "proddata.dbf"))
   histdata <- read.dbf(file.path(path$raw, "histdata.dbf"))
-  
+
   # Drop welldata's comments and modify date columns
   welldata <- subset(welldata,select=-c(COMMENTS,MODIFYDATE))
-  
-  
+
+
   # Write dataframes to comma-delimited files -------------------------------
-  
+
   write.table(welldata,file=file.path(path$raw, "welldata.txt"),
               sep=",",quote=TRUE,row.names=FALSE,na="NULL")
   write.table(proddata,file=file.path(path$raw, "proddata.txt"),
               sep=",",quote=TRUE,row.names=FALSE,na="NULL")
   write.table(histdata,file=file.path(path$raw, "histdata.txt"),
               sep=",",quote=TRUE,row.names=FALSE,na="NULL")
-  
-  
+
+
   # Create proddata ---------------------------------------------------------
-  
+
   proddata_colclasses <- c("Date",      # rpt_period
                            "character", # acct_num
                            "character", # alt_addres
@@ -92,52 +92,52 @@ dogmDataUpdate <- function(path, ver) {
                            "numeric",   # water_prod
                            "character", # date_recd
                            "character") # amend_flag
-  
+
   proddata <- read.csv(file.path(path$raw,"proddata.txt"),
                        header=TRUE,
                        comment.char = "",
                        colClasses = proddata_colclasses)
-  
+
   # Use clean_names function on proddata
   new_names <- clean_names(names(proddata), table=names_pattern_replacement)
-  
+
   # Prepend 'p_' for 'proddata' to new names
   new_names <- gsub(pattern="^", replacement = "p_", x = new_names)
-  
+
   # Assign these new names to proddata
   names(proddata) <- new_names
-  
+
   # Remove unwanted fields p_alt_addres, p_date_recd, and p_amend_flag
   omits <- c("p_alt_addres", "p_date_recd", "p_amend_flag")
   if (all((omits %in% names(proddata)))) {
-    proddata <- proddata[,setdiff(names(proddata), omits)]  
+    proddata <- proddata[,setdiff(names(proddata), omits)]
   } else stop("Check column names")
-  
+
   # Order by api, rpt_period
   proddata <- proddata[order(proddata[,"p_api"], proddata[,"p_rpt_period"]),]
-  
-  
+
+
   # Combining production for wells producing in more than one zone ----------
-  
+
   # Extract all and only records for wells with duplicate api-rpt_period
   # (these are wells with production in multiple zones).
   dd <- duplicated(proddata[,c("p_api","p_rpt_period")])
   aa <- unique(proddata[dd,"p_api"])
-  
+
   # Multi zone.
   mz <- subset(proddata, subset = (p_api %in% aa))
-  
+
   # Single zone.
   sz <- subset(proddata,
                subset = (p_api %in% setdiff(unique(proddata[,"p_api"]), aa)))
-  
+
   # Combine production records from different production zones.
   # Get fields which will be summed (oil, gas, and water production) or the
-  # maximum taken (days_prod). 
+  # maximum taken (days_prod).
   mz1 <- mz[,c("p_rpt_period","p_api","p_oil_prod","p_gas_prod","p_water_prod",
                "p_days_prod")]
-  
-  # Do the combining. 
+
+  # Do the combining.
   mz1 <- ddply(mz1,
                c("p_api", "p_rpt_period"),
                summarize,
@@ -145,30 +145,30 @@ dogmDataUpdate <- function(path, ver) {
                p_gas_prod = sum(p_gas_prod),
                p_water_prod = sum(p_water_prod),
                p_days_prod = max(p_days_prod))
-  
+
   # Get fields which are being held constant for each distinct api-rpt_period
   # value, then remove duplicate rows.
   mz2 <- mz[,c("p_rpt_period","p_api","p_acct_num","p_prod_zone","p_entity",
                "p_wellstatus","p_well_type")]
   ww <- which(duplicated(mz2[,c("p_rpt_period","p_api")]))
   mz2 <- mz2[-ww,]
-  
-  # Now merge mz1 and mz2 as mz. 
+
+  # Now merge mz1 and mz2 as mz.
   mz <- merge(mz1,
               mz2,
               by.x = c("p_api","p_rpt_period"),
               by.y = c("p_api","p_rpt_period"),
               sort = FALSE)
-  
+
   # Now bind sz and mz as proddata.
   proddata <- rbind(sz,mz)
-  
-  # Reorder. 
+
+  # Reorder.
   proddata <- proddata[order(proddata[,"p_api"], proddata[,"p_rpt_period"]),]
-  
-  
+
+
   # Create welldata ---------------------------------------------------------
-  
+
   welldata_colclasses <- c("character", # api
                            "character", # well_name
                            "character", # acct_num
@@ -195,7 +195,7 @@ dogmDataUpdate <- function(path, ver) {
                            "character", # wellstatus
                            "character", # well_type
                            "numeric",   # totcum_oil
-                           "numeric",   # totcum_gas                         
+                           "numeric",   # totcum_gas
                            "numeric",   # totcum_wtr
                            "character", # ind_tribe
                            "character", # multi_lats
@@ -208,39 +208,39 @@ dogmDataUpdate <- function(path, ver) {
                            "character", # unit_name
                            "character", # lat_surf
                            "character") # long_surf
-  
+
   welldata <- read.csv(file.path(path$raw,"welldata.txt"),
                        header=TRUE,
                        comment.char = "",
                        colClasses = welldata_colclasses)
-  
+
   # Clean names.
   new_names <- clean_names(names(welldata), table=names_pattern_replacement)
-  
+
   # Prepend 'w_' for 'welldata' to cleaned names.
   new_names <- gsub(pattern="^", replacement = "w_", x = new_names)
-  
+
   # Assign these new names to welldata.
   names(welldata) <- new_names
-  
+
   # Remove unwanted fields.
   omits <- c("w_well_name", "w_alt_addres", "w_elevation", "w_locat_foot",
              "w_utm_bhl_n", "w_utm_bhl_e")
   if (all((omits %in% names(welldata)))) {
     welldata <- welldata[,setdiff(names(welldata), omits)]
   } else stop("Check column names")
-  
-  
+
+
   # Create histdata ---------------------------------------------------------
-  
-  histdata_colclasses <- c("character", # api 
+
+  histdata_colclasses <- c("character", # api
                            "Date",      # apd_aprovd
                            "character", # work_type
                            "Date",      # spud_dry
-                           "Date",      # spud_rotry                         
+                           "Date",      # spud_rotry
                            "character", # prod_zone
                            "Date",      # compl_date
-                           "Date",      # intent_rec  
+                           "Date",      # intent_rec
                            "Date",      # work_compl
                            "numeric",   # td_md
                            "numeric",   # td_tvd
@@ -264,117 +264,124 @@ dogmDataUpdate <- function(path, ver) {
                            "numeric",   # lat_count
                            "integer",   # rec_seq
                            "character") # conf_flag
-  
+
   histdata <- read.csv(file.path(path$raw,"histdata.txt"),
                        header=TRUE,
                        comment.char = "",
                        colClasses = histdata_colclasses,
                        na.strings="NULL")
-  
+
   # Clean names.
   new_names <- clean_names(names(histdata), table=names_pattern_replacement)
-  
+
   # Prepend 'h_' for 'histdata' to cleaned names.
   new_names <- gsub(pattern="^", replacement = "h_", x = new_names)
-  
+
   # Assign these new names to histdata.
   names(histdata) <- new_names
   omits <- c("h_td_tvd","h_pbtd_tvd")
   if (all((omits %in% names(histdata)))) {
     histdata <- histdata[,setdiff(names(histdata), omits)]
   } else stop("Check column names")
-  
-  
+
+
+  # Cleanup *.csv files -----------------------------------------------------
+
+  file.remove(c(file.path(path$raw, "welldata.txt"),
+                file.path(path$raw, "proddata.txt"),
+                file.path(path$raw, "histdata.txt")))
+
+
   # Field Names -------------------------------------------------------------
-  
+
   fieldnames <- read.dbf(file.path(path$raw, "fieldata.dbf"))
-  
-  
+
+
   # Save to *.rda files -----------------------------------------------------
-  
+
   save(file=file.path(path$data, "proddata.rda"), list=c("proddata"))
   save(file=file.path(path$data, "welldata.rda"), list=c("welldata"))
   save(file=file.path(path$data, "histdata.rda"), list=c("histdata"))
   save(file=file.path(path$data, "fieldnames.rda"), list=c("fieldnames"))
-  
-  
+
+
   # Cleanup histdata and merge with well data & proddata --------------------
-  
+
   # Reorder h by API# and h_rec_seq
   a <- with(histdata, histdata[order(h_api, h_rec_seq),])
-  
+
   # Get list of unique API #s in a
   b <- unique(a$h_api)
-  
+
   # Predefine dummy variable for holding row indices
   c <- rep(0, length(b))
-  
+
   # Get row indices for first entry in h for each API #
   for (i in 1:length(b)) {
     c[i] <- which(a$h_api == b[i])[1]
   }
-  
+
   # Redefine data.frame using row indices found in loop above
   a <- a[c,]
-  
+
   d <- merge(x = welldata, y = a, by.x = "w_api", by.y = "h_api")
   e <- merge(x = proddata, y = d, by.x = "p_api", by.y = "w_api")
-  
+
   # Convert to data.table
   pwh_dt <- data.table(e)
-  
+
   # Remove temp variables
   remove(a,b,c,d,e)
-  
-  
+
+
   #-------------------------------------------------------------------------------
   # Add columns to to pwh_dt
   #-------------------------------------------------------------------------------
-  
+
   # Add count of months since well first shows up in proddata (i.e. upon well
   # completion).
   pwh_dt[, time := 1 + diffMonPOSIX(first = min(p_rpt_period),
                                     last = p_rpt_period), by = "p_api"]
-  
+
   # Add cumulative oil and gas production time series
   pwh_dt[, coil_prod := cumsum(p_oil_prod), by = "p_api"]
   pwh_dt[, cgas_prod := cumsum(p_gas_prod), by = "p_api"]
-  
+
   # Add count of production records.
   pwh_dt[, nrec := length(unique(p_rpt_period)), by = "p_api"]
-  
+
   # Max value of 'time'.
   pwh_dt[, maxtime := max(time), by = "p_api"]
-  
-  # So I can pick out rows. 
+
+  # So I can pick out rows.
   pwh_dt[, lastrecord := (time == maxtime), by = "p_api"]
-  
+
   # Add Boolean for whether records are complete.  Records are complete iff actual
   # number of records equals max time.
   pwh_dt[, complete := (nrec == maxtime), by = "p_api"]
-  
+
   # Add Boolean for whether well ever produced; note this is not exactly right
   # when have wells drilled prior to 1984 since they may have produced before
   # coming into proddata.
   pwh_dt[, everproduce := any(p_wellstatus == "P"), by = "p_api"]
-  
+
   # Add Boolean for whether well was orphaned
   pwh_dt[, orphan := any(p_acct_num == "N9999"), by = "p_api"]
-  
+
   # Add Boolean for whether p_wellstatus has ever been PA
   pwh_dt[, everpa := any(p_wellstatus == "PA"), by = "p_api"]
-  
+
   # Add number of months between w_abndondate and p_rpt_period
   pwh_dt[, padiff := diffMonPOSIX(first = p_rpt_period,
                                   last = w_abndondate)]
-  
+
   # From data table to data frame
   production <- as.data.frame(pwh_dt)
-  
-  
+
+
   # Save merged data.frame --------------------------------------------------
-  
+
   save(file=file.path(path$data,
                       paste("production_", ver, ".rda", sep = "")),
-       list=c("production"))  
+       list=c("production"))
 }
