@@ -13,25 +13,25 @@
 
 # If cross-validating
 if(opt$crossvalid == T) {
-  
+
   # Actual energy prices for oil and gas
   ep.act <- subset(eia.hp,
                    subset = (month >= as.yearmon(opt$tstart) &
                              month <= as.yearmon(opt$tstop)),
                    select = c("OP", "GP"))
-  
+
   # Actual number of wells drilled as timeseries. sqldf returns result as a
   # data.frame, so brackets extract numerical results as a vector.
   Drilled.act <- drillModelData$wells[which(drillModelData$month >= opt$tstart &
                                               drillModelData$month <= opt$tstop)]
-  
+
   # Actual total oil/gas production as timeseries...
   all.p <- sqldf("select p_rpt_period, sum(p_oil_prod), sum(p_gas_prod)
                  from p
                  group by p_rpt_period")
   names(all.p) <- c("date", "oil", "gas")
   all.p <- all.p[which(all.p$date >= opt$tstart & all.p$date <= opt$tstop),]
-  
+
   # ...and just from new wells
   temp <- subset(p,
                  subset = (h_first_prod >= opt$tstart),
@@ -42,7 +42,7 @@ if(opt$crossvalid == T) {
   remove(temp)
   names(new.p) <- c("date", "oil", "gas")
   new.p <- new.p[which(new.p$date >= opt$tstart & new.p$date <= opt$tstop),]
-  
+
   # ...and just from existing wells
   prior.p <- data.frame(date = all.p$date,
                         oil = (all.p$oil-new.p$oil),
@@ -162,7 +162,7 @@ for (i in 1:ncol(Drilled.q)) {
   pgas.q   [, i] <- quantile(pgsim  [, i], opt$quant)
   op.q     [, i] <- quantile(op     [, i], opt$quant)
   gp.q     [, i] <- quantile(gp     [, i], opt$quant)
-  
+
   # Activity-based emissions
   aE$CO2.q [, i] <- quantile(aE$CO2 [, i], opt$quant)
   aE$CH4.q [, i] <- quantile(aE$CH4 [, i], opt$quant)
@@ -170,7 +170,7 @@ for (i in 1:ncol(Drilled.q)) {
   aE$rCO2.q[, i] <- quantile(aE$rCO2[, i], opt$quant)
   aE$rCH4.q[, i] <- quantile(aE$rCH4[, i], opt$quant)
   aE$rVOC.q[, i] <- quantile(aE$rVOC[, i], opt$quant)
-  
+
   # Equipment-based emissions
   eE$pm10.q[, i] <- quantile(eE$pm10[, i], opt$quant)
   eE$pm25.q[, i] <- quantile(eE$pm25[, i], opt$quant)
@@ -179,7 +179,7 @@ for (i in 1:ncol(Drilled.q)) {
   eE$voc.q [, i] <- quantile(eE$voc [, i], opt$quant)
   eE$co.q  [, i] <- quantile(eE$co  [, i], opt$quant)
   eE$ch2o.q[, i] <- quantile(eE$ch2o[, i], opt$quant)
-  
+
   # Reduced equipment-based emissions
   reE$pm10.q[, i] <- quantile(reE$pm10[, i], opt$quant)
   reE$pm25.q[, i] <- quantile(reE$pm25[, i], opt$quant)
@@ -188,25 +188,25 @@ for (i in 1:ncol(Drilled.q)) {
   reE$voc.q [, i] <- quantile(reE$voc [, i], opt$quant)
   reE$co.q  [, i] <- quantile(reE$co  [, i], opt$quant)
   reE$ch2o.q[, i] <- quantile(reE$ch2o[, i], opt$quant)
-  
+
   # Emission by species and equipment type
   eE$fpm10.q$wc[, i]   <- quantile(eE$fpm10$wc[, i],   opt$quant) # PM10 - Well completions
   eE$fpm10.q$rt[, i]   <- quantile(eE$fpm10$rt[, i],   opt$quant) # PM10 - RICE & Turbines
   eE$fpm10.q$sh[, i]   <- quantile(eE$fpm10$sh[, i],   opt$quant) # PM10 - Separators & Heaters
-  
+
   eE$fpm25.q$wc[, i]   <- quantile(eE$fpm25$wc[, i],   opt$quant) # PM25 - Well completions
   eE$fpm25.q$rt[, i]   <- quantile(eE$fpm25$rt[, i],   opt$quant) # PM25 - RICE & Turbines
   eE$fpm25.q$sh[, i]   <- quantile(eE$fpm25$sh[, i],   opt$quant) # PM25 - Separators & Heaters
-  
+
   eE$fsox.q$rt[, i]    <- quantile(eE$fsox$rt[, i],    opt$quant) # SOx - RICE & Turbines
   eE$fsox.q$sh[, i]    <- quantile(eE$fsox$sh[, i],    opt$quant) # SOx - Separators & Heaters
-  
+
   eE$fnox.q$wc[, i]    <- quantile(eE$fnox$wc[, i],    opt$quant) # NOx - Well completions
   eE$fnox.q$rt[, i]    <- quantile(eE$fnox$rt[, i],    opt$quant) # NOx - RICE & Turbines
   eE$fnox.q$sh[, i]    <- quantile(eE$fnox$sh[, i],    opt$quant) # NOx - Separators & Heaters
   eE$fnox.q$dh[, i]    <- quantile(eE$fnox$dh[, i],    opt$quant) # NOx - Dehydrators
   eE$fnox.q$tank[, i]  <- quantile(eE$fnox$tank[, i],  opt$quant) # NOx - Tanks
-  
+
   eE$fvoc.q$wc[, i]    <- quantile(eE$fvoc$wc[, i],    opt$quant) # voc - Well completions
   eE$fvoc.q$rt[, i]    <- quantile(eE$fvoc$rt[, i],    opt$quant) # voc - RICE & Turbines
   eE$fvoc.q$sh[, i]    <- quantile(eE$fvoc$sh[, i],    opt$quant) # voc - Separators & Heaters
@@ -216,31 +216,31 @@ for (i in 1:ncol(Drilled.q)) {
   eE$fvoc.q$pctrl[, i] <- quantile(eE$fvoc$pctrl[, i], opt$quant) # voc - Pneumatic Controllers
   eE$fvoc.q$ppump[, i] <- quantile(eE$fvoc$ppump[, i], opt$quant) # voc - Pneumatic Pumps
   eE$fvoc.q$fug[, i]   <- quantile(eE$fvoc$fug[, i],   opt$quant) # voc - Fugitives
-  
+
   eE$fco.q$wc[, i]     <- quantile(eE$fco$wc[, i],     opt$quant) # CO - Well completions
   eE$fco.q$rt[, i]     <- quantile(eE$fco$rt[, i],     opt$quant) # CO - RICE & Turbines
   eE$fco.q$sh[, i]     <- quantile(eE$fco$sh[, i],     opt$quant) # CO - Separators & Heaters
   eE$fco.q$dh[, i]     <- quantile(eE$fco$dh[, i],     opt$quant) # CO - Dehydrators
   eE$fco.q$tank[, i]   <- quantile(eE$fco$tank[, i],   opt$quant) # CO - Tanks
-  
+
   # Reduced emission by species and equipment type
   reE$fpm10.q$wc[, i]   <- quantile(reE$fpm10$wc[, i],   opt$quant) # PM10 - Well completions
   reE$fpm10.q$rt[, i]   <- quantile(reE$fpm10$rt[, i],   opt$quant) # PM10 - RICE & Turbines
   reE$fpm10.q$sh[, i]   <- quantile(reE$fpm10$sh[, i],   opt$quant) # PM10 - Separators & Heaters
-  
+
   reE$fpm25.q$wc[, i]   <- quantile(reE$fpm25$wc[, i],   opt$quant) # PM25 - Well completions
   reE$fpm25.q$rt[, i]   <- quantile(reE$fpm25$rt[, i],   opt$quant) # PM25 - RICE & Turbines
   reE$fpm25.q$sh[, i]   <- quantile(reE$fpm25$sh[, i],   opt$quant) # PM25 - Separators & Heaters
-  
+
   reE$fsox.q$rt[, i]    <- quantile(reE$fsox$rt[, i],    opt$quant) # SOx - RICE & Turbines
   reE$fsox.q$sh[, i]    <- quantile(reE$fsox$sh[, i],    opt$quant) # SOx - Separators & Heaters
-  
+
   reE$fnox.q$wc[, i]    <- quantile(reE$fnox$wc[, i],    opt$quant) # NOx - Well completions
   reE$fnox.q$rt[, i]    <- quantile(reE$fnox$rt[, i],    opt$quant) # NOx - RICE & Turbines
   reE$fnox.q$sh[, i]    <- quantile(reE$fnox$sh[, i],    opt$quant) # NOx - Separators & Heaters
   reE$fnox.q$dh[, i]    <- quantile(reE$fnox$dh[, i],    opt$quant) # NOx - Dehydrators
   reE$fnox.q$tank[, i]  <- quantile(reE$fnox$tank[, i],  opt$quant) # NOx - Tanks
-  
+
   reE$fvoc.q$wc[, i]    <- quantile(reE$fvoc$wc[, i],    opt$quant) # voc - Well completions
   reE$fvoc.q$rt[, i]    <- quantile(reE$fvoc$rt[, i],    opt$quant) # voc - RICE & Turbines
   reE$fvoc.q$sh[, i]    <- quantile(reE$fvoc$sh[, i],    opt$quant) # voc - Separators & Heaters
@@ -250,7 +250,7 @@ for (i in 1:ncol(Drilled.q)) {
   reE$fvoc.q$pctrl[, i] <- quantile(reE$fvoc$pctrl[, i], opt$quant) # voc - Pneumatic Controllers
   reE$fvoc.q$ppump[, i] <- quantile(reE$fvoc$ppump[, i], opt$quant) # voc - Pneumatic Pumps
   reE$fvoc.q$fug[, i]   <- quantile(reE$fvoc$fug[, i],   opt$quant) # voc - Fugitives
-  
+
   reE$fco.q$wc[, i]     <- quantile(reE$fco$wc[, i],     opt$quant) # CO - Well completions
   reE$fco.q$rt[, i]     <- quantile(reE$fco$rt[, i],     opt$quant) # CO - RICE & Turbines
   reE$fco.q$sh[, i]     <- quantile(reE$fco$sh[, i],     opt$quant) # CO - Separators & Heaters
@@ -263,137 +263,134 @@ for (i in 1:ncol(Drilled.q)) {
 
 # Export equipment-based emissions results to Excel?
 if(opt$xls.export == T) {
-  
-  # Function to calculate equipment specific emissoin quantiles for each species
-  export2excel <- function(fspec, first = FALSE, name) {
-    
-    # Apply quantile across columns (i.e. time steps)
-    temp <- t(apply(X = fspec, MARGIN = 2, FUN = quantile, probs = rev(opt$quant)))
-    
-    if(first == TRUE) {
-      
-      # Write to Excel
-      write.xlsx(x = data.frame(Date = opt$tsteps,
-                                temp),
-                 file = file.path(path$data, paste(opt$xls.name,
-                                                   opt$file_ver, ".xlsx", sep = "")),
-                 sheetName = name, row.names = F)
-    } else {
-      
-      # Write to Excel and append
-      write.xlsx(x = data.frame(Date = opt$tsteps,
-                                temp),
-                 file = file.path(path$data, paste(opt$xls.name,
-                                                   opt$file_ver, ".xlsx", sep = "")),
-                 sheetName = name, row.names = F, append = T)
+
+    # Function for getting quantiles out of emissions results for export
+    qxls <- function(fspec) {
+
+        # Apply quantile across columns (i.e. time steps)
+        temp <- data.frame(Date = opt$tsteps,
+                           t(apply(X      = fspec,
+                                   MARGIN = 2,
+                                   FUN    = quantile,
+                                   probs  = rev(opt$quant))))
+
+        # Return result
+        return(temp)
     }
-  }
-  
-  # Run export function on each equipment/species/base|reduction combination
-  
-  # Total emissions by species
-  export2excel(fspec = eE$pm10,        name = "PM10", first = T) # PM10
-  export2excel(fspec = reE$pm10,       name = "rPM10")           # PM10 - reduced
-  export2excel(fspec = eE$pm25,        name = "pm25")            # PM25
-  export2excel(fspec = reE$pm25,       name = "rpm25")           # PM25 - reduced
-  export2excel(fspec = eE$sox,         name = "sox")             # SOx
-  export2excel(fspec = reE$sox,        name = "rsox")            # SOx - reduced
-  export2excel(fspec = eE$nox,         name = "nox")             # NOx
-  export2excel(fspec = reE$nox,        name = "rnox")            # NOx - reduced
-  export2excel(fspec = eE$voc,         name = "voc")             # VOC
-  export2excel(fspec = reE$voc,        name = "rvoc")            # VOC - reduced
-  export2excel(fspec = eE$co,          name = "co")              # CO
-  export2excel(fspec = reE$co,         name = "rco")             # CO - reduced
-  export2excel(fspec = eE$ch2o,        name = "ch2o")            # CH2O
-  export2excel(fspec = reE$ch2o,       name = "rch2o")           # CH2O - reduced
-  
-  # Well completions
-  export2excel(fspec = eE$fpm10$wc,    name = "wc-PM10")  # PM10
-  export2excel(fspec = reE$fpm10$wc,   name = "rwc-PM10") # PM10 - reduced
-  export2excel(fspec = eE$fpm25$wc,    name = "wc-PM25")  # PM25
-  export2excel(fspec = reE$fpm25$wc,   name = "rwc-PM25") # PM25 - reduced
-  export2excel(fspec = eE$fnox$wc,     name = "wc-NOx")   # NOX
-  export2excel(fspec = reE$fnox$wc,    name = "rwc-NOx")  # NOX  - reduced
-  export2excel(fspec = eE$fvoc$wc,     name = "wc-VOC")   # VOC
-  export2excel(fspec = reE$fvoc$wc,    name = "rwc-VOC")  # VOC  - reduced
-  export2excel(fspec = eE$fco$wc,      name = "wc-CO")    # CO
-  export2excel(fspec = reE$fco$wc,     name = "rwc-CO")   # CO   - reduced
-  
-  # RICE & Turbines
-  export2excel(fspec = eE$fpm10$rt,    name = "rt-PM10")  # PM10
-  export2excel(fspec = reE$fpm10$rt,   name = "rrt-PM10") # PM10 - reduced
-  export2excel(fspec = eE$fpm25$rt,    name = "rt-PM25")  # PM25
-  export2excel(fspec = reE$fpm25$rt,   name = "rrt-PM25") # PM25 - reduced
-  export2excel(fspec = eE$fsox$rt,     name = "rt-SOx")   # SOX
-  export2excel(fspec = reE$fsox$rt,    name = "rrt-SOx")  # SOX  - reduced
-  export2excel(fspec = eE$fnox$rt,     name = "rt-NOx")   # NOX
-  export2excel(fspec = reE$fnox$rt,    name = "rrt-NOx")  # NOX  - reduced
-  export2excel(fspec = eE$fvoc$rt,     name = "rt-VOC")   # VOC
-  export2excel(fspec = reE$fvoc$rt,    name = "rrt-VOC")  # VOC  - reduced
-  export2excel(fspec = eE$fco$rt,      name = "rt-CO")    # CO
-  export2excel(fspec = reE$fco$rt,     name = "rrt-CO")   # CO   - reduced
-  export2excel(fspec = eE$ch2o,        name = "rt-CH2O")  # CH2O
-  export2excel(fspec = reE$ch2o,       name = "rrt-CH2O") # CH2O - reduced
-  
-  # Separators and Heaters
-  export2excel(fspec = eE$fpm10$sh,    name = "sh-PM10")  # PM10
-  export2excel(fspec = reE$fpm10$sh,   name = "rsh-PM10") # PM10 - reduced
-  export2excel(fspec = eE$fpm25$sh,    name = "sh-PM25")  # PM25
-  export2excel(fspec = reE$fpm25$sh,   name = "rsh-PM25") # PM25 - reduced
-  export2excel(fspec = eE$fsox$sh,     name = "sh-SOx")   # SOX
-  export2excel(fspec = reE$fsox$sh,    name = "rsh-SOx")  # SOX  - reduced
-  export2excel(fspec = eE$fnox$sh,     name = "sh-NOx")   # NOX
-  export2excel(fspec = reE$fnox$sh,    name = "rsh-NOx")  # NOX  - reduced
-  export2excel(fspec = eE$fvoc$sh,     name = "sh-VOC")   # VOC
-  export2excel(fspec = reE$fvoc$sh,    name = "rsh-VOC")  # VOC  - reduced
-  export2excel(fspec = eE$fco$sh,      name = "sh-CO")    # CO
-  export2excel(fspec = reE$fco$sh,     name = "rsh-CO")   # CO   - reduced
-  
-  # Dehydrators
-  export2excel(fspec = eE$fnox$dh,     name = "dh-NOx")  # NOX
-  export2excel(fspec = reE$fnox$dh,    name = "rdh-NOx") # NOX  - reduced
-  export2excel(fspec = eE$fvoc$dh,     name = "dh-VOC")  # VOC
-  export2excel(fspec = reE$fvoc$dh,    name = "rdh-VOC") # VOC  - reduced
-  export2excel(fspec = eE$fco$dh,      name = "dh-CO")   # CO
-  export2excel(fspec = reE$fco$dh,     name = "rdh-CO")  # CO   - reduced
-  
-  # Tanks
-  export2excel(fspec = eE$fnox$tank,   name = "tank-NOx")  # NOX
-  export2excel(fspec = reE$fnox$tank,  name = "rtank-NOx") # NOX  - reduced
-  export2excel(fspec = eE$fvoc$tank,   name = "tank-VOC")  # VOC
-  export2excel(fspec = reE$fvoc$tank,  name = "rtank-VOC") # VOC  - reduced
-  export2excel(fspec = eE$fco$tank,    name = "tank-CO")   # CO
-  export2excel(fspec = reE$fco$tank,   name = "rtank-CO")  # CO   - reduced
-  
-  # Trucks
-  export2excel(fspec = eE$fvoc$truck,  name = "truck-VOC")  # VOC
-  export2excel(fspec = reE$fvoc$truck, name = "rtruck-VOC") # VOC  - reduced
-  
-  # Pneumatic Controllers
-  export2excel(fspec = eE$fvoc$pctrl,  name = "pctrl-VOC")  # VOC
-  export2excel(fspec = reE$fvoc$pctrl, name = "rpctrl-VOC") # VOC  - reduced
-  
-  # Pneumatic Pumps
-  export2excel(fspec = eE$fvoc$ppump,  name = "ppump-VOC")  # VOC
-  export2excel(fspec = reE$fvoc$ppump, name = "rppump-VOC") # VOC  - reduced
-  
-  # Fugitives
-  export2excel(fspec = eE$fvoc$fug,    name = "fug-VOC")  # VOC
-  export2excel(fspec = reE$fvoc$fug,   name = "rfug-VOC") # VOC  - reduced 
+
+    # Create export list
+    xls.list <- list("PM10"       = qxls(eE$pm10),        # PM10
+                     "rPM10"      = qxls(reE$pm10),       # PM10 - reduced
+                     "pm25"       = qxls(eE$pm25),        # PM25
+                     "rpm25"      = qxls(reE$pm25),       # PM25 - reduced
+                     "sox"        = qxls(eE$sox),         # SOx
+                     "rsox"       = qxls(reE$sox),        # SOx - reduced
+                     "nox"        = qxls(eE$nox),         # NOx
+                     "rnox"       = qxls(reE$nox),        # NOx - reduced
+                     "voc"        = qxls(eE$voc),         # VOC
+                     "rvoc"       = qxls(reE$voc),        # VOC - reduced
+                     "co"         = qxls(eE$co),          # CO
+                     "rco"        = qxls(reE$co),         # CO - reduced
+                     "ch2o"       = qxls(eE$ch2o),        # CH2O
+                     "rch2o"      = qxls(reE$ch2o),       # CH2O - reduced
+
+                     # Well completions
+                     "wc-PM10"    = qxls(eE$fpm10$wc),    # PM10
+                     "rwc-PM10"   = qxls(reE$fpm10$wc),   # PM10 - reduced
+                     "wc-PM25"    = qxls(eE$fpm25$wc),    # PM25
+                     "rwc-PM25"   = qxls(reE$fpm25$wc),   # PM25 - reduced
+                     "wc-NOx"     = qxls(eE$fnox$wc),     # NOX
+                     "rwc-NOx"    = qxls(reE$fnox$wc),    # NOX  - reduced
+                     "wc-VOC"     = qxls(reE$fnox$wc),    # VOC
+                     "rwc-VOC"    = qxls(reE$fvoc$wc),    # VOC  - reduced
+                     "wc-CO"      = qxls(eE$fco$wc),      # CO
+                     "rwc-CO"     = qxls(reE$fco$wc),     # CO   - reduced
+
+                     # RICE & Turbines
+                     "rt-PM10"    = qxls(eE$fpm10$rt),    # PM10
+                     "rrt-PM10"   = qxls(reE$fpm10$rt),   # PM10 - reduced
+                     "rt-PM25"    = qxls(eE$fpm25$rt),    # PM25
+                     "rrt-PM25"   = qxls(reE$fpm25$rt),   # PM25 - reduced
+                     "rt-SOx"     = qxls(eE$fsox$rt),     # SOX
+                     "rrt-SOx"    = qxls(reE$fsox$rt),    # SOX  - reduced
+                     "rt-NOx"     = qxls(eE$fnox$rt),     # NOX
+                     "rrt-NOx"    = qxls(reE$fnox$rt),    # NOX  - reduced
+                     "rt-VOC"     = qxls(eE$fvoc$rt),     # VOC
+                     "rrt-VOC"    = qxls(reE$fvoc$rt),    # VOC  - reduced
+                     "rt-CO"      = qxls(eE$fco$rt),      # CO
+                     "rrt-CO"     = qxls(reE$fco$rt),     # CO   - reduced
+                     "rt-CH2O"    = qxls(eE$ch2o),        # CH2O
+                     "rrt-CH2O"   = qxls(reE$ch2o),       # CH2O - reduced
+
+                     # Separators and Heaters
+                     "sh-PM10"    = qxls(eE$fpm10$sh),    # PM10
+                     "rsh-PM10"   = qxls(reE$fpm10$sh),   # PM10 - reduced
+                     "sh-PM25"    = qxls(eE$fpm25$sh),    # PM25
+                     "rsh-PM25"   = qxls(reE$fpm25$sh),   # PM25 - reduced
+                     "sh-SOx"     = qxls(eE$fsox$sh),     # SOX
+                     "rsh-SOx"    = qxls(reE$fsox$sh),    # SOX  - reduced
+                     "sh-NOx"     = qxls(eE$fnox$sh),     # NOX
+                     "rsh-NOx"    = qxls(reE$fnox$sh),    # NOX  - reduced
+                     "sh-VOC"     = qxls(eE$fvoc$sh),     # VOC
+                     "rsh-VOC"    = qxls(reE$fvoc$sh),    # VOC  - reduced
+                     "sh-CO"      = qxls(eE$fco$sh),      # CO
+                     "rsh-CO"     = qxls(reE$fco$sh),     # CO   - reduced
+
+                     # Dehydrators
+                     "dh-NOx"     = qxls(eE$fnox$dh),     # NOX
+                     "rdh-NOx"    = qxls(reE$fnox$dh),    # NOX  - reduced
+                     "dh-VOC"     = qxls(eE$fvoc$dh),     # VOC
+                     "rdh-VOC"    = qxls(reE$fvoc$dh),    # VOC  - reduced
+                     "dh-CO"      = qxls(eE$fco$dh),      # CO
+                     "rdh-CO"     = qxls(reE$fco$dh),     # CO   - reduced
+
+                     # Tanks
+                     "tank-NOx"   = qxls(eE$fnox$tank),   # NOX
+                     "rtank-NOx"  = qxls(reE$fnox$tank),  # NOX  - reduced
+                     "tank-VOC"   = qxls(eE$fvoc$tank),   # VOC
+                     "rtank-VOC"  = qxls(reE$fvoc$tank),  # VOC  - reduced
+                     "tank-CO"    = qxls(eE$fco$tank),    # CO
+                     "rtank-CO"   = qxls(reE$fco$tank),   # CO   - reduced
+
+                     # Trucks
+                     "truck-VOC"  = qxls(eE$fvoc$truck),  # VOC
+                     "rtruck-VOC" = qxls(reE$fvoc$truck), # VOC  - reduced
+
+                     # Pneumatic Controllers
+                     "pctrl-VOC"  = qxls(eE$fvoc$pctrl),  # VOC
+                     "rpctrl-VOC" = qxls(reE$fvoc$pctrl), # VOC  - reduced
+
+                     # Pneumatic Pumps
+                     "ppump-VOC"  = qxls(eE$fvoc$ppump),  # VOC
+                     "rppump-VOC" = qxls(reE$fvoc$ppump), # VOC  - reduced
+
+                     # Fugitives
+                     "fug-VOC"    = qxls(eE$fvoc$fug),    # VOC
+                     "rfug-VOC"   = qxls(reE$fvoc$fug))   # VOC  - reduced
+
+    # Write export list to file
+    write.xlsx(x    = xls.list,
+               file = file.path(path$data, paste(opt$xls.name,
+                                                 opt$file_ver,
+                                                 ".xlsx",
+                                                 sep = "")))
+
+    # Remove export list
+    remove(xls.list)
 }
 
 
 # Global plotting options -------------------------------------------------
 
 # Set line colors for quantiles used in quant
-qlinecolor <- gray(1:5/7) # gray(1:5/7)  #rep("grey", length(opt$quant))  #rainbow(length(opt$quant))
-qlinetype <-  2:6#rep(1,5)#2:6
-qlinewidth <- rep(2,5)
+qlinecolor <- rainbow(length(opt$quant)) # gray(1:5/7)  #rep("grey", length(opt$quant))  #rainbow(length(opt$quant))
+qlinetype <-  rep(1,5) #rep(1,5)#2:6
+qlinewidth <- rep(1,5)
 
 # Set line options for actual lines (for cross-validation plots)
 alinecolor <- "black"
 alinetype <-  1
-alinewidth <- 3#2
+alinewidth <- 2#2
 
 # Set line options for forecast lines (for price plots)
 forlinecolor <- c("grey50", "grey75", "grey25")
@@ -403,42 +400,45 @@ forlinewidth <- c(1,1,1)
 # Plot counter
 j <- 1
 
+# Start PDF device if making a single PDF plot
+if(opt$exportFlag == TRUE & opt$exportSingle == TRUE) {pdf(file.path(path$plot, file = paste("Plots", opt$affix, sep = "")))}
+
 
 # 01 - Oil prices simulated vs actual -------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, op.q[1,],
-       ylim = c(0.9*min(op.q), 1.1*max(ep.act$OP)),
+       ylim = c(0, 1.1*max(c(ep.act$OP, op.q[1,]))),
        type = "l",
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        col = qlinecolor[1],
        xlab = "Time (months)",
-       ylab = paste("Oil First Purchase Price (", opt$cpiDate, " $/bbl)", sep = ""))#,
-       #main = "Oil Price")
-  
+       ylab = paste("Oil First Purchase Price (", opt$cpiDate, " $/bbl)", sep = ""),
+       main = "Oil Price")
+
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, op.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
-  
+
   # Add the forecast line
   lines(opt$tsteps, op.FC.ref,  col = forlinecolor[1], lty = forlinetype[1], lwd = forlinewidth[1])
   lines(opt$tsteps, op.FC.low,  col = forlinecolor[2], lty = forlinetype[2], lwd = forlinewidth[2])
   lines(opt$tsteps, op.FC.high, col = forlinecolor[3], lty = forlinetype[3], lwd = forlinewidth[3])
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Add the line for the actual value
     lines(opt$tsteps, ep.act$OP, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Add legend
     legend("topleft",
            c("Actual", "EIA Ref.", "EIA Low", "EIA High", "90%", "70%", "50%", "30%", "10%"),
@@ -448,7 +448,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, forlinewidth, qlinewidth),
            lty = c(alinetype,  forlinetype,  qlinetype))
   } else {
-    
+
     # Add legend
     legend("topleft",
            c("EIA Ref.", "EIA Low", "EIA High", "90%", "70%", "50%", "30%", "10%"),
@@ -458,9 +458,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(forlinewidth, qlinewidth),
            lty = c(forlinetype,  qlinetype))
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -469,30 +469,30 @@ j <- j+1
 
 # 02 - Gas prices simulated vs actual -------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # What term to use as lower ylim value depends on whether or not
   # cross-validation is occurring
   if(opt$crossvalid == T) {
-    
+
     # Main plot with largest quantile result using ylim on actual price
     plot(opt$tsteps, gp.q[1,],
-         ylim = c(0.9*min(ep.act$GP), 1.1*max(ep.act$GP)),
+         ylim = c(0, 1.1*max(c(ep.act$GP, gp.q[1,]))),
          type = "l",
          lty = qlinetype[1],
          lwd = qlinewidth[1],
          col = qlinecolor[1],
          xlab = "Time (months)",
-         ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""))#,
-         #main = "Gas Price")
-    
+         ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""),
+         main = "Gas Price")
+
   } else {
-    
+
     # Main plot with largest quantile result using ylim on simulated price
     plot(opt$tsteps, gp.q[1,],
          ylim = c(0.9*min(gp.q), 1.1*max(gp.q)),
@@ -501,25 +501,25 @@ if(opt$plist$plot[j] == TRUE) {
          lwd = qlinewidth[1],
          col = qlinecolor[1],
          xlab = "Time (months)",
-         ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""))#,
-         #main = "Gas Price")
+         ylab = paste("Gas First Purchase Price (", opt$cpiDate, " $/MCF)", sep = ""),
+         main = "Gas Price")
   }
-  
+
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, gp.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
-  
+
   # Add the forecast line
   lines(opt$tsteps, gp.FC.ref,  col = forlinecolor[1], lty = forlinetype[1], lwd = forlinewidth[1])
   lines(opt$tsteps, gp.FC.low,  col = forlinecolor[2], lty = forlinetype[2], lwd = forlinewidth[2])
   lines(opt$tsteps, gp.FC.high, col = forlinecolor[3], lty = forlinetype[3], lwd = forlinewidth[3])
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Add the line for the actual value
     lines(opt$tsteps, ep.act$GP, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Add legend
     legend("topleft",
            c("Actual", "EIA Ref.", "EIA Low", "EIA High", "90%", "70%", "50%", "30%", "10%"),
@@ -529,7 +529,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, forlinewidth, qlinewidth),
            lty = c(alinetype,  forlinetype,  qlinetype))
   } else {
-    
+
     # Add legend
     legend("topleft",
            c("EIA Ref.", "EIA Low", "EIA High", "90%", "70%", "50%", "30%", "10%"),
@@ -539,9 +539,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(forlinewidth, qlinewidth),
            lty = c(forlinetype,  qlinetype))
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -550,13 +550,13 @@ j <- j+1
 
 # 03 - Drilling schedule simulated vs actual ------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, Drilled.q[1,],
        type = "l",
@@ -565,19 +565,19 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Wells Drilled")#,
-       #main = "Drilling Schedule")
-  
+       ylab = "Wells Drilled",
+       main = "Drilling Schedule")
+
   # All the other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, Drilled.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
   }
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Add the line for the actual value
     lines(opt$tsteps, Drilled.act, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Add legend
     legend("topleft",
            c("Actual", "90%", "70%", "50%", "30%", "10%"),
@@ -586,7 +586,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, qlinewidth),
            lty = c(alinetype,  qlinetype))
   } else {
-    
+
     # Add legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -595,9 +595,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth,
            lty = qlinetype)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -606,52 +606,55 @@ j <- j+1
 
 # 04 - Drilling fit vs actual ---------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Prior well model function
   PWM <- function(OP, GP, par, init) {
-    
+
     # Initial wells drilled
     w <- round(par[1]*OP[1]+par[2]*GP[1]+par[3]*init+par[4])
     w <- ifelse(w < 0, 0, w)
-    
+
     for(i in 2:length(OP)) {
-      
+
       # Wells drilled
       w <- c(w, round(par[1]*OP[i]+par[2]*GP[i]+par[3]*w[length(w)]+par[4]))
       w <- ifelse(w < 0, 0, w)
     }
-    
+
     return(w)
   }
-  
+
   # Other models
   EPM <- function(fit, OP, GP) {temp <- round(fit[2]*OP+fit[3]*GP+fit[1]); ifelse(temp > 0, temp, 0)} # Energy price model
   OPM <- function(fit, OP)     {temp <- round(fit[2]*OP+fit[1]); ifelse(temp > 0, temp, 0)}           # Oil price model
   GPM <- function(fit, GP)     {temp <- round(fit[2]*GP+fit[1]); ifelse(temp > 0, temp, 0)}
-  
+
   # For simplicity, make copy of drillModelData just labeled as "d"
   d <- drillModelData
-  
+
   # Temporary time index
   ind <- which(d$month >= opt$DMU.tstart &
                d$month <= opt$DMU.tstop)
-  
-  # 2x2 multiplot
+
+  # Save default plot settings
+  opar <- par()
+
+  # Setup 2x2 multiplot
   par(mfrow = c(2,2),
       oma = c(5,4,0,0) + 0.1,
       mar = c(0,0,3,3) + 0.1)
-  
+
   # names for character switch
-  char.switch <- c("Eq. (7)", "Eq. (8)", "Eq. (9)", "Eq. (10)")
-  
+  char.switch <- c("Prior Well", "Oil & Gas", "Oil", "Gas")
+
   for (k in 1:4) {
-    
+
     # Main plot for training fit
     plot(d$month[ind], d$wells[ind],
          lwd =  2,
@@ -659,21 +662,18 @@ if(opt$plist$plot[j] == TRUE) {
          lty =  alinetype,
          type = "l",
          xlab = "Time (months)",
-         ylab = "Wells Drilled")#,
-    #main = "Drilling Schedule Models")
-    
-    #Cswitch <- 
-    
+         ylab = "Wells Drilled")
+
     # Add line for model fit results
     switch(char.switch[k],
-           
-           "Eq. (7)" =  lines(d$month[ind],
-                              PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
-                              col = "grey", lwd = 2, lty = 1),
-           "Eq. (8)" =  lines(d$month[ind], fitted(drillModel$epm), col = "grey", lwd = 2, lty = 1),
-           "Eq. (9)" =  lines(d$month[ind], fitted(drillModel$opm), col = "grey", lwd = 2, lty = 1),
-           "Eq. (10)" = lines(d$month[ind], fitted(drillModel$gpm), col = "grey", lwd = 2, lty = 1))
-    
+
+           "Prior Well" = lines(d$month[ind],
+                                PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
+                                col = "grey", lwd = 2, lty = 1),
+           "Oil & Gas"  = lines(d$month[ind], fitted(drillModel$epm), col = "grey", lwd = 2, lty = 1),
+           "Oil"        = lines(d$month[ind], fitted(drillModel$opm), col = "grey", lwd = 2, lty = 1),
+           "Gas"        = lines(d$month[ind], fitted(drillModel$gpm), col = "grey", lwd = 2, lty = 1))
+
     # Legend
     legend("topleft",
            c("Actual", char.switch[k]),
@@ -681,16 +681,21 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, 2),
            col = c(alinecolor, "grey"))
   }
-  
+
   title(xlab = "Time (months)",
         ylab = "Wells Drilled",
         outer = TRUE, line = 3)
-  
+
+  # Restore plot settings
+  par(mfrow = opar$mfrow,
+      oma   = opar$oma,
+      mar   = opar$mar)
+
   # Remove everything
-  remove(PWM, EPM, OPM, GPM, d, ind, char.switch, k)
-  
+  remove(PWM, EPM, OPM, GPM, d, ind, char.switch, k, opar)
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -699,42 +704,42 @@ j <- j+1
 
 # 05 - Drilling fit cross-validation --------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Prior well model function
   PWM <- function(OP, GP, par, init) {
-    
+
     # Initial wells drilled
     w <- round(par[1]*OP[1]+par[2]*GP[1]+par[3]*init+par[4])
     w <- ifelse(w < 0, 0, w)
-    
+
     for(i in 2:length(OP)) {
-      
+
       # Wells drilled
       w <- c(w, round(par[1]*OP[i]+par[2]*GP[i]+par[3]*w[length(w)]+par[4]))
       w <- ifelse(w < 0, 0, w)
     }
-    
+
     return(w)
   }
-  
+
   # Other models
   EPM <- function(fit, OP, GP) {temp <- round(fit[2]*OP+fit[3]*GP+fit[1]); ifelse(temp > 0, temp, 0)} # Energy price model
   OPM <- function(fit, OP)     {temp <- round(fit[2]*OP+fit[1]); ifelse(temp > 0, temp, 0)}           # Oil price model
   GPM <- function(fit, GP)     {temp <- round(fit[2]*GP+fit[1]); ifelse(temp > 0, temp, 0)}
-  
+
   # For simplicity, make copy of drillModelData just labeled as "d"
   d <- drillModelData
-  
+
   # Temporary time index
   ind <- which(d$month >= opt$tstart &
                  d$month <= opt$tstop)
-  
+
   # Main plot for cross-validation
   plot(d$month[ind], d$wells[ind],
        ylim = c(0, 100),
@@ -743,9 +748,9 @@ if(opt$plist$plot[j] == TRUE) {
        lty =  alinetype,
        type = "l",
        xlab = "Time (months)",
-       ylab = "Wells Drilled")#,
-  #main = "Cross-Validation of Drilling Schedule Models")
-  
+       ylab = "Wells Drilled",
+       main = "Cross-Validation of Drilling Schedule Models")
+
   # Add line for model predictions
   lines(d$month[ind],
         PWM(OP = d$OP[ind], GP = d$GP[ind], par = drillModel$pwm, init = d$prior[ind[1]]),
@@ -759,20 +764,20 @@ if(opt$plist$plot[j] == TRUE) {
   lines(d$month[ind],
         GPM(fit = coefficients(drillModel$gpm), GP = d$GP[ind-1]),
         col = qlinecolor[4], lwd = qlinewidth[4], lty = qlinetype[4])
-  
+
   # Legend
   #legend("bottomleft", c("Actual", "PWM", "EPM", "OPM", "GPM"), lty = c(1,rep(1,4)),
-  legend("bottomleft", c("Actual", "Eq. (7)", "Eq. (8)", "Eq. (9)", "Eq. (10)"),
+  legend("bottomleft", c("Actual", "Prior Well", "Oil & Gas", "Oil", "Gas"),
          lty = c(alinetype,  qlinetype[1:4]),
          lwd = c(alinewidth, qlinewidth[1:4]),
          col = c(alinecolor, qlinecolor[1:4]),
          ncol = 3, cex = 1/opt$defFontSize)
-  
+
   # Remove everything
   remove(PWM, EPM, OPM, GPM, d, ind)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -783,18 +788,18 @@ j <- j+1
 if(opt$plist$plot[j] == TRUE) {
 
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Source hyperbolic and cumulative boxplot functions
   source(file.path(path$plotfun, "bplotHypDCAcoef.R"))
   source(file.path(path$plotfun, "bplotQfitDCAcoef.R"))
-  
+
   # Run plotting functions
   bplotHypDCAcoef()
   bplotQfitDCAcoef()
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -803,21 +808,21 @@ j <- j+1
 
 # 07 - CDF for decline curve coefficients ---------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Source hyperbolic and cumulative boxplot functions
   source(file.path(path$plotfun, "cdfDCAcoef.R"))
-  
+
   # Run plotting functions
   cdfDCAcoef(hyp = F, Qfit = T)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -826,13 +831,13 @@ j <- j+1
 
 # 08 - Total oil production simulated vs actual ----------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, oil.q[1,]+poil.q[1,],
        type = "l",
@@ -841,19 +846,19 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Oil Production (bbl)")#,
-       #main = "Total Oil Production")
-  
+       ylab = "Oil Production (bbl)",
+       main = "Total Oil Production")
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, oil.q[i,]+poil.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
     }
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Actual oil production
     lines(opt$tsteps, all.p$oil, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Legend
     legend("topleft",
            c("Actual", "90%", "70%", "50%", "30%", "10%"),
@@ -862,7 +867,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, qlinewidth),
            lty = c(alinetype,  qlinetype))
   } else {
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -871,9 +876,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth,
            lty = qlinetype)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -882,13 +887,13 @@ j <- j+1
 
 # 09 - Total oil production from new wells simulated vs actual ------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, oil.q[1,],
        type = "l",
@@ -897,19 +902,19 @@ if(opt$plist$plot[j] == TRUE) {
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Oil Production (bbl)")#,
-       #main = "Oil Production from New Wells")
-  
+       ylab = "Oil Production (bbl)",
+       main = "Oil Production from New Wells")
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, oil.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
     }
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Actual oil production
     lines(opt$tsteps, new.p$oil, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Legend
     legend("topleft",
            c("Actual", "90%", "70%", "50%", "30%", "10%"),
@@ -918,7 +923,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, qlinewidth),
            lty = c(alinetype,  qlinetype))
   } else {
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -927,9 +932,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth,
            lty = qlinetype)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -938,34 +943,35 @@ j <- j+1
 
 # 10 - Total oil production from existing wells simulated vs actual -------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, poil.q[1,],
        type = "l",
-       ylim = c(0.9*min(poil.q), 1.1*max(poil.q)),
+       ylim = c(0.9*min(c(poil.q, prior.p$oil)),
+                1.1*max(c(poil.q, prior.p$oil))),
        col = qlinecolor[1],
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Oil Production (bbl)")#,
-       #main = "Oil Production from Existing Wells")
-  
+       ylab = "Oil Production (bbl)",
+       main = "Oil Production from Existing Wells")
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, poil.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
     }
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Actual oil production
     lines(opt$tsteps, prior.p$oil, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Legend
     legend("topright",
            c("Actual", "90%", "70%", "50%", "30%", "10%"),
@@ -974,7 +980,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, qlinewidth),
            lty = c(alinetype,  qlinetype))
   } else {
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -983,9 +989,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth,
            lty = qlinetype)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -994,34 +1000,35 @@ j <- j+1
 
 # 11 - Total gas production simulated vs actual ---------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, gas.q[1,]+pgas.q[1,],
        type = "l",
-       ylim = c(0.9*min(gas.q+pgas.q), 1.1*max(gas.q+pgas.q)),
+       ylim = c(0.9*min(c(gas.q+pgas.q, all.p$gas)),
+                1.1*max(c(gas.q+pgas.q, all.p$gas))),
        col = qlinecolor[1],
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Gas Production (MCF)")#,
-       #main = "Total Gas Production")
-  
+       ylab = "Gas Production (MCF)",
+       main = "Total Gas Production")
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, gas.q[i,]+pgas.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
     }
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Actual oil production
     lines(opt$tsteps, all.p$gas, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Legend
     legend("topleft",
            c("Actual", "90%", "70%", "50%", "30%", "10%"),
@@ -1030,7 +1037,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, qlinewidth),
            lty = c(alinetype,  qlinetype))
   } else {
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -1039,9 +1046,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth,
            lty = qlinetype)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1050,34 +1057,35 @@ j <- j+1
 
 # 12 - Total gas production from new wells simulated vs actual ------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, gas.q[1,],
        type = "l",
-       ylim = c(0.9*min(gas.q), 1.1*max(gas.q)),
+       ylim = c(0.9*min(c(gas.q, new.p$gas)),
+                1.1*max(c(gas.q, new.p$gas))),
        col = qlinecolor[1],
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Gas Production (MCF)")#,
-       #main = "Gas Production from New Wells")
-  
+       ylab = "Gas Production (MCF)",
+       main = "Gas Production from New Wells")
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, gas.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
     }
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Actual oil production
     lines(opt$tsteps, new.p$gas, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Legend
     legend("topleft",
            c("Actual", "90%", "70%", "50%", "30%", "10%"),
@@ -1086,7 +1094,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, qlinewidth),
            lty = c(alinetype,  qlinetype))
   } else {
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -1095,9 +1103,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth,
            lty = qlinetype)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1106,34 +1114,35 @@ j <- j+1
 
 # 13 - Total gas production from existing wells simulated vs actual -------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, pgas.q[1,],
        type = "l",
-       ylim = c(0.9*min(pgas.q), 1.1*max(pgas.q)),
+       ylim = c(0.9*min(c(pgas.q, prior.p$gas)),
+                1.1*max(c(pgas.q, prior.p$gas))),
        col = qlinecolor[1],
        lty = qlinetype[1],
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "Gas Production (MCF)")#,
-       #main = "Gas Production from Existing Wells")
-  
+       ylab = "Gas Production (MCF)",
+       main = "Gas Production from Existing Wells")
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
     lines(opt$tsteps, pgas.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
     }
-  
+
   if(opt$crossvalid == T) {
-    
+
     # Actual oil production
     lines(opt$tsteps, prior.p$gas, col = alinecolor, lty = alinetype, lwd = alinewidth)
-    
+
     # Legend
     legend("topright",
            c("Actual", "90%", "70%", "50%", "30%", "10%"),
@@ -1142,7 +1151,7 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = c(alinewidth, qlinewidth),
            lty = c(alinetype,  qlinetype))
   } else {
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -1151,9 +1160,9 @@ if(opt$plist$plot[j] == TRUE) {
            lwd = qlinewidth,
            lty = qlinetype)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1162,13 +1171,13 @@ j <- j+1
 
 # 14 - CO2e Emissions -----------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, aE$CO2.q[1,],
        type = "l",
@@ -1178,17 +1187,17 @@ if(opt$plist$plot[j] == TRUE) {
        lty = 1,
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "CO2e Emissions (metric tons)")#,
-       #main = "Total CO2e Emissions")
-  #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
+       ylab = "CO2e Emissions (metric tons)",
+       main = "Total CO2e Emissions")
+  mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
   lines(opt$tsteps, aE$rCO2.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, aE$CO2.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, aE$rCO2.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$CO2.q[i,],  col = qlinecolor[i], lty = 1, lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$rCO2.q[i,], col = qlinecolor[i], lty = 2, lwd = qlinewidth[i])
   }
-  
+
   # Legend
   legend("topleft",
          c("90%", "70%", "50%", "30%", "10%"),
@@ -1196,9 +1205,9 @@ if(opt$plist$plot[j] == TRUE) {
          col = qlinecolor,
          lty = qlinetype,
          lwd = qlinewidth)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1207,13 +1216,13 @@ j <- j+1
 
 # 15 - CH4 Emissions ------------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, aE$CH4.q[1,],
        type = "l",
@@ -1223,17 +1232,17 @@ if(opt$plist$plot[j] == TRUE) {
        lty = 1,
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "CH4 Emissions (metric tons)")#,
-       #main = "Total CH4 Emissions")
-  #mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
+       ylab = "CH4 Emissions (metric tons)",
+       main = "Total CH4 Emissions")
+  mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
   lines(opt$tsteps, aE$rCH4.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, aE$CH4.q[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, aE$rCH4.q[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$CH4.q[i,],  col = qlinecolor[i], lty = 1, lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$rCH4.q[i,], col = qlinecolor[i], lty = 2, lwd = qlinewidth[i])
   }
-  
+
   # Legend
   legend("topleft",
          c("90%", "70%", "50%", "30%", "10%"),
@@ -1241,9 +1250,9 @@ if(opt$plist$plot[j] == TRUE) {
          col = qlinecolor,
          lty = qlinetype,
          lwd = qlinewidth)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1252,13 +1261,13 @@ j <- j+1
 
 # 16 - VOC Emissions ------------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, aE$VOC.q[1,] * 1.10231,
        type = "l",
@@ -1272,13 +1281,13 @@ if(opt$plist$plot[j] == TRUE) {
        main = "Total VOC Emissions (Activity-Based)")
   mtext("Solid Lines = Base Emissions, Dotted Lines = NSPS Emissions")
   lines(opt$tsteps, aE$rVOC.q[1,] * 1.10231, col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-  
+
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
-    lines(opt$tsteps, aE$VOC.q[i,] * 1.10231,  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-    lines(opt$tsteps, aE$rVOC.q[i,] * 1.10231, col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$VOC.q[i,] * 1.10231,  col = qlinecolor[i], lty = 1, lwd = qlinewidth[i])
+    lines(opt$tsteps, aE$rVOC.q[i,] * 1.10231, col = qlinecolor[i], lty = 2, lwd = qlinewidth[i])
   }
-  
+
   # Legend
   legend("topleft",
          c("90%", "70%", "50%", "30%", "10%"),
@@ -1286,9 +1295,9 @@ if(opt$plist$plot[j] == TRUE) {
          col = qlinecolor,
          lty = qlinetype,
          lwd = qlinewidth)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1297,30 +1306,27 @@ j <- j+1
 
 # 17 - Field Fractions ----------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Get well counts by field from well.actual
   fcount <- round(c(cdf.ff$CDF[1], diff(cdf.ff$CDF))*nrow(well.actual))
-  
+
   # Main Bar Chart
   bp <- barplot(height = fcount,
                 names.arg = as.character(cdf.ff$Field),
                 #log = "y",
-                #ylim = c(0, 3.5e3),
+                ylim = c(0, 1.1*max(fcount)),
                 ylab = "Well Count",
                 xlab = "Field Number",
-                main = "Well Counts by Field")
-  
-  # Add grid lines
-  # abline(h = c(5, 10, 50, 100, 500, 1e3, 5e3), lty = 3, col = "grey")
-  
+                main = "Well Counts by Field (Training Data Set)")
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1329,30 +1335,27 @@ j <- j+1
 
 # 18 - Field Fractions - OW -----------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Get well counts by field from well.actual
   fcount <- round(c(cdf.ff$CDF[1], diff(cdf.ff$CDF))*nrow(well.actual)*(1-prob$gas))
-  
+
   # Main Bar Chart
   barplot(height = fcount,
           names.arg = as.character(cdf.ff$Field),
           #log = "y",
-          #ylim = c(1, 5e3),
+          ylim = c(0, 1.1*max(fcount)),
           ylab = "Well Count",
           xlab = "Field Number",
-          main = "Oil Well Counts by Field")
-  
-  # Add grid lines
-  #abline(h = c(5, 10, 50, 100, 500, 1e3, 5e3), lty = 3, col = "grey")
-  
+          main = "Oil Well Counts by Field (Training Data Set)")
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1361,33 +1364,30 @@ j <- j+1
 
 # 19 - Field Fractions - GW -----------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Get well counts by field from well.actual
   fcount <- round(c(cdf.ff$CDF[1], diff(cdf.ff$CDF))*nrow(well.actual)*prob$gas)
-  
+
   # Since some fields have zero gas wells, make those fields NA
   fcount[which(fcount == 0)] <- NA
-  
+
   # Main Bar Chart
   barplot(height = fcount,
           names.arg = as.character(cdf.ff$Field),
           #log = "y",
-          #ylim = c(1, 5e3),
+          ylim = c(0, 1.1*max(fcount)),
           ylab = "Well Count",
           xlab = "Field Number",
-          main = "Gas Well Counts by Field")
-  
-  # Add grid lines
-  #abline(h = c(5, 10, 50, 100, 500, 1e3, 5e3), lty = 3, col = "grey")
-  
+          main = "Gas Well Counts by Field (Training Data Set)")
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1396,13 +1396,13 @@ j <- j+1
 
 # 21 - Surface Lease Ownership --------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Build temporary data.frame with individual (not cumulative) probabilities
   # of each surface lease type by field and then transpose
   temp <- data.frame(cdf.flt[,2],
@@ -1411,20 +1411,21 @@ if(opt$plist$plot[j] == TRUE) {
                      cdf.flt[,5]-cdf.flt[,4], row.names = cdf.flt[,1])
   names(temp) <- c("Federal", "Indian", "State", "Fee")
   temp <- t(as.matrix(temp))
-  
+
   # Plot with barplot()
   barplot(
     temp,
     beside = TRUE,
+    ylim = c(0, 1),
     xlab = "Field Number",
     ylab = "Probability",
-    main = "Surface Lease Ownership Type by Field",
+    main = "Surface Lease Ownership Type by Field (Training Data Set)",
     legend = c("Federal", "Indian", "State", "Fee"),
     args.legend = list(x = "topright", cex = 0.75)
   )
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1433,13 +1434,13 @@ j <- j+1
 
 # 22 - Well Depth ---------------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main Plot
   plot(cdf.depth.ow,
        type = "l",
@@ -1447,15 +1448,15 @@ if(opt$plist$plot[j] == TRUE) {
        xlab = "Well Depth (ft)",
        ylab = "Cumulative Probability",
        main = "CDFs for Well Depth by Well Type")
-  
+
   # Line plot for GW
   lines(cdf.depth.gw, col = "red")
-  
+
   # Legend
   legend("topleft", c("Oil Wells", "Gas Wells"), lty = 1, col = c("blue","red"))
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1464,13 +1465,13 @@ j <- j+1
 
 # 23 - Lease Capital & Operating Costs Fit --------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Oil LOC equip plot
   ind <- which(LOC.data$wellType == "OW" & LOC.data$LOCtype == "equip")
   temp <-scatterplot3d(x = LOC.data$op[ind],
@@ -1484,7 +1485,7 @@ if(opt$plist$plot[j] == TRUE) {
                        ylab = "Well Depth (1e3 ft)",
                        zlab = paste("Capital Cost in thousands of", opt$cpiDate, "USD"),
                        main="Lease Capital Cost Fit for Oil Wells")
-  
+
   # Plane fit for oil LOC
   fitdata <- LOC.data[ind,]
   fitdata$cost <- fitdata$cost/1e3
@@ -1493,7 +1494,7 @@ if(opt$plist$plot[j] == TRUE) {
   temp$plane3d(Intercept = 0,
                x.coef = coefficients(fitdata)[1],
                y.coef = coefficients(fitdata)[2])
-  
+
   # Gas LOC equip plot - 250 MCFD gas production rate
   ind <- which(LOC.data$wellType == "GW" & LOC.data$LOCtype == "equip" & LOC.data$gasRate == 250)
   temp <-scatterplot3d(x = LOC.data$gp[ind],
@@ -1507,7 +1508,7 @@ if(opt$plist$plot[j] == TRUE) {
                        ylab = "Well Depth (1e3 ft)",
                        zlab = paste("Capital Cost in thousands of", opt$cpiDate, "USD"),
                        main="Lease Capital Cost Fit for Gas Wells - Gas Production 250 MCFD")
-  
+
   # Plane fit for oil LOC
   fitdata <- LOC.data[ind,]
   fitdata$cost <- fitdata$cost/1e3
@@ -1516,7 +1517,7 @@ if(opt$plist$plot[j] == TRUE) {
   temp$plane3d(Intercept = 0,
                x.coef = coefficients(fitdata)[1],
                y.coef = coefficients(fitdata)[2])
-  
+
   # Oil LOC op plot
   ind <- which(LOC.data$wellType == "OW" & LOC.data$LOCtype == "op")
   temp <-scatterplot3d(x = LOC.data$op[ind],
@@ -1530,7 +1531,7 @@ if(opt$plist$plot[j] == TRUE) {
                        ylab = "Well Depth (1e3 ft)",
                        zlab = paste("Operating Cost in thousands of", opt$cpiDate, "USD per month"),
                        main="Lease Operating Cost Fit for Oil Wells")
-  
+
   # Plane fit for oil LOC
   fitdata <- LOC.data[ind,]
   fitdata$cost <- fitdata$cost/1e3
@@ -1539,7 +1540,7 @@ if(opt$plist$plot[j] == TRUE) {
   temp$plane3d(Intercept = 0,
                x.coef = coefficients(fitdata)[1],
                y.coef = coefficients(fitdata)[2])
-  
+
   # Gas LOC op plot
   ind <- which(LOC.data$wellType == "GW" & LOC.data$LOCtype == "op" & LOC.data$gasRate == 250)
   temp <-scatterplot3d(x = LOC.data$gp[ind],
@@ -1553,7 +1554,7 @@ if(opt$plist$plot[j] == TRUE) {
                        ylab = "Well Depth (1e3 ft)",
                        zlab = paste("Operating Cost in thousands of", opt$cpiDate, "USD per month"),
                        main="Lease Operating Cost Fit for Gas Wells - Gas Production 250 MCFD")
-  
+
   # Plane fit for oil LOC
   fitdata <- LOC.data[ind,]
   fitdata$cost <- fitdata$cost/1e3
@@ -1562,9 +1563,9 @@ if(opt$plist$plot[j] == TRUE) {
   temp$plane3d(Intercept = 0,
                x.coef = coefficients(fitdata)[1],
                y.coef = coefficients(fitdata)[2])
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1573,29 +1574,29 @@ j <- j+1
 
 # 24 - Energy FPP History -------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Oil FPP
   plot(eia.hp$month, eia.hp$OP,
        type = "l",
        xlab = "Date (by month)",
        ylab = paste("Price in", opt$cpiDate, "$/bbl"),
        main = "Utah Oil First Purchase Price History")
-  
+
   # Gas FPP
   plot(eia.hp$month, eia.hp$GP,
        type = "l",
        xlab = "Date (by month)",
        ylab = paste("Price in", opt$cpiDate, "$/MCF"),
        main = "Utah Gas First Purchase Price History")
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1604,17 +1605,17 @@ j <- j+1
 
 # 25 - EIA AEO Error CDFs -------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
-  # CDF for % error in oil  
+
+  # CDF for % error in oil
   # Line colors
   eqlinecolor <- rainbow(ncol(Eoil)/12)
-  
+
   # Main plot
   plot(Eoil[,12], opt$xq,
        type = "l",
@@ -1624,16 +1625,16 @@ if(opt$plist$plot[j] == TRUE) {
        xlab = "% Error",
        ylab = "Cumulative Probability",
        main = "CDF of Relative % Error of EIA Oil Price Forecasts")
-  
+
   # For all other timesteps
   for (i in seq(from = 24, to = ncol(Eoil), by = 12)) {
     lines(Eoil[,i], opt$xq, col = eqlinecolor[i/12])
   }
-  
+
   legend("topleft",
          c("Y1", "Y2", "Y3", "Y4", "Y5"),
          ncol = 2, lty = 1, col = eqlinecolor)
-  
+
   # Main plot for gas
   plot(Egas[,12], opt$xq,
        type = "l",
@@ -1643,18 +1644,18 @@ if(opt$plist$plot[j] == TRUE) {
        xlab = "% Error",
        ylab = "Cumulative Probability",
        main = "CDF of Relative % Error of EIA Gas Price Forecasts")
-  
+
   # For all other timesteps
   for (i in seq(from = 24, to = ncol(Egas), by = 12)) {
     lines(Egas[,i], opt$xq, col = eqlinecolor[i/12])
   }
-  
+
   legend("topleft",
          c("Y1", "Y2", "Y3", "Y4", "Y5"),
          ncol = 2, lty = 1, col = eqlinecolor)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1663,31 +1664,31 @@ j <- j+1
 
 # 26 - CDF Well Reworks ---------------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Main plot - CDF for oil
   plot(oil~month, cdf.rework,
        type = "l",
        col = qlinecolor[1],
-       lwd = 2,
+       lwd = 1,
        ylim = c(0, 1),
        xlab = "Well Age (months)",
-       ylab = "Cumulative Probability")#,
-       #main = "CDF for Well Reworks as f(time)")
-  
+       ylab = "Cumulative Probability",
+       main = "CDF for Well Reworks as f(time)")
+
   # CDF for gas
-  lines(gas~month, cdf.rework, col = qlinecolor[3], lwd = 2, lty = qlinetype[1])
-  
+  lines(gas~month, cdf.rework, col = qlinecolor[4], lwd = 1, lty = qlinetype[1])
+
   # Legend
-  legend("topleft", c("Oil Wells", "Gas Wells"), lty = c(1, qlinetype[1]), lwd = 2, col = qlinecolor[c(1,3)])
-  
+  legend("topleft", c("Oil Wells", "Gas Wells"), lty = c(1, qlinetype[1]), lwd = 1, col = qlinecolor[c(1,4)])
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1696,19 +1697,19 @@ j <- j+1
 
 # 27 - EIA AEO Relative Error ---------------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Error collector function
   din <- function(fname) {
-    
+
     # Get data for plot
     din <- read.csv(file.path(path$raw, fname))
-    
+
     # Restructure
     din <- rbind(data.frame(year = "FY 1", err = din[,1]),
                  data.frame(year = "FY 2", err = din[,2]),
@@ -1716,7 +1717,7 @@ if(opt$plist$plot[j] == TRUE) {
                  data.frame(year = "FY 4", err = din[,4]),
                  data.frame(year = "FY 5", err = din[,5]))
   }
-  
+
 #   # Main plot - oil directional relative error
 #   boxplot(err~year, din(fname = "EIA_op_error_export.csv"),
 #           range = 0,
@@ -1724,7 +1725,7 @@ if(opt$plist$plot[j] == TRUE) {
 #           xlab = "Future-Year",
 #           ylab = "Relative Error (%)")#,
 #           #main = "Error in EIA Oil Price Forecasts (RE = (FP - AP) / AP)")
-#   
+#
 #   # Main plot - gas directional relative error
 #   boxplot(err~year, din(fname = "EIA_gp_error_export.csv"),
 #           range = 0,
@@ -1732,28 +1733,28 @@ if(opt$plist$plot[j] == TRUE) {
 #           xlab = "Future-Year",
 #           ylab = "Relative Error (%)")#,
 #           #main = "Error in EIA Gas Price Forecasts (RE = (FP - AP) / AP)")
-  
+
   # Main plot - oil fractional relative error
   boxplot(r[year <= 5]~year[year <= 5], read.csv(file.path(path$raw, "EIA AEO frac error op export.csv")),
           range = 0,
           ylim = c(0, 1),
           xlab = "Future-Year",
-          ylab = "Relative Error (%)")#,
-          #main = "Error in EIA Oil Price Forecasts (RE = FP/AP | RE = AP/FP)")
-  
+          ylab = "Relative Error (%)",
+          main = "Error in EIA Oil Price Forecasts (RE = FP/AP | RE = AP/FP)")
+
   # Main plot - gas fractional relative error
   boxplot(r[year <= 5]~year[year <= 5], read.csv(file.path(path$raw, "EIA AEO frac error gp export.csv")),
           range = 0,
           ylim = c(0, 1),
           xlab = "Future-Year",
-          ylab = "Relative Error (%)")#,
-          #main = "Error in EIA Gas Price Forecasts (RE = FP/AP | RE = AP/FP)")
-  
+          ylab = "Relative Error (%)",
+          main = "Error in EIA Gas Price Forecasts (RE = FP/AP | RE = AP/FP)")
+
   # Remove function
   remove(din)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1762,46 +1763,46 @@ j <- j+1
 
 # 28 - CO2 Emission totals Barplot ----------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   tCO2 <- NULL
-  
+
   # Median emissions activity fractions
   nfCO2.med <-  apply(aE$nfCO2,  2, median) # CO2 emissions fractions by activity for new wells
   pfCO2.med <-  apply(aE$pfCO2,  2, median) # CO2 emissions fractions by activity for prior wells
   rnfCO2.med <- apply(aE$rnfCO2, 2, median) # CO2 emissions fractions by activity for new wells with reductions
   rpfCO2.med <- apply(aE$rpfCO2, 2, median) # CO2 emissions fractions by activity for prior wells with reductions
-  
+
   # Median emissions from new vs. prior wells for CO2s
   fnvp.CO2 <-  median(aE$fnvp[, 3])
   rfnvp.CO2 <- median(aE$rfnvp[, 3])
-  
+
   # Conversion factor
   fconv <-  fnvp.CO2  * (nfCO2.med)  + (1 - fnvp.CO2)  * (pfCO2.med)
   rfconv <- rfnvp.CO2 * (rnfCO2.med) + (1 - rfnvp.CO2) * (rpfCO2.med)
-  
+
   # Get total median CO2 production by year for (a) base and (b) reduced emissions
   for(i in seq(from = 12, to = 60, by = 12)-11) {
-    
+
     tCO2 <- cbind(tCO2, (sum(apply(aE$CO2[,  i:(i+11)], 2, median))*fconv))
     tCO2 <- cbind(tCO2, (sum(apply(aE$rCO2[, i:(i+11)], 2, median))*rfconv))
   }
-  
+
   # Sum together small stuff
   ind <- c(3, 5, 7, 8)
   tCO2 <- rbind(tCO2, colSums(tCO2[ind,]))
   tCO2 <- tCO2[-ind, ]
-  
+
   # Names
   fCO2.names <- c("Drill", "Completion", "Gas Production", "Gas Transmission", "Other")
   fCO2.lab <- c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5")
-  fCO2.xlab <- c("Year (2010 - 2014)")
-  
+  fCO2.xlab <- c("Year (2011 - 2015)")
+
   # Barplot
   barplot(height = tCO2/1e6,
           names.arg = fCO2.lab,
@@ -1809,12 +1810,13 @@ if(opt$plist$plot[j] == TRUE) {
           ylim = c(0, 7.5),
           xlab = fCO2.xlab,
           ylab = "CO2e Emissions (1E+09 kg / yr)",
+          main = "CO2e Emissions by Activity Source",
           legend.text = fCO2.names,
           args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
-  
+
   abline(h = seq(1, 6, 1), col = "lightgrey")
   box()
-  
+
   # Barplot
   barplot(height = tCO2/1e6,
           add = TRUE,
@@ -1823,15 +1825,16 @@ if(opt$plist$plot[j] == TRUE) {
           ylim = c(0, 7.5),
           xlab = fCO2.xlab,
           ylab = "CO2e Emissions (1E+09 kg / yr)",
+          main = "CO2e Emissions by Activity Source",
           legend.text = fCO2.names,
           args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
-  
+
   # Cleanup variables from workspace
   remove(fCO2.lab, fCO2.names, fCO2.xlab, fconv, fnvp.CO2, nfCO2.med,
          pfCO2.med, rfconv, rfnvp.CO2, rnfCO2.med, rpfCO2.med, tCO2)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1840,46 +1843,46 @@ j <- j+1
 
 # 29 - CH4 Emission totals Barplot ----------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   tCH4 <- NULL
-  
+
   # Median emissions activity fractions
   nfCH4.med <-  apply(aE$nfCH4,  2, median) # CH4 emissions fractions by activity for new wells
   pfCH4.med <-  apply(aE$pfCH4,  2, median) # CH4 emissions fractions by activity for prior wells
   rnfCH4.med <- apply(aE$rnfCH4, 2, median) # CH4 emissions fractions by activity for new wells with reductions
   rpfCH4.med <- apply(aE$rpfCH4, 2, median) # CH4 emissions fractions by activity for prior wells with reductions
-  
+
   # Median emissions from new vs. prior wells for CH4s
   fnvp.CH4 <-  median(aE$fnvp[, 3])
   rfnvp.CH4 <- median(aE$rfnvp[, 3])
-  
+
   # Conversion factor
   fconv <-  fnvp.CH4  * (nfCH4.med)  + (1 - fnvp.CH4)  * (pfCH4.med)
   rfconv <- rfnvp.CH4 * (rnfCH4.med) + (1 - rfnvp.CH4) * (rpfCH4.med)
-  
+
   # Get total median CH4 production by year for (a) base and (b) reduced emissions
   for(i in seq(from = 12, to = 60, by = 12)-11) {
-    
+
     tCH4 <- cbind(tCH4, (sum(apply(aE$CH4[,  i:(i+11)], 2, median))*fconv))
     tCH4 <- cbind(tCH4, (sum(apply(aE$rCH4[, i:(i+11)], 2, median))*rfconv))
   }
-  
+
   # Sum together small stuff
   ind <- c(3, 5, 7, 8)
   tCH4 <- rbind(tCH4, colSums(tCH4[ind,]))
   tCH4 <- tCH4[-ind, ]
-  
+
   # Names
   fCH4.names <- c("Drill", "Completion", "Gas Production", "Gas Transmission", "Other")
   fCH4.lab <- c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5")
-  fCH4.xlab <- c("Year (2010 - 2014)")
-  
+  fCH4.xlab <- c("Year (2011 - 2015)")
+
   # Barplot
   barplot(height = tCH4/1e4,
           names.arg = fCH4.lab,
@@ -1887,12 +1890,13 @@ if(opt$plist$plot[j] == TRUE) {
           ylim = c(0, 35),
           xlab = fCH4.xlab,
           ylab = "CH4 Emissions (1E+07 kg / yr)",
+          main = "CH4 Emissions by Activity Source",
           legend.text = fCH4.names,
           args.legend = list(x = 12.3, y = 34.75, ncol = 3, cex = 1/opt$defFontSize))
-  
+
   abline(h = seq(5, 30, 5), col = "lightgrey")
   box()
-  
+
   # Barplot
   barplot(height = tCH4/1e4,
           add = TRUE,
@@ -1901,15 +1905,16 @@ if(opt$plist$plot[j] == TRUE) {
           ylim = c(0, 35),
           xlab = fCH4.xlab,
           ylab = "CH4 Emissions (1E+07 kg / yr)",
+          main = "CH4 Emissions by Activity Source",
           legend.text = fCH4.names,
           args.legend = list(x = 12.3, y = 34.75, ncol = 3, cex = 1/opt$defFontSize))
-  
+
   # Cleanup variables from workspace
   remove(fCH4.lab, fCH4.names, fCH4.xlab, fconv, fnvp.CH4, nfCH4.med, pfCH4.med,
          rfconv, rfnvp.CH4, rnfCH4.med, rpfCH4.med, tCH4)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1918,46 +1923,46 @@ j <- j+1
 
 # 30 - VOC Emission totals Barplot ----------------------------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   tVOC <- NULL
-  
+
   # Median emissions activity fractions
   nfVOC.med <-  apply(aE$nfVOC,  2, median) # VOC emissions fractions by activity for new wells
   pfVOC.med <-  apply(aE$pfVOC,  2, median) # VOC emissions fractions by activity for prior wells
   rnfVOC.med <- apply(aE$rnfVOC, 2, median) # VOC emissions fractions by activity for new wells with reductions
   rpfVOC.med <- apply(aE$rpfVOC, 2, median) # VOC emissions fractions by activity for prior wells with reductions
-  
+
   # Median emissions from new vs. prior wells for VOCs
   fnvp.VOC <-  median(aE$fnvp[, 3])
   rfnvp.VOC <- median(aE$rfnvp[, 3])
-  
+
   # Conversion factor
   fconv <-  fnvp.VOC  * (nfVOC.med)  + (1 - fnvp.VOC)  * (pfVOC.med)
   rfconv <- rfnvp.VOC * (rnfVOC.med) + (1 - rfnvp.VOC) * (rpfVOC.med)
-  
+
   # Get total median VOC production by year for (a) base and (b) reduced emissions
   for(i in seq(from = 12, to = 60, by = 12)-11) {
-    
+
     tVOC <- cbind(tVOC, (sum(apply(aE$VOC[,  i:(i+11)], 2, median))*fconv))
     tVOC <- cbind(tVOC, (sum(apply(aE$rVOC[, i:(i+11)], 2, median))*rfconv))
   }
-  
+
   # Sum together small stuff
   ind <- c(3, 5, 7, 8)
   tVOC <- rbind(tVOC, colSums(tVOC[ind,]))
   tVOC <- tVOC[-ind, ]
-  
+
   # Names
   fVOC.names <- c("Drill", "Completion", "Gas Production", "Gas Transmission", "Other")
   fVOC.lab <- c("BY1", "RY1", "BY2", "RY2", "BY3", "RY3", "BY4", "RY4", "BY5", "RY5")
-  fVOC.xlab <- c("Year (2010 - 2014)")
-  
+  fVOC.xlab <- c("Year (2011 - 2015)")
+
   # Barplot
   barplot(height = tVOC/1e3,
           names.arg = fVOC.lab,
@@ -1965,12 +1970,13 @@ if(opt$plist$plot[j] == TRUE) {
           ylim = c(0, 60),
           xlab = fVOC.xlab,
           ylab = "VOC Emissions (1E+06 kg / yr)",
+          main = "VOC Emissions by Activity Source",
           legend.text = fVOC.names,
           args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
-  
+
   abline(h = seq(10, 50, 10), col = "lightgrey")
   box()
-  
+
   # Barplot
   barplot(height = tVOC/1e3,
           add = TRUE,
@@ -1979,15 +1985,16 @@ if(opt$plist$plot[j] == TRUE) {
           ylim = c(0, 60),
           xlab = fVOC.xlab,
           ylab = "VOC Emissions (1E+06 kg / yr)",
+          main = "VOC Emissions by Activity Source",
           legend.text = fVOC.names,
           args.legend = list("top", ncol = 3, cex = 1/opt$defFontSize))
-  
+
   # Cleanup variables from workspace
   remove(fVOC.lab, fVOC.names, fVOC.xlab, fconv, fnvp.VOC, nfVOC.med,
          pfVOC.med, rfconv, rfnvp.VOC, rnfVOC.med, rpfVOC.med, tVOC)
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -1996,61 +2003,61 @@ j <- j+1
 
 # 31 - Production ratio new wells vs. existing wells ----------------------
 if(opt$plist$plot[j] == TRUE) {
-  
+
   # If exporting to PDF
-  if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-  
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
   # Set font size
   par(cex = opt$defFontSize)
-  
+
   # Get ratios
   sPR <- data.frame(oil = oil.q[3, ] / (oil.q[3, ] + poil.q[3, ]),
                     gas = gas.q[3, ] / (gas.q[3, ] + pgas.q[3, ]))
-  
+
   # Main plot with largest quantile result
   plot(opt$tsteps, sPR$oil,
        type = "l",
        ylim = c(0, 1),
        col = qlinecolor[1],
-       lty = qlinetype[1],
+       lty = 2,
        lwd = qlinewidth[1],
        xlab = "Time (months)",
-       ylab = "New Well Production Fraction")#,
-       #main = "Fraction of Total Production from New Wells")
-  
+       ylab = "New Well Production Fraction",
+       main = "Fraction of Total Production from New Wells")
+
   # Other quantile lines
-  lines(opt$tsteps, sPR$gas, col = qlinecolor[2], lty = qlinetype[2], lwd = qlinewidth[2])
-  
+  lines(opt$tsteps, sPR$gas, col = qlinecolor[4], lty = 2, lwd = qlinewidth[2])
+
   if(opt$crossvalid == T) {
-    
+
     # Get actual ratio
     aPR <- data.frame(oil = new.p$oil / (new.p$oil + prior.p$oil),
                       gas = new.p$gas / (new.p$gas + prior.p$gas))
-    
+
     # Actual oil production
     lines(opt$tsteps, aPR$oil, col = qlinecolor[1], lty = alinetype, lwd = alinewidth)
-    lines(opt$tsteps, aPR$gas, col = qlinecolor[2], lty = alinetype, lwd = alinewidth)
-    
+    lines(opt$tsteps, aPR$gas, col = qlinecolor[4], lty = alinetype, lwd = alinewidth)
+
     # Legend
     legend("topleft",
            c("Oil - Actual", "Oil - Sim", "Gas - Actual", "Gas - Sim"),
            ncol = 1,
-           col = c(qlinecolor[1], qlinecolor[1], qlinecolor[2], qlinecolor[2]),
+           col = c(qlinecolor[1], qlinecolor[1], qlinecolor[4], qlinecolor[4]),
            lwd = c(alinewidth, qlinewidth[1]),
-           lty = c(alinetype,  qlinetype[1], alinetype, qlinetype[2]))
+           lty = c(alinetype,  2, alinetype, 2))
   } else {
-    
+
     # Legend
     legend("topleft",
            c("Oil - Sim", "Gas - Sim"),
            ncol = 1,
-           col = qlinecolor[1:2],
+           col = qlinecolor[c(1, 4)],
            lwd = qlinewidth[1:2],
-           lty = qlinetype[1:2])
+           lty = 2)
   }
-  
+
   # If exporting to PDF, close PDF
-  if(opt$exportFlag == TRUE) {dev.off()}
+  if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
 }
 
 # Increment counter
@@ -2068,20 +2075,20 @@ j <- j+1
 # All plots follow the same pattern. As such, an internal function in defined
 # here for plotting them.
 emplot <- function(x, rx, type) {
-  
+
   # Should plot be made?
   if(opt$plist$plot[j] == TRUE) {
-    
+
     # If exporting to PDF, call pdf() function
-    if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-    
+    if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
     # Set font size
     par(cex = opt$defFontSize)
-    
+
     # Main plot with largest quantile result
     plot(opt$tsteps, x[1,],
          type = "l",
-         ylim = c(0.9*min(x),
+         ylim = c(0.9*min(c(x, rx)),
                   1.1*max(x)),
          col = qlinecolor[1],
          lty = 1,
@@ -2090,14 +2097,14 @@ emplot <- function(x, rx, type) {
          ylab = paste(type, "Emissions (tons)"),
          main = paste("Total", type, "Emissions (Equipment-Based)"))
     mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-    lines(opt$tsteps, rx[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-    
+    lines(opt$tsteps, rx[1,], col = qlinecolor[1], lty = 2, lwd = qlinewidth[1])
+
     # Other quantile lines
     for (i in 2:length(opt$quant)) {
-      lines(opt$tsteps, x[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-      lines(opt$tsteps, rx[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+      lines(opt$tsteps, x[i,],  col = qlinecolor[i], lty = 1, lwd = qlinewidth[i])
+      lines(opt$tsteps, rx[i,], col = qlinecolor[i], lty = 2, lwd = qlinewidth[i])
     }
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -2105,28 +2112,28 @@ emplot <- function(x, rx, type) {
            col = qlinecolor,
            lty = qlinetype,
            lwd = qlinewidth)
-    
+
     # If exporting to PDF, close PDF
-    if(opt$exportFlag == TRUE) {dev.off()}
+    if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
   }
 }
 
 # Equipment-based emissions plots - by species by equipment type
 eqplot <- function(x, rx, type, equip) {
-  
+
   # Should plot be made?
   if(opt$plist$plot[j] == TRUE) {
-    
+
     # If exporting to PDF, call pdf() function
-    if(opt$exportFlag == TRUE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
-    
+    if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {pdf(file.path(path$plot, file = paste(opt$prefix, opt$plist$name[j], opt$affix, sep = "")))}
+
     # Set font size
     par(cex = opt$defFontSize)
-    
+
     # Main plot with largest quantile result
     plot(opt$tsteps, x[1,],
          type = "l",
-         ylim = c(0.9*min(x),
+         ylim = c(0.9*min(c(x, rx)),
                   1.1*max(x)),
          col = qlinecolor[1],
          lty = 1,
@@ -2135,14 +2142,14 @@ eqplot <- function(x, rx, type, equip) {
          ylab = paste(type, "Emissions (tons)"),
          main = paste(equip, type, "Emissions"))
     mtext("Solid Lines = Base Emissions, Dotted Lines = Reduced Emissions")
-    lines(opt$tsteps, rx[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
-    
+    lines(opt$tsteps, rx[1,], col = qlinecolor[1], lty = 2, lwd = qlinewidth[1])
+
     # Other quantile lines
     for (i in 2:length(opt$quant)) {
-      lines(opt$tsteps, x[i,],  col = qlinecolor[i], lty = 1,            lwd = qlinewidth[i])
-      lines(opt$tsteps, rx[i,], col = qlinecolor[i], lty = qlinetype[i], lwd = qlinewidth[i])
+      lines(opt$tsteps, x[i,],  col = qlinecolor[i], lty = 1, lwd = qlinewidth[i])
+      lines(opt$tsteps, rx[i,], col = qlinecolor[i], lty = 2, lwd = qlinewidth[i])
     }
-    
+
     # Legend
     legend("topleft",
            c("90%", "70%", "50%", "30%", "10%"),
@@ -2150,9 +2157,9 @@ eqplot <- function(x, rx, type, equip) {
            col = qlinecolor,
            lty = qlinetype,
            lwd = qlinewidth)
-    
+
     # If exporting to PDF, close PDF
-    if(opt$exportFlag == TRUE) {dev.off()}
+    if(opt$exportFlag == TRUE & opt$exportSingle == FALSE) {dev.off()}
   }
 }
 
@@ -2212,6 +2219,9 @@ eqplot(x = eE$fco.q$tank,   rx = reE$fco.q$tank,   type = "CO",    equip = "Tank
 
 
 # Cleanup -----------------------------------------------------------------
+
+# Close PDF if making single plot
+if(opt$exportFlag == TRUE & opt$exportSingle == TRUE) {dev.off()}
 
 # Remove temp object from workspace
 remove(temp)
