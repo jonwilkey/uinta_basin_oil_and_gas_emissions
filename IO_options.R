@@ -5,7 +5,7 @@
 
 # Description -------------------------------------------------------------
 
-# This script creates a list object named "opt" that contains the options for 
+# This script creates a list object named "opt" that contains the options for
 # all the inputs/outputs that control the execution of the main.R script. Review
 # each input/output below and change as desired from their base values.
 
@@ -31,11 +31,9 @@ opt$load.name <- "results v1.rda"
 # the version number below so that previous *.rda versions will be retained.
 
 opt$file_ver <- "v1"
-# opt$file_ver <- "v2"
 
 # Version notes
-# v1: Xvalid -      train 1984-2009, predict 2010-2014
-# v2: 5yr predict - train 1984-2015, predict 2016-2020
+# v1: crossvalid -  train 1984-2010, predict 2011-2015
 
 # Enter number of overall simulation iterations
 opt$nrun <- 1e2
@@ -44,28 +42,21 @@ opt$nrun <- 1e2
 # postProcess script)
 
 opt$crossvalid <- T # v1
-# opt$crossvalid <- F # v2
 
 # Time Options v1
-opt$tstart <-      as.Date("2010-01-01") # Start date of simulation period
-opt$tstop  <-      as.Date("2014-12-01") # Stop date of simulation period
+opt$tstart <-      as.Date("2011-01-01") # Start date of simulation period
+opt$tstop  <-      as.Date("2015-12-01") # Stop date of simulation period
 opt$train.start <- as.Date("1984-01-01") # Start date of training period
-opt$train.stop  <- as.Date("2009-12-01") # Stop date of training period
-
-# # Time Options v2
-# opt$tstart <-      as.Date("2016-01-01") # Start date of simulation period
-# opt$tstop  <-      as.Date("2020-12-01") # Stop date of simulation period
-# opt$train.start <- as.Date("1984-01-01") # Start date of training period
-# opt$train.stop  <- as.Date("2015-12-01") # Stop date of training period
+opt$train.stop  <- as.Date("2010-12-01") # Stop date of training period
 
 # Additional time related values calculated from inputs above
 opt$tsteps <-      seq(from = opt$tstart, to = opt$tstop, by = "months")
 opt$MC.tsteps <-   length(opt$tsteps)
 
 # CPI value for inflation adjustment and it's associated date (as character
-# string). Current value is for average 2014 USD.
-opt$cpi <-     236.736
-opt$cpiDate <- "2014"
+# string). Current value is for average 2015 USD.
+opt$cpi <-     237.017
+opt$cpiDate <- "2015"
 
 # Quantiles vector (sequence of quantile values at which to estimate CDF). Used
 # everywhere quantile() or qnorm() is used to generate CDF.
@@ -75,27 +66,11 @@ opt$xq <- seq(from = 0.0001, to = 0.9999, by = 0.0001)
 # subsetting.
 opt$min.well.depth <- 0
 
-# Initial prices for EIA/GBM price path simulation (from last recorded EIA FPP).
-# Should be set to the last wellhead price for oil and gas in the time step
-# immediately prior to start of simulation. Price history is available from:
-
-# https://docs.google.com/spreadsheets/d/1S1M6RD3QXHewViG-7stioRxxzDDZvSKBHUe4YEVH-CU/edit?usp=sharing
-
-# v1: FPPs
-opt$oil.fpp.init <- 71.03                 # Oil FPP
-opt$gas.fpp.init <-  4.85                 # Gas FPP
-opt$FPPdate <-      as.Date("2009-12-01") # Month associated with FPPs
-
-# # v2 FPPs
-# opt$oil.fpp.init <- 29.91            # Oil FPP
-# opt$gas.fpp.init <-  1.87            # Gas FPP
-# opt$FPPdate <- as.Date("2015-12-01") # Month associated with FPPS
-
 
 # 1.1 Flags for updating prepared data files ----------------------------------
 
-# This segment contains flags for updating the files contained in the prepared 
-# data folder (typically *.rda files, probability distributions, linear 
+# This segment contains flags for updating the files contained in the prepared
+# data folder (typically *.rda files, probability distributions, linear
 # regression fits, etc.). If new data is available, save the raw data to the raw
 # data folder, update the flag(s) for the appropriate script(s) below, save this
 # script, and rerun main.R
@@ -107,7 +82,7 @@ opt$schedule.update     <- F # Generates CDF for field numbers, lease type, well
 opt$EIAprice.update     <- F # Converts *.csv file with historical EIA prices into data.frame and adjusts prices for inflation
 opt$lease.update        <- F # Fits lease operating cost model to EIA lease operating cost data.
 opt$drillmodel.update   <- F # Fits drilling schedule model to energy prices
-opt$GBMfit.update       <- F # Fits GBM parameters "v" and "mu" to energy prices
+opt$ARIMAfit.update     <- F # Fits GBM parameters "v" and "mu" to energy prices
 opt$EIAforecast.update  <- F # Adjusts EIA forecast for inflation and converts to monthly basis, set to true if opt$forecast input is changed
 opt$EIAerror.update     <- F # Generates CDFs for error in EIA AEO forecasts
 opt$DCA.update          <- F # Fits decline curves
@@ -215,7 +190,7 @@ opt$p.keep <- c("p_api",        # API well number. All API numbers (American Pet
 # argument for subsetting the DOGM database. Current valid options are:
 #
 #   a  - Selects only wells located in Uintah or Duchesne counties
-#  ... - Others must be coded first in main.R section 2.1
+#  ... - Others selection options must be coded into main.R script in Section 2.1
 #
 opt$psub <- "a"
 
@@ -225,16 +200,16 @@ opt$psub <- "a"
 # Time step options
 opt$SU.tsteps <- seq(from = opt$train.start, to = opt$train.stop, by = "months")
 
-# Fraction of wells located in a given field compared to total number of wells 
+# Fraction of wells located in a given field compared to total number of wells
 # in the Uinta Basin that is required for a field to be analyzed individually.
 # If a field's well count fraction is lower than this threshold, all of its
 # wells will be accounted for in the catch-all "Field 999."
 opt$field.cutoff <- 0.05
 
-# Well depth criteria (minimum, maximum, and resolution of well depth CDF) in 
+# Well depth criteria (minimum, maximum, and resolution of well depth CDF) in
 # feet. Minimum well depth is set in global options (Section 1.0). Note that one
-# important use of these values is to generate well depth probability 
-# distributions. In that context, the # of bins generated is 
+# important use of these values is to generate well depth probability
+# distributions. In that context, the # of bins generated is
 # (max.depth-min.depth)/depth.step. This result must be a whole number.
 opt$max.well.depth <-  20e3
 opt$well.depth.step <- 10
@@ -263,50 +238,78 @@ opt$LOCbasis <- 214.537
 
 # Note - uses opt$min.well.depth option set in Section 1.0
 
-# Time step options - for purposes of cross-validating against 2010-2014 data,
-# best window appears to be 1999-2009
+# Time step options - data prior to 1999 are excluded because correlation
+# between oil prices and well completions is very poor prior to that year
 opt$DMU.tstart <- as.Date("1999-01-01")
 opt$DMU.tstop  <- opt$train.stop
 
+# Time lags - the distributed lag models use past prices N time steps ago to
+# predict drilling activity. The model searches for the best value of N between
+# 1 and the value specified below:
+opt$DMU.tlag <- 12
 
-# 2.6 GBMfitUpdate Options ------------------------------------------------
+
+# 2.6 ARIMAfitUpdate Options ----------------------------------------------
 
 # Time step options
-opt$GBM.tstart <- as.Date("1977-07-01")
-opt$GBM.tstop  <- opt$train.stop
+opt$ARIMA.tstart <- as.Date("1977-07-01")
+
+# For stop of training window, select either (a) all data (i.e. opt$train.stop)
+# or (b) ~20 yrs. in the past (to test long-term predictive power in
+# cross-validation mode)
+
+opt$ARIMA.tstop  <- as.Date("1995-01-01") # cross-validation mode
+# opt$ARIMA.tstop  <- opt$train.stop        # predictive mode
+
+# Manual ARIMA fit specification
+#
+# Must be of form (p, d, q) where
+# - p  = order of autoregressive term
+# - d  = order of difference term
+# - q  = order of moving average term
+# - ic = include constant (TRUE/FALSE)? Including a constant fits linear trend
+#        to the training data time series.
+#
+# Noteable model choices:
+# (0,0,0) - white noise (for both values of ic)
+# (0,1,0) - (ic = FALSE) Random walk
+# (0,1,0) - (ic = TRUE)  Random walk with drift
+# (0,1,1) - (ic = FALSE) Exponential smoothing *** RECOMMENDED CHOICE ***
+# (0,1,1) - (ic = TRUE)  Exponential smoothing with growth
+
+# Manual oil prices ARIMA model specification
+opt$ARIMA.opdq <- list(order = c(0, 1, 1),
+                       ic    = FALSE)
+
+# Manual gas prices ARIMA model specification
+opt$ARIMA.gpdq <- list(order = c(0, 1, 1),
+                       ic    = FALSE)
+
+# Plot forecast fits? (Note: for use in cross-validation mode only)
+opt$ARIMA.plotFit <- TRUE
 
 
 # 2.7 EIAforecastUpdate Options -------------------------------------------
 
-# EIA Forecast data.frame creation. Enter EIA forecast here - the AEO forecast 
+# EIA Forecast data.frame creation. Enter EIA forecast here - the AEO forecast
 # used should be the same as the year used for the starting point of the modeled
-# time period. The number of rows in the data.frame should also be equal to the 
+# time period. The number of rows in the data.frame should also be equal to the
 # value used above in opt$EIAtsteps. Finally, the "year" column assumes that the
-# EIA price given is for the middle of each year of the EIA forecast (i.e. 
+# EIA price given is for the middle of each year of the EIA forecast (i.e.
 # June). The final date of the modeled time period should be equal to or greater
-# than the last date in the year column. "oil" and "gas" are the reference 
+# than the last date in the year column. "oil" and "gas" are the reference
 # forecast prices, while "l" and "h" are prefixes for the low and high AEO
 # forecasts, respectively.
 
-# v1: AEO 2010 Reference Forecast (CPI = 215.303)
-opt$EIAbasis  <- 215.303 # Annual average CPI for whatever dollar year is used in AEO prices below
-year <-  seq(as.Date("2010-06-01"), as.Date("2014-06-01"), by = "year") # Year (time step for EIA price forecasts)
-oil  <-  c(73.90, 74.13,  81.39,  87.98,  93.26) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
-gas  <-  c( 4.16,  5.33,   5.65,   5.48,   5.44) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
-loil  <- c(73.55, 57.55,  55.04,  53.28,  52.09) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
-lgas  <- c( 4.13,  4.91,   5.12,   5.04,   4.99) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
-hoil  <- c(74.57, 85.80, 104.25, 119.73, 137.15) # Rocky Mountain wellhead oil price forecast in 2008 $/bbl from Table 101
-hgas  <- c( 4.18,  5.57,   5.97,   5.81,   5.89) # Rocky Mountain wellhead gas price forecast in 2008 $/MCF from Table 102
-
-# # v2: AEO 2015 Forecast
-# opt$EIAbasis  <- 232.957 # Annual average CPI for whatever dollar year is used in AEO prices below
-# year <-  seq(as.Date("2016-06-01"), as.Date("2020-06-01"), by = "year") # Year (time step for EIA price forecasts)
-# oil  <-  c( 60.92,  65.07,  65.02,  66.53,  67.98) # Rocky Mountain wellhead oil price forecast in 2013 $/bbl from Table 60
-# gas  <-  c(  2.52,   2.85,   3.19,   3.59,   3.97) # Rocky Mountain wellhead gas price forecast in 2013 $/MCF from Table 61
-# loil  <- c( 41.09,  41.64,  42.60,  44.68,  46.81) # Rocky Mountain wellhead oil price forecast in 2013 $/bbl from Table 60
-# lgas  <- c(  2.67,   2.81,   3.02,   3.27,   3.49) # Rocky Mountain wellhead gas price forecast in 2013 $/MCF from Table 61
-# hoil  <- c(123.41, 128.05, 130.00, 132.92, 134.90) # Rocky Mountain wellhead oil price forecast in 2013 $/bbl from Table 60
-# hgas  <- c(  2.73,   2.99,   3.35,   3.80,   4.20) # Rocky Mountain wellhead gas price forecast in 2013 $/MCF from Table 61
+# v1: AEO 2011 Forecast (2009 Dollars)
+opt$EIAbasis  <- 214.537 # Annual average CPI for whatever dollar year is used in AEO prices below
+year <-  seq(as.Date("2011-06-01"), as.Date("2015-06-01"), by = "year") # Year (time step for EIA price forecasts)
+oil  <-  c( 88.76,  91.15,  93.57,  97.10, 100.15) # Rocky Mountain wellhead oil price forecast in 2009 $/bbl from Table 60
+gas  <-  c(  3.93,   3.94,   4.01,   4.05,   4.12) # Rocky Mountain wellhead gas price forecast in 2009 $/MCF from Table 61
+loil  <- c( 63.39,  59.65,  58.62,  57.99,  57.43) # Rocky Mountain wellhead oil price forecast in 2009 $/bbl from Table 60
+lgas  <- c(  3.87,   3.89,   3.96,   3.99,   4.08) # Rocky Mountain wellhead gas price forecast in 2009 $/MCF from Table 61
+hoil  <- c(116.85, 134.34, 144.69, 150.97, 156.45) # Rocky Mountain wellhead oil price forecast in 2009 $/bbl from Table 60
+hgas  <- c(  3.93,   3.95,   4.03,   4.08,   4.17) # Rocky Mountain wellhead gas price forecast in 2009 $/MCF from Table 61
 
 # Make data.frame for forecasts
 opt$forecast <- data.frame(type = c(rep("ref",  length(year)),
@@ -409,16 +412,12 @@ opt$DFmin.rec.count <- 10
 # Plot results? T/F
 opt$DFplot.flag <- T
 
-# Set start/stop years for trendline analysis. For example, tstart = 2000 and 
+# Set start/stop years for trendline analysis. For example, tstart = 2000 and
 # tstop = 2009 would be equivalent to using 2000-2009 as a training period
 
 # v1 Years
 opt$DF.tstart <- 1999
-opt$DF.tstop <-  2009
-
-# # v2 Years
-# opt$DF.tstart <- 1999
-# opt$DF.tstop <-  2015
+opt$DF.tstop <-  2010
 
 
 # 2.13 Emissions Update ---------------------------------------------------
@@ -429,70 +428,96 @@ opt$DF.tstop <-  2009
 
 # 3.1 Energy Price Path Simulation Options --------------------------------
 
-# Energy price path simulation method. Valid options are:
-#  a - GBM price paths
-#  b - EIA forecast with error propagation
-#  c - Actual price path
-#    - EIA long-term price forecast based on log-normal distribution (DISABLED)
-#  d - User specified price path
-opt$ep.type <- "b"
+# Energy price path simulation method for oil and gas. Valid options are:
+#  a - Auto-ARIMA price path simulation
+#  b - Manual-ARIMA price path simulation
+#  c - EIA forecast with error propagation
+#  d - Actual price path (for cross-validation mode only)
+#  e - Constant price (equal to average price of last "n" time steps)
+#  f - User-specified price path
 
-# Additional options for EIA forecast with error propagation method
+opt$epf.type <- list(oil = "c", # Oil price path selection
+                     gas = "c") # Gas price path selection
 
-# Pick what type of relative error to propagate. Valid options are:
+# --- Additional options ---
+
+# Option (c) -  EIA forecast with error propagation method
+#
+# (1) Pick what type of relative error to propagate. Valid options are:
+#
 # "direct" - Uses eq: SP = FP * (1 - RE)
-# "frac"   - Uses eq: (a) SP = FP / RE or (b) SP = RE * FP
-opt$EIA.ep.type <- "frac"
+# "frac"   - Uses eq: (c1) SP = FP / RE
+#                            or
+#                     (c2) SP = RE * FP
+#
+opt$epf.EIA.type <- list(oil = "frac",
+                         gas = "frac")
 
-# Fractional method probability pick for choosing between eq. type (a) and (b).
-# Choice must be between 0 and 1, with higher values favoring eq (a) (over
-# predicting)
-opt$EIA.fracProb <- 0.5
+# If using "frac" method, specify probability of picking equation (c1). Choice
+# must be between 0 and 1 (0.5 recommended value, equal probability of forecast
+# forecast error under- or over-predicting).
+opt$epf.EIA.fracProb <- list(oil = 0.5,
+                             gas = 0.5)
 
-# User specified price path for oil
-opt$uppo <- matrix(rep(35, opt$nrun * opt$MC.tsteps),
-                   nrow =  opt$nrun,
-                   ncol =  opt$MC.tsteps,
-                   byrow = T)
+# Option (e) - Constant price
+#
+# Sets energy price equal to a constant over the last "n" time steps.
+#
+# Specify the value of n (recommended value is 12 months):
+#
+opt$epf.const <- list(noil = 12,
+                      ngas = 12)
 
-# User specified price path for gas
-opt$uppg <- matrix(rep(3.71, opt$nrun * opt$MC.tsteps),
-                   nrow =  opt$nrun,
-                   ncol =  opt$MC.tsteps,
-                   byrow = T)
+# Option (f) User-specified price path
+#
+# Fully specify your own price path. Must be a matrix with rows = number of
+# simulations, columns = number of timesteps in each simulation, and the value
+# in each [row,column] being the price of oil ($/bbl) or gas ($/MCF). The
+# default inputs below assume that the same forecast is used for every iteration
+# (i.e. row) of the simulation. See details of matrix() command (?matrix) for
+# options on how to specify matrices.
+#
+opt$epf.uepf <- list(oil = matrix(data = rep(x = seq(from       = 35,
+                                                     by         = 1,
+                                                     length.out = opt$MC.tsteps),
+                                             times = opt$nrun),
+                                  nrow  =  opt$nrun,
+                                  ncol  =  opt$MC.tsteps,
+                                  byrow = T),
+
+                     gas = matrix(data = rep(x = seq(from       = 3.71,
+                                                     by         = 0.1,
+                                                     length.out = opt$MC.tsteps),
+                                             times = opt$nrun),
+                                  nrow  =  opt$nrun,
+                                  ncol  =  opt$MC.tsteps,
+                                  byrow = T))
 
 
 # 3.2 drillSim Options ----------------------------------------------------
 
-# Initial number of wells drilled during prior time step at start of simulated 
-# time. To find the number of wells drilled between any two sets of dates, run
-# the following command (after running the dogmDataUpdate function, loading the
-# results, and subsetting production to p):
-
-# length(unique(p$p_api[which(p$h_first_prod >= as.Date("2015-12-01") &
-#                             p$h_first_prod <= as.Date("2015-12-31"))]))
-
-opt$drilled.init <- 43 # v1: 2009-12-01 value
-# opt$drilled.init <- 14 # v2: 2015-12-01 value
-
 # Select drilling simulation type. Valid options are:
+#
 #  sim - for simulated drilling schedule based on economic drilling model
 #  actual - for actual drilling schedule
-opt$DStype <- "sim"
+#
+opt$DStype <- "actual"
 
 # Pick method for simulated drilling schedule, valid options are:
-#  a - Prior well model:   W_n = a * OP_n   + b * GP_n   + c * W_n-1 + d
-#  b - Energy price model: W_n = a * OP_n-1 + b * GP_n-1 + c
-#  c - Oil price model:    W_n = a * OP_n-1 + b
-#  d - Gas price model:    W_n = a * GP_n-1 + b
+#
+#  a - Prior well model:   W_n = a * OP_n   + b * GP_n   + c * W_n-N + d
+#  b - Energy price model: W_n = a * OP_n-N + b * GP_n-N + c
+#  c - Oil price model:    W_n = a * OP_n-N + b
+#  d - Gas price model:    W_n = a * GP_n-N + b
+#
 opt$DSsimtype <- "c"
 
 
 # 3.3 priorProd Options ---------------------------------------------------
 
 # Cutoff threshold for how old a well can be and still be included as
-# a prior well. For example, if tend.cut == 60, then any well that doesn't have 
-# a last decline curve fit (either because it had too few production records or 
+# a prior well. For example, if tend.cut == 60, then any well that doesn't have
+# a last decline curve fit (either because it had too few production records or
 # because the solver failed to converge) and is > 60 months old would dropped
 # from population of prior wells
 opt$tend.cut <- 60
@@ -577,16 +602,17 @@ opt$EFred <- data.frame(cat =  c("prod", "proc", "transm", "compl", "drill", "pU
 
 
 # 4.1 Plot Export options -------------------------------------------------
-opt$exportFlag <- F                        # If true, will plot to PDF located in path$plot directory
-opt$prefix <-     "Fig- "                  # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " -xvalid -5yr -v1.pdf" # Any text here will be added to the end " " " "...
+opt$exportFlag <-   T                     # If true, will plot to PDF located in path$plot directory
+opt$exportSingle <- T                     # If true, exports as single PDF file, else each plot is separate
+opt$prefix <-     "Fig- "                 # Any text here will be added in front of the name given in the table below
+opt$affix  <-     " actualWells.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
 opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated vs actual
                    c("02 Gas Price",                  F), # Gas prices simulated vs actual
-                   c("03 Drilling Schedule",          F), # Drilling schedule simulated vs actual
+                   c("03 Drilling Schedule",          T), # Drilling schedule simulated vs actual
                    c("04 Drilling Model Fit",         F), # Drilling fit vs actual
                    c("05 Drill model cross-valid",    F), # (ONLY IF RUNNING CROSS-VALIDATION) Drilling model cross-validation
                    c("06 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
@@ -594,9 +620,9 @@ opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated
                    c("08 Total Oil Production",       F), # Total oil production simulated vs actual
                    c("09 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
                    c("10 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
-                   c("11 Total Gas Production",       F), # Total gas production simulated vs actual
-                   c("12 Gas from New Wells",         F), # Total gas production simulated vs actual from new wells
-                   c("13 Gas from Prior Wells",       F), # Total gas production simulated vs actual from existing wells
+                   c("11 Total Gas Production",       T), # Total gas production simulated vs actual
+                   c("12 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
+                   c("13 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
                    c("14 CO2e Emissions",             F), # CO2 emissions
                    c("15 CH4 Emissions",              F), # CH4 emissions
                    c("16 VOC Emissions",              F), # VOC emissions
@@ -655,7 +681,7 @@ opt$plist <- data.frame(opt$plist[,1], as.logical(opt$plist[,2]))
 names(opt$plist) <- c("name", "plot")
 
 # Set font size
-opt$defFontSize <- 1.25
+opt$defFontSize <- 1.00
 
 # Quantiles to use to show uncertainty in simulated results
 opt$quant <- c(0.9, 0.7, 0.5, 0.3, 0.1)
