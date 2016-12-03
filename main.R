@@ -106,7 +106,7 @@ library(beepr)
 library(fitdistrplus)
 library(lhs)
 library(xtable)
-library(devtools)
+library(devtools)  # NOTE: Requires that Rtools must also be installed
 library(openxlsx)
 library(forecast)
 
@@ -597,17 +597,26 @@ gp <- EPFsim(epf.type = opt$epf.type$gas, product  = "gas")
 
 # 3.2 Well drilling simulation --------------------------------------------
 
-# Run well drilling simulation given price paths opsim and gpsim
-Drilled <- drillsim(path =       path,
-                    simOP =      op,
-                    simGP =      gp,
-                    nrun =       opt$nrun,
-                    drillModel = drillModel,
-                    type =       opt$DStype,
-                    p =          p,
-                    tstart =     opt$tstart,
-                    tstop =      opt$tstop,
-                    simtype =    opt$DSsimtype)
+# If using user-specified drilling schedule
+if (opt$DStype == "user") {
+
+    # Then use the specified schedule
+    Drilled <- opt$DS.uspec
+
+} else {
+
+    # Run well drilling simulation given price paths op and gp
+    Drilled <- drillsim(path =       path,
+                        simOP =      op,
+                        simGP =      gp,
+                        nrun =       opt$nrun,
+                        drillModel = drillModel,
+                        type =       opt$DStype,
+                        p =          p,
+                        tstart =     opt$tstart,
+                        tstop =      opt$tstop,
+                        simtype =    opt$DSsimtype)
+}
 
 
 # 3.3 Prior production calculations ---------------------------------------

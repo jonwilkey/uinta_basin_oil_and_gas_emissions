@@ -22,7 +22,7 @@ opt$save <- F
 opt$save.name <- "results v1.rda"
 
 # Load results?
-opt$load.prior <- F
+opt$load.prior <- T
 
 # Load name
 opt$load.name <- "results v1.rda"
@@ -36,7 +36,7 @@ opt$file_ver <- "v1"
 # v1: crossvalid -  train 1984-2010, predict 2011-2015
 
 # Enter number of overall simulation iterations
-opt$nrun <- 1e2
+opt$nrun <- 1e4
 
 # Is model run for cross-validation? (turns on/off plots of actual values in
 # postProcess script)
@@ -285,8 +285,9 @@ opt$ARIMA.opdq <- list(order = c(0, 1, 1),
 opt$ARIMA.gpdq <- list(order = c(0, 1, 1),
                        ic    = FALSE)
 
-# Plot forecast fits? (Note: for use in cross-validation mode only)
-opt$ARIMA.plotFit <- TRUE
+# Plot forecast fits? (Note: for use in cross-validation mode only and set by
+# default to plot if opt$crossvalid is true and false otherwise)
+opt$ARIMA.plotFit <- ifelse(opt$crossvalid == TRUE, yes = TRUE, no = FALSE)
 
 
 # 2.7 EIAforecastUpdate Options -------------------------------------------
@@ -498,10 +499,13 @@ opt$epf.uepf <- list(oil = matrix(data = rep(x = seq(from       = 35,
 
 # Select drilling simulation type. Valid options are:
 #
-#  sim - for simulated drilling schedule based on economic drilling model
-#  actual - for actual drilling schedule
+# sim    - for simulated drilling schedule based on economic drilling model
+# actual - for actual drilling schedule
+# user   - for what-if scenarios, specify the total number of wells drilled
+#          during each time step using the same approach as with user-specified
+#          price paths
 #
-opt$DStype <- "actual"
+opt$DStype <- "sim"
 
 # Pick method for simulated drilling schedule, valid options are:
 #
@@ -511,6 +515,15 @@ opt$DStype <- "actual"
 #  d - Gas price model:    W_n = a * GP_n-N + b
 #
 opt$DSsimtype <- "c"
+
+# If using the user-specified option, enter the desired drilling schedule below.
+opt$DS.uspec <- matrix(data = rep(x = seq(from       = 25,
+                                          by         = 1,
+                                          length.out = opt$MC.tsteps),
+                                  times = opt$nrun),
+                       nrow  =  opt$nrun,
+                       ncol  =  opt$MC.tsteps,
+                       byrow = T)
 
 
 # 3.3 priorProd Options ---------------------------------------------------
@@ -602,8 +615,8 @@ opt$EFred <- data.frame(cat =  c("prod", "proc", "transm", "compl", "drill", "pU
 
 
 # 4.1 Plot Export options -------------------------------------------------
-opt$exportFlag <-   T                     # If true, will plot to PDF located in path$plot directory
-opt$exportSingle <- T                     # If true, exports as single PDF file, else each plot is separate
+opt$exportFlag <-   F                     # If true, will plot to PDF located in path$plot directory
+opt$exportSingle <- F                     # If true, exports as single PDF file, else each plot is separate
 opt$prefix <-     "Fig- "                 # Any text here will be added in front of the name given in the table below
 opt$affix  <-     " actualWells.pdf" # Any text here will be added to the end " " " "...
 

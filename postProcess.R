@@ -376,7 +376,7 @@ if(opt$xls.export == T) {
                                                  sep = "")))
 
     # Remove export list
-    remove(xls.list)
+    remove(xls.list, qxls)
 }
 
 
