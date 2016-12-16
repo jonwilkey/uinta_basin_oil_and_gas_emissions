@@ -5,7 +5,7 @@
 
 # Description -------------------------------------------------------------
 
-# This script creates a list object named "eopt" that contains the options for 
+# This script creates a list object named "eopt" that contains the options for
 # all the inputs/outputs that control the execution of emissions calculations
 # scripts and functions. Review each input/output below and change as desired
 # from their base values.
@@ -67,8 +67,8 @@ eopt$r$wc <- data.frame(tDrill   = calTstep(as.Date("2012-06-01")),
                         anox     = 0,
                         avoc     = 0,
                         aco      = 0,
-                        moil     = 100,
-                        mgas     = 1000,
+                        moil     = 0,   # Should be left at 0
+                        mgas     = 0,   # Should be left at 0
                         red.pm10 = 0.5,
                         red.pm25 = 0.5,
                         red.nox  = 0.5,
