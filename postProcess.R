@@ -1190,7 +1190,7 @@ if(opt$plist$plot[j] == TRUE) {
        ylab = "CO2e Emissions (metric tons)",
        main = "Total CO2e Emissions")
   mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
-  lines(opt$tsteps, aE$rCO2.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+  lines(opt$tsteps, aE$rCO2.q[1,], col = qlinecolor[1], lty = 2, lwd = qlinewidth[1])
 
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -1235,7 +1235,7 @@ if(opt$plist$plot[j] == TRUE) {
        ylab = "CH4 Emissions (metric tons)",
        main = "Total CH4 Emissions")
   mtext("Solid Lines = Reduced Emissions, Dotted Lines = Base Emissions")
-  lines(opt$tsteps, aE$rCH4.q[1,], col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+  lines(opt$tsteps, aE$rCH4.q[1,], col = qlinecolor[1], lty = 2, lwd = qlinewidth[1])
 
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -1280,7 +1280,7 @@ if(opt$plist$plot[j] == TRUE) {
        ylab = "VOC Emissions (tons)",
        main = "Total VOC Emissions (Activity-Based)")
   mtext("Solid Lines = Base Emissions, Dotted Lines = NSPS Emissions")
-  lines(opt$tsteps, aE$rVOC.q[1,] * 1.10231, col = qlinecolor[1], lty = qlinetype[1], lwd = qlinewidth[1])
+  lines(opt$tsteps, aE$rVOC.q[1,] * 1.10231, col = qlinecolor[1], lty = 2, lwd = qlinewidth[1])
 
   # Other quantile lines
   for (i in 2:length(opt$quant)) {
@@ -2223,5 +2223,5 @@ eqplot(x = eE$fco.q$tank,   rx = reE$fco.q$tank,   type = "CO",    equip = "Tank
 # Close PDF if making single plot
 if(opt$exportFlag == TRUE & opt$exportSingle == TRUE) {dev.off()}
 
-# Remove temp object from workspace
-remove(temp)
+# Remove temp object from workspace (if it exists)
+if (exists("temp")) {remove(temp)}
