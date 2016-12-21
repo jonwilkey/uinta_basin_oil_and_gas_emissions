@@ -26,15 +26,6 @@ Please complete the following steps to setup the model:
 
 ### Documentation ###
 
-* The model's User Manual is available [here](https://www.dropbox.com/s/mrl31iyp58wlyzm/User%20Manual%20for%20Uinta%20Basin%20Oil%20and%20Gas%20Emissions%20Model.pdf?dl=0).
+* The model's User Manual is available [here](https://drive.google.com/open?id=0B7tE8j4aYhm-OEI4SmpjMkwySEE).
 * Documentation for Git [here](http://git-scm.com/doc).
 * Documentation for Bitbucket [here](https://confluence.atlassian.com/x/bgozDQ).
-
-### Version History ###
-
-The following table lists the version history of the results saved in the prepared data folder (and their corresponding entries in `IO_options.R`):
-
-| Version | Notes                                               |
-|---------|-----------------------------------------------------|
-| v1      | Cross validate - train 1984-2009, predict 2010-2014 |
-| v2      | Prediction - train 1984-2014, predict 2015-2019     |
