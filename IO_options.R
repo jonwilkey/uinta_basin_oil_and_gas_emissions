@@ -615,78 +615,78 @@ opt$EFred <- data.frame(cat =  c("prod", "proc", "transm", "compl", "drill", "pU
 
 
 # 4.1 Plot Export options -------------------------------------------------
-opt$exportFlag <-   F                     # If true, will plot to PDF located in path$plot directory
-opt$exportSingle <- F                     # If true, exports as single PDF file, else each plot is separate
+opt$exportFlag <-   T                     # If true, will plot to PDF located in path$plot directory
+opt$exportSingle <- T                     # If true, exports as single PDF file, else each plot is separate
 opt$prefix <-     "Fig- "                 # Any text here will be added in front of the name given in the table below
-opt$affix  <-     " actualWells.pdf" # Any text here will be added to the end " " " "...
+opt$affix  <-     " -xvalid -5yr -v1.pdf" # Any text here will be added to the end " " " "...
 
 #...............................................................................
 #                      File Name              Plot? T/F          Description
 #...............................................................................
-opt$plist <- rbind(c("01 Oil Price",                  F), # Oil prices simulated vs actual
-                   c("02 Gas Price",                  F), # Gas prices simulated vs actual
+opt$plist <- rbind(c("01 Oil Price",                  T), # Oil prices simulated vs actual
+                   c("02 Gas Price",                  T), # Gas prices simulated vs actual
                    c("03 Drilling Schedule",          T), # Drilling schedule simulated vs actual
-                   c("04 Drilling Model Fit",         F), # Drilling fit vs actual
-                   c("05 Drill model cross-valid",    F), # (ONLY IF RUNNING CROSS-VALIDATION) Drilling model cross-validation
+                   c("04 Drilling Model Fit",         T), # Drilling fit vs actual
+                   c("05 Drill model cross-valid",    T), # (ONLY IF RUNNING CROSS-VALIDATION) Drilling model cross-validation
                    c("06 DCA Coefficients - Boxplot", F), # Boxplot of DCA coefficients
                    c("07 DCA Coefficients - CDF",     F), # CDF DCA coefficients
-                   c("08 Total Oil Production",       F), # Total oil production simulated vs actual
-                   c("09 Oil from New Wells",         F), # Total oil production simulated vs actual from new wells
-                   c("10 Oil from Prior Wells",       F), # Total oil production simulated vs actual from existing wells
+                   c("08 Total Oil Production",       T), # Total oil production simulated vs actual
+                   c("09 Oil from New Wells",         T), # Total oil production simulated vs actual from new wells
+                   c("10 Oil from Prior Wells",       T), # Total oil production simulated vs actual from existing wells
                    c("11 Total Gas Production",       T), # Total gas production simulated vs actual
                    c("12 Gas from New Wells",         T), # Total gas production simulated vs actual from new wells
                    c("13 Gas from Prior Wells",       T), # Total gas production simulated vs actual from existing wells
-                   c("14 CO2e Emissions",             F), # CO2 emissions
-                   c("15 CH4 Emissions",              F), # CH4 emissions
-                   c("16 VOC Emissions",              F), # VOC emissions
-                   c("17 Field Fractions",            F), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
-                   c("18 Field Fractions -OW",        F), # Same but just oil wells
-                   c("19 Field Fractions -GW",        F), # Same but just gas wells
-                   c("21 Surface Lease Ownership",    F), # Surface lease ownership by field
-                   c("22 CDFs for Well Depth",        F), # CDFs for well depth by well type
-                   c("23 LOC Model Fit",              F), # Lease operating costs model fit for oil wells and gas wells
+                   c("14 CO2e Emissions",             T), # CO2 emissions
+                   c("15 CH4 Emissions",              T), # CH4 emissions
+                   c("16 VOC Emissions",              T), # VOC emissions
+                   c("17 Field Fractions",            T), # Pie chart of bar chart or something showing number of wells located in each distinct field during the data fitting period
+                   c("18 Field Fractions -OW",        T), # Same but just oil wells
+                   c("19 Field Fractions -GW",        T), # Same but just gas wells
+                   c("21 Surface Lease Ownership",    T), # Surface lease ownership by field
+                   c("22 CDFs for Well Depth",        T), # CDFs for well depth by well type
+                   c("23 LOC Model Fit",              T), # Lease operating costs model fit for oil wells and gas wells
                    c("24 Enery Price History",        F), # FPP history for oil and gas from EIA data
                    c("25 EIA AEO Error CDFs",         F), # CDFs for error % in EIA AEO forecasts for oil and gas
-                   c("26 CDF for Well Reworks",       F), # CDFs for well reworks
-                   c("27 EIA AEO Relative Error",     F), # Boxplot of EIA AEO relative errors as f(prediction year)
-                   c("28 CO2 emissions barplot",      F), # Total CO2 emissions barplot showing contribution from emissions sources
-                   c("29 CH4 emissions barplot",      F), # Total CH4 emissions barplot showing contribution from emissions sources
-                   c("30 VOC emissions barplot",      F), # Total VOC emissions barplot showing contribution from emissions sources
-                   c("31 Production fraction n vs e", F), # Fraction of production from new wells vs. old wells
-                   c("32 EQ-Based PM10 Emissions",    F), # Total PM10 emissions from equipment-based calculations
-                   c("33 EQ-Based PM25 Emissions",    F), # Total PM25 emissions from equipment-based calculations
-                   c("34 EQ-Based SOX Emissions",     F), # Total SOX emissions from equipment-based calculations
-                   c("35 EQ-Based NOX Emissions",     F), # Total NOX emissions from equipment-based calculations
-                   c("36 EQ-Based VOC Emissions",     F), # Total VOC emissions from equipment-based calculations
-                   c("37 EQ-Based CO Emissions",      F), # Total CO emissions from equipment-based calculations
-                   c("38 EQ-Based CH2O Emissions",    F), # Total CH2O emissions from equipment-based calculations
-                   c("39 PM10 Emissions - WC",        F), # PM10 emissions from Well Completions
-                   c("40 PM10 Emissions - RT",        F), # PM10 emissions from RICE & Turbines
-                   c("41 PM10 Emissions - SH",        F), # PM10 emissions from Separators & Heaters
-                   c("42 PM25 Emissions - WC",        F), # PM25 emissions from Well Completions
-                   c("43 PM25 Emissions - RT",        F), # PM25 emissions from RICE & Turbines
-                   c("44 PM25 Emissions - SH",        F), # PM25 emissions from Separators & Heaters
-                   c("45 SOx Emissions - RT",         F), # SOx emissions from RICE & Turbines
-                   c("46 SOx Emissions - SH",         F), # SOx emissions from Separators & Heaters
-                   c("47 NOx Emissions - WC",         F), # NOx emissions from Well Completions
-                   c("48 NOx Emissions - RT",         F), # NOx emissions from RICE & Turbines
-                   c("49 NOx Emissions - SH",         F), # NOx emissions from Separators & Heaters
-                   c("50 NOx Emissions - DH",         F), # NOx emissions from Dehydrators
-                   c("51 NOx Emissions - Tanks",      F), # NOx emissions from Tanks
-                   c("52 VOC Emissions - WC",         F), # VOC emissions from Well Completions
-                   c("53 VOC Emissions - RT",         F), # VOC emissions from RICE & Turbines
-                   c("54 VOC Emissions - SH",         F), # VOC emissions from Separators & Heaters
-                   c("55 VOC Emissions - DH",         F), # VOC emissions from Dehydrators
-                   c("56 VOC Emissions - Tanks",      F), # VOC emissions from Tanks
-                   c("57 VOC Emissions - Trucks",     F), # VOC emissions from Truck Loading
-                   c("58 VOC Emissions - PCTRL",      F), # VOC emissions from Pneumatic Controllers
-                   c("59 VOC Emissions - PPUMP",      F), # VOC emissions from Pneumatic Pumps
-                   c("60 VOC Emissions - Fug",        F), # VOC emissions from Fugitive Emissions
-                   c("61 CO Emissions - WC",          F), # CO emissions from Well Completions
-                   c("62 CO Emissions - RT",          F), # CO emissions from RICE & Turbines
-                   c("63 CO Emissions - SH",          F), # CO emissions from Separators & Heaters
-                   c("64 CO Emissions - DH",          F), # CO emissions from Dehydrators
-                   c("65 CO Emissions - Tanks",       F)  # CO emissions from Tanks
+                   c("26 CDF for Well Reworks",       T), # CDFs for well reworks
+                   c("27 EIA AEO Relative Error",     T), # Boxplot of EIA AEO relative errors as f(prediction year)
+                   c("28 CO2 emissions barplot",      T), # Total CO2 emissions barplot showing contribution from emissions sources
+                   c("29 CH4 emissions barplot",      T), # Total CH4 emissions barplot showing contribution from emissions sources
+                   c("30 VOC emissions barplot",      T), # Total VOC emissions barplot showing contribution from emissions sources
+                   c("31 Production fraction n vs e", T), # Fraction of production from new wells vs. old wells
+                   c("32 EQ-Based PM10 Emissions",    T), # Total PM10 emissions from equipment-based calculations
+                   c("33 EQ-Based PM25 Emissions",    T), # Total PM25 emissions from equipment-based calculations
+                   c("34 EQ-Based SOX Emissions",     T), # Total SOX emissions from equipment-based calculations
+                   c("35 EQ-Based NOX Emissions",     T), # Total NOX emissions from equipment-based calculations
+                   c("36 EQ-Based VOC Emissions",     T), # Total VOC emissions from equipment-based calculations
+                   c("37 EQ-Based CO Emissions",      T), # Total CO emissions from equipment-based calculations
+                   c("38 EQ-Based CH2O Emissions",    T), # Total CH2O emissions from equipment-based calculations
+                   c("39 PM10 Emissions - WC",        T), # PM10 emissions from Well Completions
+                   c("40 PM10 Emissions - RT",        T), # PM10 emissions from RICE & Turbines
+                   c("41 PM10 Emissions - SH",        T), # PM10 emissions from Separators & Heaters
+                   c("42 PM25 Emissions - WC",        T), # PM25 emissions from Well Completions
+                   c("43 PM25 Emissions - RT",        T), # PM25 emissions from RICE & Turbines
+                   c("44 PM25 Emissions - SH",        T), # PM25 emissions from Separators & Heaters
+                   c("45 SOx Emissions - RT",         T), # SOx emissions from RICE & Turbines
+                   c("46 SOx Emissions - SH",         T), # SOx emissions from Separators & Heaters
+                   c("47 NOx Emissions - WC",         T), # NOx emissions from Well Completions
+                   c("48 NOx Emissions - RT",         T), # NOx emissions from RICE & Turbines
+                   c("49 NOx Emissions - SH",         T), # NOx emissions from Separators & Heaters
+                   c("50 NOx Emissions - DH",         T), # NOx emissions from Dehydrators
+                   c("51 NOx Emissions - Tanks",      T), # NOx emissions from Tanks
+                   c("52 VOC Emissions - WC",         T), # VOC emissions from Well Completions
+                   c("53 VOC Emissions - RT",         T), # VOC emissions from RICE & Turbines
+                   c("54 VOC Emissions - SH",         T), # VOC emissions from Separators & Heaters
+                   c("55 VOC Emissions - DH",         T), # VOC emissions from Dehydrators
+                   c("56 VOC Emissions - Tanks",      T), # VOC emissions from Tanks
+                   c("57 VOC Emissions - Trucks",     T), # VOC emissions from Truck Loading
+                   c("58 VOC Emissions - PCTRL",      T), # VOC emissions from Pneumatic Controllers
+                   c("59 VOC Emissions - PPUMP",      T), # VOC emissions from Pneumatic Pumps
+                   c("60 VOC Emissions - Fug",        T), # VOC emissions from Fugitive Emissions
+                   c("61 CO Emissions - WC",          T), # CO emissions from Well Completions
+                   c("62 CO Emissions - RT",          T), # CO emissions from RICE & Turbines
+                   c("63 CO Emissions - SH",          T), # CO emissions from Separators & Heaters
+                   c("64 CO Emissions - DH",          T), # CO emissions from Dehydrators
+                   c("65 CO Emissions - Tanks",       T)  # CO emissions from Tanks
 )
 
 # Convert to data.frame and adjust column names
@@ -703,7 +703,7 @@ opt$quant <- c(0.9, 0.7, 0.5, 0.3, 0.1)
 # 4.2 Excel export options ------------------------------------------------
 
 # Export equipment-based emissions results to Excel? (T/F)
-opt$xls.export <- F
+opt$xls.export <- T
 
 # Export name
 opt$xls.name <- "Equipment-based emission results "
