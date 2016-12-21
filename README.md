@@ -8,7 +8,7 @@ Please complete the following steps to setup the model:
 1. [Download](http://www.r-project.org/) and install R.
 2. (Recommended) [Download](http://www.rstudio.com/products/rstudio/download/) and install RStudio.
 3. [Download](http://git-scm.com/downloads) and install Git for version control.
-4. Download [this](https://www.dropbox.com/sh/sfc47tx1c2d9nzw/AADDnBzPnw4S5ywAVfVZ6L1Ya?dl=0) shared Dropbox folder.
+4. Download [this](https://drive.google.com/open?id=0B7tE8j4aYhm-dHpSdjY1OF9SWE0) shared Google Drive folder.
 5. Launch RStudio.
 6. From the menu, select **File > New Project**.
 7. In the dialogue menu that pops up, select **Version Control**.
